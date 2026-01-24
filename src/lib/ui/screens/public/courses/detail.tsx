@@ -1,12 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRightIcon, CheckCircle2Icon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  CheckCircle2Icon,
+  ClipboardListIcon,
+  GraduationCapIcon,
+  ListChecksIcon,
+  RocketIcon,
+  TrophyIcon,
+} from "lucide-react"
 
 import { getPublicCourse } from "@/lib/data/public-courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
+import { TechLogoCard } from "@/lib/ui/useable-components/tech-logos"
 
 export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
   const course = getPublicCourse(slug)
@@ -110,7 +119,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
               <Card key={s.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
+                    <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-11 shrink-0 items-center justify-center rounded-2xl">
                       <s.icon className="size-5" />
                     </span>
                     <div className="min-w-0">
@@ -129,6 +138,128 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
               </Card>
             ))}
           </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-secondary">Technologies</div>
+            <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+              Tools you’ll master (with real projects)
+            </h3>
+            <p className="text-muted-foreground max-w-3xl text-pretty">
+              You won’t just “see” these technologies — you’ll build with them, submit work, and track marks.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {course.technologies.map((t, idx) => (
+              <TechLogoCard
+                key={t.id + t.label}
+                id={t.id}
+                label={t.label}
+                delayMs={idx * 80}
+              />
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-secondary">Projects</div>
+            <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+              Projects that make you confident
+            </h3>
+            <p className="text-muted-foreground max-w-3xl text-pretty">
+              Every project is designed to create “proof of skill” — the kind that upgrades your resume and confidence fast.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {course.projects.map((p) => (
+              <Card key={p.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
+                <CardHeader>
+                  <CardTitle className="text-lg">{p.title}</CardTitle>
+                  <CardDescription className="text-sm leading-7">{p.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-2xl border bg-background/40 p-4 text-sm">
+                    <div className="text-muted-foreground leading-7">
+                      You’ll submit this work from your dashboard — and your marks keep momentum high.
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-secondary">Your step‑by‑step path</div>
+            <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+              From day 1 to job-ready outcomes
+            </h3>
+            <p className="text-muted-foreground max-w-3xl text-pretty">
+              This is the exact flow students follow inside the platform. It keeps motivation high and results measurable.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-5">
+            {[
+              {
+                title: "Step 1: Enroll",
+                description: "Choose your track and set your weekly study plan.",
+                icon: RocketIcon,
+              },
+              {
+                title: "Step 2: Learn",
+                description: "Attend structured lectures and understand core concepts.",
+                icon: GraduationCapIcon,
+              },
+              {
+                title: "Step 3: Practice",
+                description: "Work on guided tasks and real projects.",
+                icon: ClipboardListIcon,
+              },
+              {
+                title: "Step 4: Submit",
+                description: "Submit assignments directly from your dashboard.",
+                icon: ListChecksIcon,
+              },
+              {
+                title: "Step 5: Marks + Growth",
+                description: "Get marks, see progress, and qualify for career support.",
+                icon: TrophyIcon,
+              },
+            ].map((s) => (
+              <Card
+                key={s.title}
+                className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50"
+              >
+                <CardHeader className="space-y-3">
+                  <div className="bg-background/40 relative overflow-hidden rounded-2xl border p-4">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(70,208,255,0.22),transparent_60%)]" />
+                    <div className="relative flex items-center gap-2">
+                      <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-9 items-center justify-center rounded-xl">
+                        <s.icon className="size-4" />
+                      </span>
+                      <div className="text-sm font-semibold">{s.title}</div>
+                    </div>
+                  </div>
+                  <CardDescription className="text-sm leading-7">{s.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
+            <CardContent className="grid gap-6 p-6 sm:grid-cols-3 sm:p-8">
+              {[
+                { k: "Weekly plan", v: "2–4 live sessions + practice" },
+                { k: "Assignments", v: "Submit weekly tasks + projects" },
+                { k: "Career support", v: "For top performers" },
+              ].map((s) => (
+                <div key={s.k} className="rounded-2xl border bg-background/40 p-5">
+                  <div className="text-muted-foreground text-xs">{s.k}</div>
+                  <div className="mt-1 text-xl font-semibold">{s.v}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
           <Separator />
 

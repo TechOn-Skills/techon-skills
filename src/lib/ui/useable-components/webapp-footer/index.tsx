@@ -15,47 +15,49 @@ export const WebappFooter = ({ className }: { className?: string }) => {
   return (
     <footer
       className={cn(
-        "border-border bg-background/70 supports-backdrop-filter:bg-background/55 text-muted-foreground relative border-t backdrop-blur",
+        "border-border bg-[linear-gradient(135deg,var(--brand-primary),rgba(7,26,43,0.9))] text-(--text-on-dark) relative border-t",
         className
       )}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(to_right,transparent,rgba(79,195,232,0.65),rgba(242,140,40,0.55),transparent)]" />
-      <div className="grid w-full gap-8 px-4 py-10 sm:px-6 lg:grid-cols-3 lg:px-8 2xl:px-10">
-        <div className="space-y-2">
-          <div className="text-foreground text-sm font-semibold">{COMPANY_NAME}</div>
-          <p className="text-muted-foreground text-sm leading-6">
-            Modern, outcome-driven training in web development, mobile app development, and software engineering.
-          </p>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(to_right,transparent,rgba(70,208,255,0.75),rgba(255,138,61,0.55),transparent)]" />
+      <div className="w-full px-4 py-10 sm:px-6 lg:px-8 2xl:px-10">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">{COMPANY_NAME}</div>
+            <p className="text-(--text-on-dark)/75 text-sm leading-6">
+              Modern, outcome-driven training in web development, mobile app development, and software engineering.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Contact</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Phone: +923144240550</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Email: info@cloudrika.com</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Address: Lahore Punjab Pakistan</div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Legal</div>
+            <nav className="flex flex-col gap-2 text-sm">
+              {FOOTER_LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="text-(--text-on-dark)/80 hover:text-(--text-on-dark) w-fit transition-colors"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="text-foreground text-sm font-semibold">Contact</div>
-          <div className="text-muted-foreground text-sm">Phone: +923144240550</div>
-          <div className="text-muted-foreground text-sm">Email: info@techonskills.cloudrika.com</div>
-          <div className="text-muted-foreground text-sm">Address: Lahore Punjab Pakistan</div>
+        <div className="mt-10 flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-(--text-on-dark)/70">
+            © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
+          </div>
+          <div className="text-(--text-on-dark)/70">Built with TechOn Skills.</div>
         </div>
-
-        <div className="space-y-2">
-          <div className="text-foreground text-sm font-semibold">Legal</div>
-          <nav className="flex flex-col gap-2 text-sm">
-            {FOOTER_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-link hover:text-link-hover w-fit"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      <div className="border-border/70 flex w-full flex-col gap-2 border-t px-4 py-6 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 2xl:px-10">
-        <div className="text-muted-foreground">
-          © {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
-        </div>
-        <div className="text-muted-foreground">Built with TechOn Skills.</div>
       </div>
     </footer>
   )

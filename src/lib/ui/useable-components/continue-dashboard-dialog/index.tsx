@@ -11,12 +11,13 @@ import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 
+// used to remember last attempted email (and for other flows)
 const ENROLLED_EMAIL_KEY = "techon:enrolledEmail"
+const DASHBOARD_ALLOWED_EMAIL = "ahmadrazawebexpert@gmail.com"
+const MAGIC_LINK_SENT_EMAIL = "ahmadrazayousaf30@gmail.com"
 
-function isEnrolled(email: string) {
-  if (typeof window === "undefined") return false
-  const stored = window.localStorage.getItem(ENROLLED_EMAIL_KEY)
-  return !!stored && stored.toLowerCase() === email.toLowerCase()
+function isDashboardAllowed(email: string) {
+  return email.trim().toLowerCase() === DASHBOARD_ALLOWED_EMAIL.toLowerCase()
 }
 
 export const ContinueToDashboardDialog = ({ className }: { className?: string }) => {
@@ -26,7 +27,10 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   const status = useMemo(() => {
     if (!submitted) return "idle" as const
-    return isEnrolled(email) ? ("magic" as const) : ("enroll" as const)
+    // Explicit behavior requested:
+    // - allow dashboard for DASHBOARD_ALLOWED_EMAIL
+    // - for any other email show enroll-required messaging
+    return isDashboardAllowed(email) ? ("magic" as const) : ("enroll" as const)
   }, [email, submitted])
 
   return (
@@ -48,7 +52,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
         <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
         <DialogPrimitive.Content
           className={cn(
-            "bg-background text-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed left-1/2 top-1/2 z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-xl outline-none"
+            "bg-card text-primary data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed left-1/2 top-1/2 z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-xl outline-none"
           )}
         >
           <div className="p-6 sm:p-8">
@@ -57,7 +61,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
                 <MailIcon className="size-5" />
               </span>
               <div className="min-w-0">
-                <DialogPrimitive.Title className="text-lg font-semibold">
+                <DialogPrimitive.Title className="text-primary text-lg font-semibold">
                   Continue to dashboard
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Description className="text-muted-foreground text-sm">
@@ -70,6 +74,12 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
               className="mt-6 space-y-4"
               onSubmit={(e) => {
                 e.preventDefault()
+                // remember last attempt for convenience
+                try {
+                  localStorage.setItem(ENROLLED_EMAIL_KEY, email.trim())
+                } catch {
+                  // ignore
+                }
                 setSubmitted(true)
               }}
             >
@@ -98,7 +108,9 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
                 {status === "magic" ? (
                   <div className="rounded-2xl border bg-background/50 p-4 text-sm">
-                    <div className="font-semibold">Magic link sent to you</div>
+                    <div className="text-primary font-semibold">
+                      Magic link sent to {MAGIC_LINK_SENT_EMAIL}
+                    </div>
                     <div className="text-muted-foreground mt-1 leading-7">
                       Check your email inbox. After you sign in, you’ll be redirected to your dashboard.
                     </div>
@@ -110,7 +122,9 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
                   </div>
                 ) : (
                   <div className="rounded-2xl border bg-background/50 p-4 text-sm">
-                    <div className="font-semibold">Please enroll into one of the courses</div>
+                    <div className="text-primary font-semibold">
+                      Dashboard access is available after enrollment
+                    </div>
                     <div className="text-muted-foreground mt-1 leading-7">
                       Dashboard access is available after enrollment. Explore courses and enroll to get started.
                     </div>

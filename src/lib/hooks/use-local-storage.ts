@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useRef, useSyncExternalStore } from "react"
 
 const LOCAL_STORAGE_EVENT = "techon:local-storage"
 
@@ -40,11 +40,38 @@ export function useLocalStorageItem(key: string) {
 }
 
 export function useLocalStorageRecord(keys: string[]) {
+  // Cache the snapshot object so React doesn't see a "new object"
+  // on every getSnapshot call (prevents infinite-loop warnings).
+  const cacheRef = useRef<{
+    keysSig: string
+    lastValues: (string | null)[]
+    lastSnapshot: Record<string, string | null>
+  } | null>(null)
+
   const getSnapshot = useCallback(() => {
-    if (typeof window === "undefined") {
-      return Object.fromEntries(keys.map((k) => [k, null] as const))
+    const keysSig = keys.join("|")
+    const values =
+      typeof window === "undefined"
+        ? keys.map(() => null)
+        : keys.map((k) => window.localStorage.getItem(k))
+
+    const cached = cacheRef.current
+    if (
+      cached &&
+      cached.keysSig === keysSig &&
+      cached.lastValues.length === values.length &&
+      cached.lastValues.every((v, i) => v === values[i])
+    ) {
+      return cached.lastSnapshot
     }
-    return Object.fromEntries(keys.map((k) => [k, window.localStorage.getItem(k)] as const))
+
+    const nextSnapshot = Object.fromEntries(keys.map((k, i) => [k, values[i]] as const))
+    cacheRef.current = {
+      keysSig,
+      lastValues: values,
+      lastSnapshot: nextSnapshot,
+    }
+    return nextSnapshot
   }, [keys])
 
   const value = useSyncExternalStore(

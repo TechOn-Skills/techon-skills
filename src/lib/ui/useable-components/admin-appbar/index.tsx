@@ -14,6 +14,7 @@ import { Separator } from "@/lib/ui/useable-components/separator"
 import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
 import { COMPANY_NAME, CONFIG } from "@/utils/constants"
 import { SidebarTrigger } from "@/lib/ui/useable-components/sidebar"
+import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
@@ -62,6 +63,7 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <ThemeSwitcher className="hidden sm:inline-flex" />
                     <DialogPrimitive.Root>
                         <DialogPrimitive.Trigger asChild>
                             <Button

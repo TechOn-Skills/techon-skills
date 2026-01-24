@@ -8,11 +8,13 @@ import {
   StoreIcon,
   WrenchIcon,
 } from "lucide-react"
+import type { ComponentType } from "react"
+import type { TechId } from "@/lib/ui/useable-components/tech-logos"
 
 export type CourseSection = {
   title: string
   description: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
 }
 
 export type PublicCourse = {
@@ -23,6 +25,8 @@ export type PublicCourse = {
   price: string
   heroGradient: string
   sections: CourseSection[]
+  technologies: { id: TechId; label: string }[]
+  projects: { title: string; description: string }[]
 }
 
 export const PUBLIC_COURSES: PublicCourse[] = [
@@ -55,6 +59,30 @@ export const PUBLIC_COURSES: PublicCourse[] = [
         icon: NetworkIcon,
       },
     ],
+    technologies: [
+      { id: "react", label: "React" },
+      { id: "node", label: "Node.js" },
+      { id: "express", label: "Express" },
+      { id: "mongodb", label: "MongoDB" },
+      { id: "python", label: "Python" },
+      { id: "fastapi", label: "FastAPI" },
+      { id: "postgres", label: "PostgreSQL" },
+      { id: "graphql", label: "GraphQL" },
+    ],
+    projects: [
+      {
+        title: "MERN product dashboard",
+        description: "Authentication, roles, CRUD, and clean UI patterns.",
+      },
+      {
+        title: "Data processing service",
+        description: "Python automation + FastAPI endpoints for real workflows.",
+      },
+      {
+        title: "Scalable API design",
+        description: "REST vs GraphQL, caching, and system design thinking.",
+      },
+    ],
   },
   {
     slug: "web-development",
@@ -83,6 +111,27 @@ export const PUBLIC_COURSES: PublicCourse[] = [
         description:
           "Build APIs with Node.js + CRUD operations and schema design with MongoDB.",
         icon: DatabaseIcon,
+      },
+    ],
+    technologies: [
+      { id: "react", label: "React" },
+      { id: "nextjs", label: "Next.js" },
+      { id: "node", label: "Node.js" },
+      { id: "express", label: "Express" },
+      { id: "mongodb", label: "MongoDB" },
+    ],
+    projects: [
+      {
+        title: "Modern marketing website",
+        description: "Responsive UI, components, and smooth user experience.",
+      },
+      {
+        title: "API-driven app",
+        description: "CRUD, auth, and a real deployment workflow.",
+      },
+      {
+        title: "Portfolio project",
+        description: "A polished project you can confidently show.",
       },
     ],
   },
@@ -115,6 +164,28 @@ export const PUBLIC_COURSES: PublicCourse[] = [
         icon: DatabaseIcon,
       },
     ],
+    technologies: [
+      { id: "react-native", label: "React Native" },
+      { id: "react", label: "React" },
+      { id: "node", label: "Node.js" },
+      { id: "express", label: "Express" },
+      { id: "mongodb", label: "MongoDB" },
+      { id: "postgres", label: "PostgreSQL" },
+    ],
+    projects: [
+      {
+        title: "Cross-platform mobile app",
+        description: "List → detail flow, navigation, and clean UI.",
+      },
+      {
+        title: "Device feature integration",
+        description: "Camera/GPS/local storage with best practices.",
+      },
+      {
+        title: "Centralized backend",
+        description: "One API serving web + mobile clients.",
+      },
+    ],
   },
   {
     slug: "ecommerce",
@@ -143,6 +214,29 @@ export const PUBLIC_COURSES: PublicCourse[] = [
         description:
           "Wix Studio & Editor (responsive breakpoints, animations), vertical solutions (Bookings/Events), Velo basics (JS + collections), and business suite (CRM + invoicing + SEO Wiz).",
         icon: WrenchIcon,
+      },
+    ],
+    technologies: [
+      { id: "shopify", label: "Shopify" },
+      { id: "liquid", label: "Liquid" },
+      { id: "wordpress", label: "WordPress" },
+      { id: "woocommerce", label: "WooCommerce" },
+      { id: "elementor", label: "Elementor" },
+      { id: "wix", label: "Wix" },
+      { id: "velo", label: "Velo" },
+    ],
+    projects: [
+      {
+        title: "High-converting Shopify store",
+        description: "Products, collections, theme setup, and apps ecosystem.",
+      },
+      {
+        title: "WordPress business site",
+        description: "Builder + SEO + performance + plugin stack.",
+      },
+      {
+        title: "Wix booking/event site",
+        description: "Design + animations + CRM/business tooling.",
       },
     ],
   },
