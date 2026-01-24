@@ -33,6 +33,8 @@ export const CONFIG = {
             ASSIGNMENTS: "/student/assignments",
             COURSES: "/student/courses",
             NEWS: "/student/news",
+            ANNOUNCEMENTS: "/student/announcements",
+            FEES: "/student/fees",
             EVENTS: "/student/events",
             ABOUT: "/student/about",
             CONTACT: "/student/contact",

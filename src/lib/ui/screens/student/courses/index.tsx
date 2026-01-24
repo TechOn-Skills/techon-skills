@@ -26,12 +26,11 @@ export const StudentCoursesScreen = () => {
         return () => window.clearTimeout(t)
     }, [toast])
 
-    const handleEnroll = (courseTitle: string) => {
+    const handleEnroll = () => {
         setToast({ status: "loading", text: "Sending request…" })
         window.setTimeout(() => {
             setToast({ status: "success", text: "Request sent successfully" })
         }, 1200)
-        // keep the UI on this page; user can still go to contact if needed
     }
 
     return (
@@ -84,7 +83,7 @@ export const StudentCoursesScreen = () => {
                                         type="button"
                                         variant="brand-secondary"
                                         shape="pill"
-                                        onClick={() => handleEnroll(c.title)}
+                                        onClick={handleEnroll}
                                     >
                                         Enroll now
                                     </Button>

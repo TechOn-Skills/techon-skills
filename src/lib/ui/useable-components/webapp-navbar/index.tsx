@@ -84,7 +84,7 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
 
           <Link
             href="/"
-            className="hover:bg-accent/40 flex min-w-0 items-center gap-2 rounded-xl px-2 py-2 transition-colors"
+            className="hover:bg-(--brand-secondary)/10 flex min-w-0 items-center gap-2 rounded-xl px-2 py-2 transition-colors"
             aria-label={`${COMPANY_NAME} home`}
           >
             <Image

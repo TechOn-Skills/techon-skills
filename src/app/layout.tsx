@@ -16,17 +16,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TechOn Skills",
-  description: "TechOn Skills is a platform for learning advanced skills in web development, mobile app development, software engineering, and e-commerce. We offer a wide range of courses to help you learn new skills and advance your career. Land your dream job in months!",
-  icons: {
-    icon: "/favicon.ico",
-  },
+  title: "TechOn Skills - Learn Web Development, Mobile Apps & Software Engineering",
+  description: "Modern, outcome-driven training in web development, mobile app development, software engineering, and e-commerce (Shopify + WordPress + Wix). Starting from PKR 2,500/month only. Career support for top performers.",
+  icons: [
+    { rel: "icon", url: "/favicon.ico" },
+  ],
   openGraph: {
     title: "TechOn Skills",
-    description: "TechOn Skills is a platform for learning advanced skills in web development, mobile app development, software engineering, and e-commerce. We offer a wide range of courses to help you learn new skills and advance your career. Land your dream job in months!",
-    images: [
-      { url: "/favicon.ico" },
-    ],
+    description: "Modern, outcome-driven training in web development, mobile app development, software engineering, and e-commerce (Shopify + WordPress + Wix). Starting from PKR 2,500/month only. Career support for top performers.",
   },
 };
 

@@ -42,7 +42,7 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
 
                     <Link
                         href={CONFIG.ROUTES.ADMIN.DASHBOARD}
-                        className="hover:bg-accent/40 flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
+                        className="hover:bg-(--brand-secondary)/10 flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
                         aria-label={`${COMPANY_NAME} admin home`}
                     >
                         <Image
@@ -62,7 +62,7 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex items-center gap-2">
                     <ThemeSwitcher className="hidden sm:inline-flex" />
                     <DialogPrimitive.Root>
                         <DialogPrimitive.Trigger asChild>

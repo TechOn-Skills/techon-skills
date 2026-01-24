@@ -44,7 +44,7 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                     {/* Logo and home link */}
                     <Link
                         href={CONFIG.ROUTES.STUDENT.DASHBOARD}
-                        className="hover:bg-accent/40 flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
+                        className="hover:bg-(--brand-secondary)/10 flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
                         aria-label={`${COMPANY_NAME} student home`}
                     >
                         <Image
@@ -65,7 +65,7 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                 </div>
 
                 {/* Profile dropdown */}
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex items-center gap-2">
                     <ThemeSwitcher className="hidden sm:inline-flex" />
                     <DialogPrimitive.Root>
                         <DialogPrimitive.Trigger asChild>

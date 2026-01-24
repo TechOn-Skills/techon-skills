@@ -25,17 +25,29 @@ export const StudentSimpleScreen = ({
 
       <div className="grid gap-6 lg:grid-cols-3">
         {STUDENT_SIDEBAR_ITEMS.slice(0, 6).map((i) => (
-          <Card key={i.href} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
-            <CardHeader>
-              <CardTitle>{i.label}</CardTitle>
-              <CardDescription>Open {i.label.toLowerCase()}.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="ghost" shape="pill" className="justify-start">
-                <Link href={i.href}>Go</Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div
+            key={i.href}
+            className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.22),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl"
+          >
+            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
+              <CardHeader className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 shrink-0 items-center justify-center rounded-2xl">
+                    <i.icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg">{i.label}</CardTitle>
+                    <CardDescription className="text-sm">Open {i.label.toLowerCase()}.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="brand-secondary" shape="pill" className="w-fit">
+                  <Link href={i.href}>Go</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         ))}
       </div>
     </div>

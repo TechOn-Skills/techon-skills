@@ -1,18 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import {
-  CalendarIcon,
-  ClockIcon,
-  ExternalLinkIcon,
-  PlayIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { CalendarIcon, ClockIcon, PlayIcon, SparklesIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
-import { CONFIG } from "@/utils/constants"
 
 type Lecture = {
   id: string
@@ -142,20 +134,12 @@ export const StudentMyLecturesScreen = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button asChild variant="brand-secondary" size="lg" shape="pill" className="w-fit">
-                      <a href={l.meetUrl} target="_blank" rel="noreferrer">
-                        <PlayIcon className="size-4" />
-                        Join live class
-                      </a>
-                    </Button>
-                    <Button asChild variant="ghost" shape="pill" className="w-fit">
-                      <Link href={CONFIG.ROUTES.STUDENT.COURSES}>
-                        Open course
-                        <ExternalLinkIcon className="size-4" />
-                      </Link>
-                    </Button>
-                  </div>
+                  <Button asChild variant="brand-secondary" size="lg" shape="pill" className="w-full">
+                    <a href={l.meetUrl} target="_blank" rel="noreferrer">
+                      <PlayIcon className="size-4" />
+                      Join live class
+                    </a>
+                  </Button>
                 </CardContent>
               </Card>
             </div>
