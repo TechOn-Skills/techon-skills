@@ -3,6 +3,13 @@
 /*  ---break---  */
 @custom-variant dark (&:is(.dark *));
 
+::selection {
+  background: var(--brand-secondary);
+  /* selected text background */
+  color: var(--text-on-dark);
+  /* selected text color */
+}
+
 :root {
   color-scheme: light;
 
@@ -335,20 +342,24 @@ body {
 }
 
 @keyframes tech-float {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-6px);
   }
 }
 
 @keyframes soft-glow {
+
   0%,
   100% {
     opacity: 0.25;
   }
+
   50% {
     opacity: 0.6;
   }
