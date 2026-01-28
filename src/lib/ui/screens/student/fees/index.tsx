@@ -8,18 +8,10 @@ import { CheckCircle2Icon, CopyIcon, CreditCardIcon, UploadIcon, XIcon } from "l
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
+import type { IFeeEntry } from "@/utils/interfaces"
+import type { FeeStatus } from "@/utils/types"
 
-type FeeStatus = "paid" | "pending" | "under-verification"
-
-type FeeEntry = {
-  id: string
-  month: string
-  amount: string
-  dueDate: string
-  status: FeeStatus
-}
-
-const FEES_DATA: FeeEntry[] = [
+const FEES_DATA: IFeeEntry[] = [
   { id: "f-1", month: "January 2026", amount: "PKR 2,500", dueDate: "2026-01-31", status: "pending" },
   { id: "f-2", month: "February 2026", amount: "PKR 2,500", dueDate: "2026-02-28", status: "pending" },
   { id: "f-3", month: "March 2026", amount: "PKR 2,500", dueDate: "2026-03-31", status: "pending" },
@@ -34,7 +26,7 @@ const BANK_DETAILS = {
 export const StudentFeesScreen = () => {
   const [open, setOpen] = useState(false)
   const [modalStep, setModalStep] = useState<"bank" | "upload">("bank")
-  const [selectedFee, setSelectedFee] = useState<FeeEntry | null>(null)
+  const [selectedFee, setSelectedFee] = useState<IFeeEntry | null>(null)
 
   // In a real app you'd track all fees; for demo we track one ID
   const { value: statusRaw, setValue: setStatusRaw } = useLocalStorageItem("student:fees:status")
@@ -53,7 +45,7 @@ export const StudentFeesScreen = () => {
     }))
   }, [storedStatus])
 
-  const handlePayNow = (fee: FeeEntry) => {
+  const handlePayNow = (fee: IFeeEntry) => {
     setSelectedFee(fee)
     setModalStep("bank")
     setOpen(true)

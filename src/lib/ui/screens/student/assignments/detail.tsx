@@ -11,12 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { cn } from "@/lib/helpers"
-
-type Submission = {
-  text: string
-  submittedAt: string
-  marks?: number
-}
+import type { ISubmission } from "@/utils/interfaces"
 
 function storageKey(id: string) {
   return `student_assignment_submission:${id}`
@@ -38,7 +33,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
 
   const key = storageKey(assignmentId)
   const { value: raw, setValue } = useLocalStorageItem(key)
-  const saved = useMemo(() => (raw ? (JSON.parse(raw) as Submission) : null), [raw])
+  const saved = useMemo(() => (raw ? (JSON.parse(raw) as ISubmission) : null), [raw])
   const [text, setText] = useState(() => saved?.text ?? "")
   const [showConfetti, setShowConfetti] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | null>(null)
@@ -47,7 +42,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
   // Auto-save draft
   useEffect(() => {
     if (!text.trim() || text === saved?.text) return
-    
+
     setAutoSaveStatus("saving")
     const timer = setTimeout(() => {
       setAutoSaveStatus("saved")
@@ -87,7 +82,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
   }
 
   const handleSubmit = () => {
-    const next: Submission = {
+    const next: ISubmission = {
       text,
       submittedAt: new Date().toISOString(),
       marks: saved?.marks ?? Math.floor(60 + Math.random() * 40),
@@ -148,9 +143,9 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
             <div className={cn(
               "inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold",
               saved.marks >= 90 ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" :
-              saved.marks >= 80 ? "bg-green-500/20 text-green-600 dark:text-green-400" :
-              saved.marks >= 70 ? "bg-blue-500/20 text-blue-600 dark:text-blue-400" :
-              "bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                saved.marks >= 80 ? "bg-green-500/20 text-green-600 dark:text-green-400" :
+                  saved.marks >= 70 ? "bg-blue-500/20 text-blue-600 dark:text-blue-400" :
+                    "bg-purple-500/20 text-purple-600 dark:text-purple-400"
             )}>
               <TrophyIcon className="size-4" />
               {saved.marks}/100
@@ -202,7 +197,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
                   <div className="text-muted-foreground text-sm">
                     Write detailed explanations, share your approach, and showcase your understanding.
                   </div>
-                  
+
                   {/* Progress Bar */}
                   {wordCount > 0 && (
                     <div className="space-y-2">
@@ -236,7 +231,7 @@ Example:
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-background/40 rounded-2xl p-4">
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">
-                      {saved?.submittedAt 
+                      {saved?.submittedAt
                         ? `✅ Last submitted: ${new Date(saved.submittedAt).toLocaleString()}`
                         : "📝 Not submitted yet"}
                     </div>
@@ -271,17 +266,17 @@ Example:
                     {saved.marks >= 90 ? "🌟" : saved.marks >= 80 ? "🎯" : saved.marks >= 70 ? "✨" : "👍"}
                   </div>
                   <h3 className="text-2xl font-semibold mb-2">
-                    {saved.marks >= 90 ? "Outstanding Work!" : 
-                     saved.marks >= 80 ? "Great Job!" : 
-                     saved.marks >= 70 ? "Well Done!" : 
-                     "Good Effort!"}
+                    {saved.marks >= 90 ? "Outstanding Work!" :
+                      saved.marks >= 80 ? "Great Job!" :
+                        saved.marks >= 70 ? "Well Done!" :
+                          "Good Effort!"}
                   </h3>
                   <p className="text-muted-foreground max-w-md mx-auto leading-7">
-                    {saved.marks >= 90 
+                    {saved.marks >= 90
                       ? "You're crushing it! This is exceptional work. Keep this momentum going!"
                       : saved.marks >= 70
-                      ? "Solid work! You're on the right track. Every assignment makes you better!"
-                      : "Keep pushing! Learning is a journey. Your next submission will be even better!"}
+                        ? "Solid work! You're on the right track. Every assignment makes you better!"
+                        : "Keep pushing! Learning is a journey. Your next submission will be even better!"}
                   </p>
                 </CardContent>
               </Card>

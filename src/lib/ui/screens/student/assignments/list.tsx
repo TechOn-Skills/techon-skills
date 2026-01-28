@@ -9,12 +9,7 @@ import { useLocalStorageRecord } from "@/lib/hooks/use-local-storage"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
-
-type Submission = {
-  text: string
-  submittedAt: string
-  marks?: number
-}
+import type { ISubmission } from "@/utils/interfaces"
 
 function storageKey(id: string) {
   return `student_assignment_submission:${id}`
@@ -48,7 +43,7 @@ export const StudentAssignmentsListScreen = () => {
       assignment: a,
       submission: (() => {
         const raw = rawByKey[storageKey(a.id)]
-        return raw ? (JSON.parse(raw) as Submission) : null
+        return raw ? (JSON.parse(raw) as ISubmission) : null
       })(),
     }))
   }, [rawByKey])
@@ -57,7 +52,7 @@ export const StudentAssignmentsListScreen = () => {
   const stats = useMemo(() => {
     const submitted = rows.filter(r => r.submission).length
     const graded = rows.filter(r => typeof r.submission?.marks === "number").length
-    const avgMarks = graded > 0 
+    const avgMarks = graded > 0
       ? Math.round(rows.reduce((sum, r) => sum + (r.submission?.marks || 0), 0) / graded)
       : 0
     const perfectScores = rows.filter(r => (r.submission?.marks || 0) >= 90).length
@@ -211,8 +206,8 @@ export const StudentAssignmentsListScreen = () => {
                 {stats.avgMarks >= 80
                   ? "Outstanding work! Your dedication is paying off. Keep pushing forward and you'll achieve incredible things!"
                   : stats.submitted >= stats.total / 2
-                  ? "You're over halfway there! Every assignment makes you stronger. Don't stop now—you've got this!"
-                  : "Great start! Consistency is key. Keep submitting and watch your skills soar to new heights!"}
+                    ? "You're over halfway there! Every assignment makes you stronger. Don't stop now—you've got this!"
+                    : "Great start! Consistency is key. Keep submitting and watch your skills soar to new heights!"}
               </p>
             </CardContent>
           </Card>

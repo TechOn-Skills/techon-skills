@@ -6,17 +6,9 @@ import { BookmarkIcon, ChevronDownIcon, HeartIcon, MegaphoneIcon, SparklesIcon, 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
+import type { IAnnouncement } from "@/utils/interfaces"
 
-type Announcement = {
-  id: string
-  title: string
-  content: string
-  date: string
-  isNew?: boolean
-  category: "news" | "feature" | "achievement" | "opportunity"
-}
-
-const ANNOUNCEMENTS: Announcement[] = [
+const ANNOUNCEMENTS: IAnnouncement[] = [
   {
     id: "a-1",
     title: "New batch starting soon",
@@ -93,7 +85,7 @@ export const StudentAnnouncementsScreen = () => {
     setUserReactions((prev) => {
       const current = prev[id]
       const next = { ...prev }
-      
+
       // Remove old reaction
       if (current) {
         setReactions((r) => ({

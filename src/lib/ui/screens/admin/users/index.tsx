@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { 
-  SearchIcon, 
-  FilterIcon, 
+import {
+  SearchIcon,
+  FilterIcon,
   UserIcon,
   MailIcon,
   PhoneIcon,
@@ -20,20 +20,9 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { cn } from "@/lib/helpers"
+import type { IUser } from "@/utils/interfaces"
 
-type User = {
-  id: string
-  name: string
-  email: string
-  phone: string
-  role: "student" | "instructor" | "admin"
-  status: "active" | "inactive" | "suspended"
-  enrolledCourse?: string
-  joinedDate: string
-  lastActive: string
-}
-
-const DEMO_USERS: User[] = [
+const DEMO_USERS: IUser[] = [
   {
     id: "1",
     name: "Ahmad Hassan",
@@ -125,18 +114,18 @@ const DEMO_USERS: User[] = [
 
 export const AdminUsersScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | User["role"]>("all")
-  const [statusFilter, setStatusFilter] = useState<"all" | User["status"]>("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | IUser["role"]>("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | IUser["status"]>("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
 
   const filteredUsers = useMemo(() => {
     return DEMO_USERS.filter(user => {
-      const matchesSearch = 
+      const matchesSearch =
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.phone.includes(searchQuery) ||
         user.enrolledCourse?.toLowerCase().includes(searchQuery.toLowerCase())
-      
+
       const matchesRole = roleFilter === "all" || user.role === roleFilter
       const matchesStatus = statusFilter === "all" || user.status === statusFilter
 

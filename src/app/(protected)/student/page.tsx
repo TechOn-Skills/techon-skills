@@ -1,4 +1,4 @@
-import { StudentMyLecturesScreen } from "@/lib/ui/screens/student/dashboard/my-lectures"
+import { StudentMyLecturesScreen } from "@/lib/ui/screens"
 
 export default function StudentPage() {
     return <StudentMyLecturesScreen />

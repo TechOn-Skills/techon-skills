@@ -1,10 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { 
-  TrendingUpIcon, 
-  UsersIcon, 
-  BookOpenIcon, 
+import {
+  TrendingUpIcon,
+  UsersIcon,
+  BookOpenIcon,
   DollarSignIcon,
   CalendarIcon,
   AlertCircleIcon,
@@ -17,42 +17,41 @@ import {
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
-
-type StatTrend = "up" | "down" | "neutral"
+import type { StatTrend } from "@/utils/types"
 
 export const AdminDashboardScreen = () => {
   const [timeframe, setTimeframe] = useState<"7d" | "30d" | "90d">("30d")
 
   const stats = [
-    { 
-      label: "Total Students", 
-      value: "1,247", 
-      change: "+12.5%", 
-      trend: "up" as StatTrend, 
+    {
+      label: "Total Students",
+      value: "1,247",
+      change: "+12.5%",
+      trend: "up" as StatTrend,
       icon: UsersIcon,
       color: "text-blue-600 dark:text-blue-400"
     },
-    { 
-      label: "Active Courses", 
-      value: "24", 
-      change: "+3", 
-      trend: "up" as StatTrend, 
+    {
+      label: "Active Courses",
+      value: "24",
+      change: "+3",
+      trend: "up" as StatTrend,
       icon: BookOpenIcon,
       color: "text-purple-600 dark:text-purple-400"
     },
-    { 
-      label: "Revenue (Monthly)", 
-      value: "PKR 3.1M", 
-      change: "+8.2%", 
-      trend: "up" as StatTrend, 
+    {
+      label: "Revenue (Monthly)",
+      value: "PKR 3.1M",
+      change: "+8.2%",
+      trend: "up" as StatTrend,
       icon: DollarSignIcon,
       color: "text-green-600 dark:text-green-400"
     },
-    { 
-      label: "Completion Rate", 
-      value: "87%", 
-      change: "-2.1%", 
-      trend: "down" as StatTrend, 
+    {
+      label: "Completion Rate",
+      value: "87%",
+      change: "-2.1%",
+      trend: "down" as StatTrend,
       icon: TrendingUpIcon,
       color: "text-orange-600 dark:text-orange-400"
     },

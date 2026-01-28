@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { 
-  CalendarIcon, 
-  ClockIcon, 
-  MapPinIcon, 
-  SparklesIcon, 
-  TrophyIcon, 
+import {
+  CalendarIcon,
+  ClockIcon,
+  MapPinIcon,
+  SparklesIcon,
+  TrophyIcon,
   UsersIcon,
   VideoIcon,
   FilterIcon,
@@ -16,25 +16,9 @@ import {
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
+import type { IEvent } from "@/utils/interfaces"
 
-type Event = {
-  id: string
-  title: string
-  description: string
-  type: "workshop" | "webinar" | "hackathon" | "networking" | "career"
-  date: string
-  time: string
-  duration: string
-  location: string
-  isOnline: boolean
-  spotsLeft: number
-  totalSpots: number
-  isRegistered: boolean
-  tags: string[]
-  instructor?: string
-}
-
-const DEMO_EVENTS: Event[] = [
+const DEMO_EVENTS: IEvent[] = [
   {
     id: "e-1",
     title: "Build Your First React App",
@@ -140,7 +124,7 @@ const eventTypeConfig = {
 }
 
 export const StudentEventsScreen = () => {
-  const [selectedFilter, setSelectedFilter] = useState<"all" | Event["type"]>("all")
+  const [selectedFilter, setSelectedFilter] = useState<"all" | IEvent["type"]>("all")
   const [registrations, setRegistrations] = useState<Set<string>>(new Set(DEMO_EVENTS.filter(e => e.isRegistered).map(e => e.id)))
 
   const filteredEvents = useMemo(() => {
@@ -269,7 +253,7 @@ export const StudentEventsScreen = () => {
             >
               <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden h-full">
                 <div className="relative h-1.5 w-full bg-[linear-gradient(to_right,rgba(70,208,255,0.75),rgba(255,138,61,0.6))] opacity-70" />
-                
+
                 <CardHeader className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -385,7 +369,7 @@ export const StudentEventsScreen = () => {
             <TrophyIcon className="size-12 mx-auto text-(--brand-accent) mb-4" />
             <h3 className="text-2xl font-semibold mb-2">Grow Beyond the Classroom</h3>
             <p className="text-muted-foreground max-w-2xl mx-auto leading-7">
-              Events and workshops are your opportunity to network, learn from industry experts, and showcase your skills. 
+              Events and workshops are your opportunity to network, learn from industry experts, and showcase your skills.
               Every event you attend is an investment in your future career. Don&apos;t miss out!
             </p>
           </CardContent>

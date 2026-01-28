@@ -1,23 +1,5 @@
 import { cn } from "@/lib/helpers"
-
-export type TechId =
-  | "nextjs"
-  | "react"
-  | "react-native"
-  | "node"
-  | "express"
-  | "mongodb"
-  | "postgres"
-  | "graphql"
-  | "python"
-  | "fastapi"
-  | "shopify"
-  | "liquid"
-  | "wordpress"
-  | "woocommerce"
-  | "elementor"
-  | "wix"
-  | "velo"
+import type { TechId } from "@/utils/types"
 
 const Badge = ({ label }: { label: string }) => (
   <div className="text-xs font-semibold tracking-wide">{label}</div>

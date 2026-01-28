@@ -9,7 +9,7 @@ import {
   WrenchIcon,
 } from "lucide-react"
 import type { ComponentType } from "react"
-import type { TechId } from "@/lib/ui/useable-components/tech-logos"
+import type { TechId } from "@/utils/types"
 
 export type CourseSection = {
   title: string
