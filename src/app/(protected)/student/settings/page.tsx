@@ -1,11 +1,6 @@
-import { StudentSimpleScreen } from "@/lib/ui/screens/student/simple"
+import { StudentSettingsScreen } from "@/lib/ui/screens/student/settings"
 
 export default function StudentSettingsPage() {
-  return (
-    <StudentSimpleScreen
-      title="Settings"
-      description="Student settings will be available here."
-    />
-  )
+  return <StudentSettingsScreen />
 }
 

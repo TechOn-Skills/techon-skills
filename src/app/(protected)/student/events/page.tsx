@@ -1,11 +1,6 @@
-import { StudentSimpleScreen } from "@/lib/ui/screens/student/simple"
+import { StudentEventsScreen } from "@/lib/ui/screens/student/events"
 
 export default function StudentEventsPage() {
-  return (
-    <StudentSimpleScreen
-      title="Events"
-      description="Your upcoming events and schedules will appear here."
-    />
-  )
+  return <StudentEventsScreen />
 }
 

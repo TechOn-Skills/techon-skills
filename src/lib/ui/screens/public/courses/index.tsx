@@ -1,9 +1,13 @@
+"use client"
+
 import Link from "next/link"
+import { useMemo, useState } from "react"
 import {
   ArrowRightIcon,
   BriefcaseIcon,
   CodeIcon,
   FileCheck2Icon,
+  SearchIcon,
   SparklesIcon,
   SmartphoneIcon,
   StoreIcon,
@@ -19,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/lib/ui/useable-components/card"
+import { Input } from "@/lib/ui/useable-components/input"
 
 const catalog = [
   {
@@ -68,6 +73,36 @@ const catalog = [
 ]
 
 export const PublicCoursesScreen = () => {
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredCatalog = useMemo(() => {
+    if (!searchQuery.trim()) return catalog
+
+    const query = searchQuery.toLowerCase().trim()
+    
+    return catalog.filter((course) => {
+      // Search in title
+      if (course.title.toLowerCase().includes(query)) return true
+      
+      // Search in description
+      if (course.description.toLowerCase().includes(query)) return true
+      
+      // Search in duration
+      if (course.duration.toLowerCase().includes(query)) return true
+      
+      // Search in price
+      if (course.price.toLowerCase().includes(query)) return true
+      
+      // Search in highlight
+      if (course.highlight?.toLowerCase().includes(query)) return true
+      
+      // Search in benefits
+      if (course.benefits.some((benefit) => benefit.toLowerCase().includes(query))) return true
+      
+      return false
+    })
+  }, [searchQuery])
+
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
       <div className="mx-auto max-w-6xl space-y-10">
@@ -81,8 +116,30 @@ export const PublicCoursesScreen = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-          {catalog.map((c) => (
+        <div className="relative max-w-md">
+          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search courses, skills, or benefits..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {filteredCatalog.length === 0 ? (
+          <div className="flex min-h-[400px] items-center justify-center rounded-3xl border bg-background/70 backdrop-blur">
+            <div className="text-center">
+              <SearchIcon className="mx-auto size-12 text-muted-foreground/50" />
+              <h3 className="mt-4 text-lg font-semibold">No courses found</h3>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Try adjusting your search to find what you&apos;re looking for.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            {filteredCatalog.map((c) => (
             <div
               key={c.slug}
               className="group rounded-3xl bg-[linear-gradient(135deg,rgba(79,195,232,0.35),rgba(242,140,40,0.20),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl"
@@ -160,8 +217,9 @@ export const PublicCoursesScreen = () => {
                 </CardContent>
               </Card>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

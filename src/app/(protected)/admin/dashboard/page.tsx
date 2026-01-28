@@ -1,11 +1,6 @@
-import { AdminSimpleScreen } from "@/lib/ui/screens/admin/simple"
+import { AdminDashboardScreen } from "@/lib/ui/screens/admin/dashboard"
 
 export default function AdminDashboardPage() {
-  return (
-    <AdminSimpleScreen
-      title="Dashboard"
-      description="Admin dashboard placeholder. Connect KPIs and management tools here."
-    />
-  )
+  return <AdminDashboardScreen />
 }
 

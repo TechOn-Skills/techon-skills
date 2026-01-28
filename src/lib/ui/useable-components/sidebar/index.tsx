@@ -481,6 +481,7 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
+        className="text-primary bg-background"
         hidden={state !== "collapsed" || isMobile}
         {...tooltip}
       />

@@ -130,10 +130,10 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
                     </div>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                       <Button asChild variant="brand-secondary" shape="pill">
-                        <Link href="/courses">View courses</Link>
+                        <Link href="/courses" onClick={() => setOpen(false)}>View courses</Link>
                       </Button>
                       <Button asChild variant="outline" shape="pill">
-                        <Link href="/contact">Contact us</Link>
+                        <Link href="/contact" onClick={() => setOpen(false)}>Contact us</Link>
                       </Button>
                     </div>
                   </div>

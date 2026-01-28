@@ -39,7 +39,7 @@ export const StudentSidebar = ({
         if (!isMobile) setOpen(false)
       }}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col overflow-hidden">
         <div className="p-2">
           <div className="bg-sidebar text-sidebar-foreground flex items-center gap-2 rounded-lg px-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
             <span className="bg-brand-secondary text-accent inline-flex size-8 items-center justify-center rounded-md">
@@ -54,7 +54,7 @@ export const StudentSidebar = ({
           </div>
         </div>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="max-w-[95%]" />
 
         <SidebarContent>
           <SidebarGroup>

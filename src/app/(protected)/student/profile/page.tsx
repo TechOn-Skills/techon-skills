@@ -1,11 +1,6 @@
-import { StudentSimpleScreen } from "@/lib/ui/screens/student/simple"
+import { StudentProfileScreen } from "@/lib/ui/screens/student/profile"
 
 export default function StudentProfilePage() {
-  return (
-    <StudentSimpleScreen
-      title="Profile"
-      description="Your profile details will be managed here."
-    />
-  )
+  return <StudentProfileScreen />
 }
 
