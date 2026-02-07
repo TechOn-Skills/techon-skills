@@ -6,3 +6,18 @@ export interface IUserProfileInfo {
     role: UserRole;
     status: UserStatus;
 }
+
+export interface IUser {
+    _id: string;
+    email: string;
+    role: UserRole;
+    status: UserStatus;
+    isBlocked: boolean;
+    isSuspended: boolean;
+    isDeleted: boolean;
+    fullName: string;
+    phoneNumber: string;
+    isVerified: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}

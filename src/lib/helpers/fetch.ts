@@ -10,6 +10,10 @@ export const fetchURL = async ({ path, options, isGraphQL = true }: { path: stri
         return null
 
     }
-    const response = await fetch(`${BACKEND_URL}${isGraphQL ? CONFIG.BACKEND_PATHS.GRAPHQL : path}`, options)
+    const _options: RequestInit = {
+        ...options,
+        credentials: "include",
+    }
+    const response = await fetch(`${BACKEND_URL}${isGraphQL ? CONFIG.BACKEND_PATHS.GRAPHQL : path}`, _options)
     return response
 }

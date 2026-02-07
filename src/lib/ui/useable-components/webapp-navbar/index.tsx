@@ -20,6 +20,7 @@ import { SheetContentSide } from "@/utils/enums"
 import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
 import { ContinueToDashboardDialog } from "@/lib/ui/useable-components/continue-dashboard-dialog"
 
+
 const NAV_ITEMS = [
   { label: "Courses", href: "/courses" },
   { label: "News", href: "/news" },
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
 ]
 
 export const WebappNavbar = ({ className }: { className?: string }) => {
+
   return (
     <header
       className={cn(

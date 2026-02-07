@@ -1,5 +1,8 @@
 export const CONFIG = {
     STORAGE_KEYS: {
+        TEMP: {
+            EMAIL: "email",
+        },
         AUTH: {
             TOKEN: "token",
             REFRESH_TOKEN: "refresh-token",
@@ -18,6 +21,11 @@ export const CONFIG = {
         AUTH: {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+            APPROVE_STUDENT_REGISTRATION_REQUEST: "/auth/approve-student-registration-request",
+            TOGGLE_BLOCK_STUDENT: "/auth/toggle-block-student",
+            TOGGLE_SUSPEND_STUDENT: "/auth/toggle-suspend-student",
+            TOGGLE_DELETE_STUDENT: "/auth/toggle-delete-student",
+            IS_USER_AUTHENTICATED: "/auth/is-user-authenticated",
         }
     },
     ROUTES: {

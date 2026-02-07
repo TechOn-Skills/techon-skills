@@ -9,7 +9,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn, logger } from "@/lib/helpers"
-import { CONFIG } from "@/utils/constants"
+import { CONFIG, HTTP_RESPONSES } from "@/utils/constants"
 import { apiService } from "@/lib/services"
 import { ApiResponse } from "@/utils/interfaces"
 import { LoggerLevel } from "@/utils/enums/logger"
@@ -44,10 +44,12 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
     const toastId = toast.loading("Sending magic link...")
     try {
       const data: ApiResponse<null> = await apiService.sendMagicLink(formData.email.trim())
-      console.log('data from send magic link', data)
       logger({ type: LoggerLevel.INFO, message: JSON.stringify(data) })
       if (data.success) {
         toast.dismiss(toastId)
+        if (data.message === HTTP_RESPONSES.HTTP_RESPONSE_200.message || data.message === HTTP_RESPONSES.HTTP_RESPONSE_201.message) {
+          localStorage.setItem(CONFIG.STORAGE_KEYS.TEMP.EMAIL, formData.email.trim())
+        }
         logger({ type: LoggerLevel.INFO, message: data.detail || data.message, showToast: true })
       } else {
         toast.dismiss(toastId)
