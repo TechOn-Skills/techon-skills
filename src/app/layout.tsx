@@ -4,6 +4,7 @@ import "./globals.css";
 import "@/lib/services/i18react-next";
 import Providers from "@/lib/providers";
 import NextTopLoader from 'nextjs-toploader';
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
           shadow="0 0 10px #2299DD, 0 0 5px #2299DD"
         />
         <Providers>
+          <Toaster position="bottom-right" />
           {children}
         </Providers>
       </body>

@@ -1,7 +1,6 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { useLocalStorageItem } from "@/lib/hooks/use-local-storage"
 import { useMemo, useState } from "react"
 import { CheckCircle2Icon, CopyIcon, CreditCardIcon, UploadIcon, XIcon } from "lucide-react"
 
@@ -28,15 +27,15 @@ export const StudentFeesScreen = () => {
   const [modalStep, setModalStep] = useState<"bank" | "upload">("bank")
   const [selectedFee, setSelectedFee] = useState<IFeeEntry | null>(null)
 
-  // In a real app you'd track all fees; for demo we track one ID
-  const { value: statusRaw, setValue: setStatusRaw } = useLocalStorageItem("student:fees:status")
-  const storedStatus: Record<string, FeeStatus> = useMemo(() => {
+  const [storedStatus, setStoredStatus] = useState<Record<string, FeeStatus>>(() => {
+    if (typeof window === "undefined") return {}
     try {
+      const statusRaw = window.localStorage.getItem("student:fees:status")
       return statusRaw ? JSON.parse(statusRaw) : {}
     } catch {
       return {}
     }
-  }, [statusRaw])
+  })
 
   const rows = useMemo(() => {
     return FEES_DATA.map((f) => ({
@@ -58,7 +57,10 @@ export const StudentFeesScreen = () => {
   const handleUploadConfirm = () => {
     if (!selectedFee) return
     const next = { ...storedStatus, [selectedFee.id]: "under-verification" as const }
-    setStatusRaw(JSON.stringify(next))
+    setStoredStatus(next)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("student:fees:status", JSON.stringify(next))
+    }
     setOpen(false)
   }
 

@@ -5,7 +5,6 @@ import { useMemo } from "react"
 import { ArrowRightIcon, FlameIcon, TrophyIcon, TargetIcon, StarIcon, ZapIcon } from "lucide-react"
 
 import { STUDENT_ASSIGNMENTS } from "@/lib/data/student-assignments"
-import { useLocalStorageRecord } from "@/lib/hooks/use-local-storage"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
@@ -36,14 +35,14 @@ export const StudentAssignmentsListScreen = () => {
     () => STUDENT_ASSIGNMENTS.map((a) => storageKey(a.id)),
     []
   )
-  const { value: rawByKey } = useLocalStorageRecord(keys)
+  const rawByKey = keys.map((key) => ({ key, value: localStorage.getItem(key) }))
 
   const rows = useMemo(() => {
     return STUDENT_ASSIGNMENTS.map((a) => ({
       assignment: a,
       submission: (() => {
-        const raw = rawByKey[storageKey(a.id)]
-        return raw ? (JSON.parse(raw) as ISubmission) : null
+        const raw = rawByKey.find((raw) => raw?.key === storageKey(a.id))
+        return raw ? (JSON.parse(raw.value as string) as ISubmission) : null
       })(),
     }))
   }, [rawByKey])

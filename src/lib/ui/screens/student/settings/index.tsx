@@ -1,17 +1,17 @@
 "use client"
 
-import { useState } from "react"
-import { 
-  BellIcon, 
-  CheckIcon, 
-  EyeIcon, 
-  EyeOffIcon, 
-  GlobeIcon, 
-  LockIcon, 
-  MoonIcon, 
-  PaletteIcon, 
-  ShieldIcon, 
-  SunIcon, 
+import { type ChangeEvent, useState } from "react"
+import {
+  BellIcon,
+  CheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GlobeIcon,
+  LockIcon,
+  MoonIcon,
+  PaletteIcon,
+  ShieldIcon,
+  SunIcon,
   UserIcon,
   ZapIcon
 } from "lucide-react"
@@ -27,7 +27,20 @@ export const StudentSettingsScreen = () => {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system")
   const [language, setLanguage] = useState("english")
-  
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+  })
+
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target
+    setPasswordForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
   const [notifications, setNotifications] = useState({
     assignments: true,
     lectures: true,
@@ -123,7 +136,10 @@ export const StudentSettingsScreen = () => {
                   <div className="relative">
                     <Input
                       type={showCurrentPassword ? "text" : "password"}
+                      name="currentPassword"
                       placeholder="Enter current password"
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordChange}
                     />
                     <button
                       type="button"
@@ -139,7 +155,10 @@ export const StudentSettingsScreen = () => {
                   <div className="relative">
                     <Input
                       type={showNewPassword ? "text" : "password"}
+                      name="newPassword"
                       placeholder="Enter new password"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordChange}
                     />
                     <button
                       type="button"

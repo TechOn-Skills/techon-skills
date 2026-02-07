@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { ChangeEvent, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CheckCircle2Icon, SparklesIcon, ZapIcon } from "lucide-react"
 
@@ -22,17 +22,27 @@ export const PublicContactScreen = () => {
   const params = useSearchParams()
   const selectedCourse = params.get("course")
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [course, setCourse] = useState<string>("")
-  const [message, setMessage] = useState("")
   const [sent, setSent] = useState(false)
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    course: "",
+    message: "",
+  })
+
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
+  }
 
   const selected = useMemo(() => {
-    if (course) return course
+    if (formData.course) return formData.course
     if (selectedCourse) return selectedCourse
     return ""
-  }, [course, selectedCourse])
+  }, [formData.course, selectedCourse])
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
@@ -100,8 +110,8 @@ export const PublicContactScreen = () => {
                   className="space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault()
-                    if (email.trim()) {
-                      localStorage.setItem(ENROLLED_EMAIL_KEY, email.trim())
+                    if (formData.email.trim()) {
+                      localStorage.setItem(ENROLLED_EMAIL_KEY, formData.email.trim())
                     }
                     setSent(true)
                   }}
@@ -109,20 +119,25 @@ export const PublicContactScreen = () => {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
                       placeholder="Your name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
                     />
                     <Input
                       placeholder="Your email"
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      name="email"
                       required
+                      value={formData.email}
+                      onChange={handleChange}
                     />
                   </div>
                   <select
                     value={selected}
-                    onChange={(e) => setCourse(e.target.value)}
+                    onChange={handleChange}
+                    name="course"
+                    required
                     className="border-input bg-transparent dark:bg-input/30 h-11 w-full rounded-full border px-4 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                   >
                     <option value="">Select a course</option>
@@ -136,8 +151,9 @@ export const PublicContactScreen = () => {
                   <Textarea
                     placeholder="Tell us your goal (e.g., job in 6 months, freelance clients, ecommerce store)…"
                     className="min-h-44"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    value={formData.message}
+                    onChange={handleChange}
+                    name="message"
                   />
 
                   <Separator />

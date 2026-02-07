@@ -1,0 +1,1 @@
+export interface ApiResponse<T> { success: boolean, message: string, detail?: string, data?: T }

@@ -9,8 +9,32 @@ export const CONFIG = {
             THEME: "theme",
             LANGUAGE: "language"
         },
+        USER: {
+            PROFILE: "profile",
+        },
+    },
+    BACKEND_PATHS: {
+        GRAPHQL: "graphql-techonskills",
+        AUTH: {
+            SEND_MAGIC_LINK: "/auth/send-magic-link",
+            VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+        }
     },
     ROUTES: {
+        PUBLIC: {
+            HOME: "/",
+            COURSES: "/courses",
+            ABOUT: "/about",
+            CONTACT: "/contact",
+            FAQS: "/faqs",
+            TERMS_OF_SERVICE: "/terms-of-service",
+            PRIVACY_POLICY: "/privacy-policy",
+            REFUND_POLICY: "/refund-policy",
+            COOKIE_POLICY: "/cookie-policy",
+            SUPPORT: "/support",
+            VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+        },
+        NOT_FOUND_404: "/404",
         AUTH: {
             LOGIN: "/auth/login",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",

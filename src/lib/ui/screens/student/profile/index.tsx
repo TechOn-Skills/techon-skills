@@ -1,17 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { 
-  AwardIcon, 
-  BriefcaseIcon, 
-  CalendarIcon, 
-  EditIcon, 
-  GithubIcon, 
-  GlobeIcon, 
-  LinkedinIcon, 
-  MailIcon, 
-  MapPinIcon, 
-  PhoneIcon, 
+import {
+  AwardIcon,
+  BriefcaseIcon,
+  CalendarIcon,
+  EditIcon,
+  GithubIcon,
+  GlobeIcon,
+  LinkedinIcon,
+  MailIcon,
+  MapPinIcon,
+  PhoneIcon,
   SparklesIcon,
   TrophyIcon,
   UserIcon
@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
+import { cn } from "@/lib/helpers"
 
 export const StudentProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false)
@@ -83,7 +84,7 @@ export const StudentProfileScreen = () => {
               Your profile showcases your progress, achievements, and skills. Keep it updated to track your growth and share with potential employers.
             </p>
           </div>
-          
+
           {/* Profile Completion */}
           <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
             <div className="bg-background/80 backdrop-blur rounded-3xl px-6 py-4">
@@ -140,7 +141,7 @@ export const StudentProfileScreen = () => {
                   </div>
                 </div>
               </div>
-              
+
               <CardHeader className="pt-20 pb-6">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -366,8 +367,8 @@ export const StudentProfileScreen = () => {
                     key={achievement.id}
                     className={cn(
                       "rounded-2xl border p-4 transition-all hover:-translate-y-0.5 animate-in fade-in slide-in-from-right-4 duration-700",
-                      achievement.locked 
-                        ? "bg-background/20 opacity-60" 
+                      achievement.locked
+                        ? "bg-background/20 opacity-60"
                         : "bg-background/40 hover:bg-background/60"
                     )}
                     style={{ animationDelay: `${idx * 150}ms` }}

@@ -1,15 +1,19 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { useMemo, useState } from "react"
+import { type ChangeEvent, FormEvent, useMemo, useState } from "react"
 import Link from "next/link"
 import { MailIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
-import { cn } from "@/lib/helpers"
+import { cn, logger } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
+import { apiService } from "@/lib/services"
+import { ApiResponse } from "@/utils/interfaces"
+import { LoggerLevel } from "@/utils/enums/logger"
+import toast from "react-hot-toast"
 
 // used to remember last attempted email (and for other flows)
 const ENROLLED_EMAIL_KEY = "techon:enrolledEmail"
@@ -22,16 +26,49 @@ function isDashboardAllowed(email: string) {
 
 export const ContinueToDashboardDialog = ({ className }: { className?: string }) => {
   const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState("")
+  const [formData, setFormData] = useState({
+    email: "",
+  })
   const [submitted, setSubmitted] = useState(false)
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const toastId = toast.loading("Sending magic link...")
+    try {
+      const data: ApiResponse<null> = await apiService.sendMagicLink(formData.email.trim())
+      console.log('data from send magic link', data)
+      logger({ type: LoggerLevel.INFO, message: JSON.stringify(data) })
+      if (data.success) {
+        toast.dismiss(toastId)
+        logger({ type: LoggerLevel.INFO, message: data.detail || data.message, showToast: true })
+      } else {
+        toast.dismiss(toastId)
+        logger({ type: LoggerLevel.ERROR, message: data.detail || data.message, showToast: true })
+      }
+    } catch (error) {
+      logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error) });
+      toast.error("Failed to send magic link")
+    } finally {
+      toast.dismiss(toastId)
+    }
+    setSubmitted(true)
+  }
 
   const status = useMemo(() => {
     if (!submitted) return "idle" as const
     // Explicit behavior requested:
     // - allow dashboard for DASHBOARD_ALLOWED_EMAIL
     // - for any other email show enroll-required messaging
-    return isDashboardAllowed(email) ? ("magic" as const) : ("enroll" as const)
-  }, [email, submitted])
+    return isDashboardAllowed(formData.email) ? ("magic" as const) : ("enroll" as const)
+  }, [formData.email, submitted])
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(v) => {
@@ -72,22 +109,14 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
             <form
               className="mt-6 space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault()
-                // remember last attempt for convenience
-                try {
-                  localStorage.setItem(ENROLLED_EMAIL_KEY, email.trim())
-                } catch {
-                  // ignore
-                }
-                setSubmitted(true)
-              }}
+              onSubmit={handleSubmit}
             >
               <Input
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 className="h-11 rounded-full"
                 required
               />

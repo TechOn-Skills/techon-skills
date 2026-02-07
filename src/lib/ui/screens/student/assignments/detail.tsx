@@ -5,7 +5,6 @@ import Link from "next/link"
 import { ArrowLeftIcon, CheckCircle2Icon, SaveIcon, SparklesIcon, TrophyIcon, ZapIcon } from "lucide-react"
 
 import { STUDENT_ASSIGNMENTS } from "@/lib/data/student-assignments"
-import { useLocalStorageItem } from "@/lib/hooks/use-local-storage"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
@@ -32,7 +31,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
   )
 
   const key = storageKey(assignmentId)
-  const { value: raw, setValue } = useLocalStorageItem(key)
+  const raw = localStorage.getItem(key)
   const saved = useMemo(() => (raw ? (JSON.parse(raw) as ISubmission) : null), [raw])
   const [text, setText] = useState(() => saved?.text ?? "")
   const [showConfetti, setShowConfetti] = useState(false)
@@ -87,7 +86,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
       submittedAt: new Date().toISOString(),
       marks: saved?.marks ?? Math.floor(60 + Math.random() * 40),
     }
-    setValue(JSON.stringify(next))
+    localStorage.setItem(key, JSON.stringify(next))
     setShowConfetti(true)
   }
 

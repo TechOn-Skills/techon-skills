@@ -3,7 +3,7 @@
 import { Slot } from "@radix-ui/react-slot"
 import { PanelLeftIcon } from "lucide-react"
 import { CSSProperties } from "react"
-import { useIsMobile } from "@/lib/hooks/use-mobile"
+
 import { cn } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -28,6 +28,7 @@ import { IAsChildProps, ISidebarContextProps } from "@/utils/interfaces"
 import { SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON, SIDEBAR_WIDTH_MOBILE } from "@/utils/constants"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { SidebarCollapsible, SidebarSide, SidebarState, SidebarVariant } from "@/utils/enums"
+import { useBreakpoint } from "@/lib/hooks"
 
 const SidebarContext = createContext<ISidebarContextProps | null>(null)
 
@@ -49,7 +50,7 @@ function SidebarProvider({
   children,
   ...props
 }: SidebarProviderProps) {
-  const isMobile = useIsMobile()
+  const { isMobile } = useBreakpoint()
   const [openMobile, setOpenMobile] = useState(false)
 
   const [_open, _setOpen] = useState(defaultOpen)

@@ -16,6 +16,10 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { TechLogoCard } from "@/lib/ui/useable-components/tech-logos"
+import { Icons } from "@/utils/constants"
+
+const HERO_GRADIENT_CLASS =
+  "bg-[radial-gradient(circle_at_top,rgba(79,195,232,0.3),transparent_60%),radial-gradient(circle_at_bottom,rgba(242,140,40,0.2),transparent_55%)]"
 
 export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
   const course = getPublicCourse(slug)
@@ -42,7 +46,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
 
   return (
     <div className="w-full">
-      <div className={`border-border/60 ${course.heroGradient} relative border-b`}>
+      <div className={`border-border/60 ${HERO_GRADIENT_CLASS} relative border-b`}>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.35),transparent_60%)]" />
         <div className="px-4 py-14 sm:px-6 lg:px-8 2xl:px-10">
           <div className="mx-auto max-w-6xl">
@@ -115,28 +119,31 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {course.sections.map((s) => (
-              <Card key={s.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-11 shrink-0 items-center justify-center rounded-2xl">
-                      <s.icon className="size-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <CardTitle className="text-base">{s.title}</CardTitle>
-                      <CardDescription className="text-xs leading-6">{s.description}</CardDescription>
+            {course.sections.map((s) => {
+              const SectionIcon = Icons[s.icon] ?? Icons.layers
+              return (
+                <Card key={s.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-11 shrink-0 items-center justify-center rounded-2xl">
+                        <SectionIcon className="size-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <CardTitle className="text-base">{s.title}</CardTitle>
+                        <CardDescription className="text-xs leading-6">{s.description}</CardDescription>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-2xl border bg-background/40 p-4 text-sm">
-                    <div className="text-muted-foreground leading-7">
-                      Learn → practice → submit → marks. This is how you lock in skills fast.
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-2xl border bg-background/40 p-4 text-sm">
+                      <div className="text-muted-foreground leading-7">
+                        Learn → practice → submit → marks. This is how you lock in skills fast.
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
 
           <div className="space-y-2">
