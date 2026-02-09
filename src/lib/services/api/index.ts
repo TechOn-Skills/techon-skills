@@ -109,8 +109,8 @@ class ApiService {
         return parsedResponse;
     }
 
-    isUserAuthenticated = async <T>(): Promise<ApiResponse<T>> => {
-        const path = `${CONFIG.BACKEND_PATHS.AUTH.IS_USER_AUTHENTICATED}`;
+    getUserProfileInfo = async <T>(): Promise<ApiResponse<T>> => {
+        const path = `${CONFIG.BACKEND_PATHS.AUTH.GET_USER_PROFILE_INFO}`;
         const response = await fetchURL({
             path,
             isGraphQL: false,

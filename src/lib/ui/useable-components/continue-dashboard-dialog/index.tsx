@@ -9,27 +9,26 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn, logger } from "@/lib/helpers"
-import { CONFIG, HTTP_RESPONSES } from "@/utils/constants"
+import { CONFIG } from "@/utils/constants"
 import { apiService } from "@/lib/services"
 import { ApiResponse } from "@/utils/interfaces"
 import { LoggerLevel } from "@/utils/enums/logger"
+import { ResponseStatus } from "@/utils/enums/magic-link"
+import { UserRole } from "@/utils/enums/user"
+
 import toast from "react-hot-toast"
+import { useUser } from "@/lib/providers/user"
 
-// used to remember last attempted email (and for other flows)
-const ENROLLED_EMAIL_KEY = "techon:enrolledEmail"
-const DASHBOARD_ALLOWED_EMAIL = "ahmadrazawebexpert@gmail.com"
-const MAGIC_LINK_SENT_EMAIL = "ahmadrazayousaf30@gmail.com"
-
-function isDashboardAllowed(email: string) {
-  return email.trim().toLowerCase() === DASHBOARD_ALLOWED_EMAIL.toLowerCase()
-}
 
 export const ContinueToDashboardDialog = ({ className }: { className?: string }) => {
+  const { userProfileInfo } = useUser()
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [responseMessage, setResponseMessage] = useState<string | null>(null)
+  const [responseStatus, setResponseStatus] = useState<ResponseStatus>(ResponseStatus.INFO)
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
@@ -41,23 +40,32 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setResponseMessage(null)
+    setResponseStatus(ResponseStatus.INFO)
     const toastId = toast.loading("Sending magic link...")
     try {
       const data: ApiResponse<null> = await apiService.sendMagicLink(formData.email.trim())
       logger({ type: LoggerLevel.INFO, message: JSON.stringify(data) })
       if (data.success) {
-        toast.dismiss(toastId)
-        if (data.message === HTTP_RESPONSES.HTTP_RESPONSE_200.message || data.message === HTTP_RESPONSES.HTTP_RESPONSE_201.message) {
-          localStorage.setItem(CONFIG.STORAGE_KEYS.TEMP.EMAIL, formData.email.trim())
+        const message = data.detail || data.message
+        setResponseMessage(message)
+        if (message.includes("requested")) {
+          setResponseStatus(ResponseStatus.INFO)
+        } else {
+          setResponseStatus(ResponseStatus.SUCCESS)
         }
-        logger({ type: LoggerLevel.INFO, message: data.detail || data.message, showToast: true })
+        logger({ type: LoggerLevel.INFO, message, showToast: true })
       } else {
-        toast.dismiss(toastId)
-        logger({ type: LoggerLevel.ERROR, message: data.detail || data.message, showToast: true })
+        const message = data.detail || data.message
+        setResponseMessage(message)
+        setResponseStatus(ResponseStatus.ERROR)
+        logger({ type: LoggerLevel.ERROR, message, showToast: true })
       }
     } catch (error) {
-      logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error) });
+      logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error) })
       toast.error("Failed to send magic link")
+      setResponseMessage("Failed to send magic link.")
+      setResponseStatus(ResponseStatus.ERROR)
     } finally {
       toast.dismiss(toastId)
     }
@@ -66,16 +74,32 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   const status = useMemo(() => {
     if (!submitted) return "idle" as const
-    // Explicit behavior requested:
-    // - allow dashboard for DASHBOARD_ALLOWED_EMAIL
-    // - for any other email show enroll-required messaging
-    return isDashboardAllowed(formData.email) ? ("magic" as const) : ("enroll" as const)
-  }, [formData.email, submitted])
+    return responseStatus
+  }, [responseStatus, submitted])
+
+  const dashboardHref = useMemo(() => {
+    if (!userProfileInfo) return null
+    return userProfileInfo.role === UserRole.STUDENT
+      ? CONFIG.ROUTES.STUDENT.DASHBOARD
+      : CONFIG.ROUTES.ADMIN.DASHBOARD
+  }, [userProfileInfo])
+
+  if (dashboardHref) {
+    return (
+      <Button asChild variant="brand-secondary" shape="pill" className={cn(className)}>
+        <Link href={dashboardHref}>Continue to dashboard</Link>
+      </Button>
+    )
+  }
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(v) => {
       setOpen(v)
-      if (!v) setSubmitted(false)
+      if (!v) {
+        setSubmitted(false)
+        setResponseMessage(null)
+        setResponseStatus(ResponseStatus.INFO)
+      }
     }}>
       <DialogPrimitive.Trigger asChild>
         <Button
@@ -133,42 +157,18 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
               </Button>
             </form>
 
-            {status !== "idle" && (
+            {status !== "idle" && responseMessage && (
               <>
                 <Separator className="my-6" />
 
-                {status === "magic" ? (
-                  <div className="rounded-2xl border bg-background/50 p-4 text-sm">
-                    <div className="text-primary font-semibold">
-                      Magic link sent to {MAGIC_LINK_SENT_EMAIL}
-                    </div>
-                    <div className="text-muted-foreground mt-1 leading-7">
-                      Check your email inbox. After you sign in, you’ll be redirected to your dashboard.
-                    </div>
-                    <div className="mt-3">
-                      <Button asChild variant="outline" shape="pill">
-                        <Link href={CONFIG.ROUTES.STUDENT.DASHBOARD}>Open dashboard</Link>
-                      </Button>
-                    </div>
+                <div className="rounded-2xl border bg-background/50 p-4 text-sm">
+                  <div className="text-primary font-semibold">
+                    {status === ResponseStatus.SUCCESS ? "Magic link sent" : status === ResponseStatus.INFO ? "Please wait for approval" : "Unable to send magic link"}
                   </div>
-                ) : (
-                  <div className="rounded-2xl border bg-background/50 p-4 text-sm">
-                    <div className="text-primary font-semibold">
-                      Dashboard access is available after enrollment
-                    </div>
-                    <div className="text-muted-foreground mt-1 leading-7">
-                      Dashboard access is available after enrollment. Explore courses and enroll to get started.
-                    </div>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <Button asChild variant="brand-secondary" shape="pill">
-                        <Link href="/courses" onClick={() => setOpen(false)}>View courses</Link>
-                      </Button>
-                      <Button asChild variant="outline" shape="pill">
-                        <Link href="/contact" onClick={() => setOpen(false)}>Contact us</Link>
-                      </Button>
-                    </div>
+                  <div className="text-muted-foreground mt-1 leading-7">
+                    {responseMessage}
                   </div>
-                )}
+                </div>
               </>
             )}
           </div>
@@ -177,6 +177,3 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
     </DialogPrimitive.Root>
   )
 }
-
-export { ENROLLED_EMAIL_KEY }
-

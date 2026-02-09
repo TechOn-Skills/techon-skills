@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
-import { ENROLLED_EMAIL_KEY } from "@/lib/ui/useable-components/continue-dashboard-dialog"
 
 const COURSE_OPTIONS = [
   "Full‑Stack Web Development",
@@ -111,7 +110,7 @@ export const PublicContactScreen = () => {
                   onSubmit={(e) => {
                     e.preventDefault()
                     if (formData.email.trim()) {
-                      localStorage.setItem(ENROLLED_EMAIL_KEY, formData.email.trim())
+
                     }
                     setSent(true)
                   }}

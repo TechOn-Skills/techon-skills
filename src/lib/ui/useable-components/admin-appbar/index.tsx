@@ -23,9 +23,8 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
     const router = useRouter()
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN)
-        localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH.REFRESH_TOKEN)
-        router.push(CONFIG.ROUTES.AUTH.LOGIN)
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
+        router.push(CONFIG.ROUTES.PUBLIC.HOME)
     }, [router])
     return (
         <header

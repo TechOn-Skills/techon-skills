@@ -21,3 +21,8 @@ export interface IUser {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export interface IUserContextProvider {
+    userProfileInfo: IUserProfileInfo | null;
+    userData: IUser | null;
+}

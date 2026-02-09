@@ -1,8 +1,5 @@
 export const CONFIG = {
     STORAGE_KEYS: {
-        TEMP: {
-            EMAIL: "email",
-        },
         AUTH: {
             TOKEN: "token",
             REFRESH_TOKEN: "refresh-token",
@@ -25,7 +22,7 @@ export const CONFIG = {
             TOGGLE_BLOCK_STUDENT: "/auth/toggle-block-student",
             TOGGLE_SUSPEND_STUDENT: "/auth/toggle-suspend-student",
             TOGGLE_DELETE_STUDENT: "/auth/toggle-delete-student",
-            IS_USER_AUTHENTICATED: "/auth/is-user-authenticated",
+            GET_USER_PROFILE_INFO: "/auth/get-user-profile-info",
         }
     },
     ROUTES: {
@@ -44,7 +41,6 @@ export const CONFIG = {
         },
         NOT_FOUND_404: "/404",
         AUTH: {
-            LOGIN: "/auth/login",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
         },
         ADMIN: {
