@@ -14,50 +14,47 @@ import {
   StoreIcon,
   WrenchIcon,
 } from "lucide-react"
+import { useEffect, useState } from "react"
 
+import toast from "react-hot-toast"
+
+import { getApiDisplayMessage } from "@/lib/helpers"
+import { apiService } from "@/lib/services/api"
+import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { CourseMultiSelect } from "@/lib/ui/useable-components/course-multi-select"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
-import { useEffect } from "react"
+import type { IContactForm, IContactFormCourse } from "@/utils/interfaces"
 
-const featuredCourses = [
-  {
-    slug: "web-development",
-    title: "Web Development",
-    description:
-      "Frontend + backend fundamentals with real projects, Git, deployments, and portfolio-ready work.",
-    icon: CodeIcon,
-    bullets: ["React + Next.js", "APIs + Databases", "Deployments + Git workflow"],
-  },
-  {
-    slug: "mobile-app-development",
-    title: "Mobile App Development",
-    description:
-      "Build production-style mobile apps with modern patterns, state management, and publish-ready setup.",
-    icon: SmartphoneIcon,
-    bullets: ["UI + Navigation", "Auth + Storage", "Release-ready checklist"],
-  },
-  {
-    slug: "software-engineering",
-    title: "Software Engineering",
-    description:
-      "Go beyond coding: system design basics, clean architecture, testing, and professional practices.",
-    icon: WrenchIcon,
-    bullets: ["Clean code habits", "Testing mindset", "Team workflows"],
-  },
-  {
-    slug: "ecommerce",
-    title: "Ecommerce (Shopify + WordPress + Wix)",
-    description:
-      "Launch fast: build stores, landing pages, and client-ready ecommerce setups across platforms.",
-    icon: StoreIcon,
-    bullets: ["Shopify store setup", "WordPress + WooCommerce", "Wix websites & funnels"],
-  },
-]
+const FEATURED_COURSE_ICONS: Record<string, typeof CodeIcon> = {
+  code: CodeIcon,
+  smartphone: SmartphoneIcon,
+  wrench: WrenchIcon,
+  store: StoreIcon,
+}
 
 export const LandingPageScreen = () => {
+  const { featuredCourses: featuredFromHook } = useCourses()
+  const featuredCourses = featuredFromHook.map((c) => ({
+    ...c,
+    icon: FEATURED_COURSE_ICONS[c.icon] ?? CodeIcon,
+  }))
+  const [contactForm, setContactForm] = useState<{
+    name: string
+    email: string
+    courses: IContactFormCourse[]
+    message: string
+  }>({
+    name: "",
+    email: "",
+    courses: [],
+    message: "",
+  })
+  const [contactSent, setContactSent] = useState(false)
+
   useEffect(() => {
     // Smooth scrolling + reveal animations (no scroll-snap to avoid footer jump).
     const root = document.documentElement
@@ -464,30 +461,61 @@ export const LandingPageScreen = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Input placeholder="Your name" />
-                      <Input placeholder="Your email" />
-                    </div>
-                    <select
-                      defaultValue=""
-                      className="border-input bg-transparent dark:bg-input/30 h-11 w-full rounded-full border px-4 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    <form
+                      className="space-y-4"
+                      onSubmit={async (e) => {
+                        e.preventDefault()
+                        if (!contactForm.email.trim()) return
+                        const toastId = toast.loading("Sending message...")
+                        const response = await apiService.submitForm<IContactForm>(contactForm)
+                        toast.dismiss(toastId)
+                        if (response.success) {
+                          toast.success(getApiDisplayMessage(response, "Thanks! We'll get back soon."))
+                          setContactSent(true)
+                        } else {
+                          toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
+                        }
+                      }}
                     >
-                      <option value="">Select a course</option>
-                      <option value="Full‑Stack Web Development">Full‑Stack Web Development</option>
-                      <option value="Mobile Application Development">Mobile Application Development</option>
-                      <option value="Software Engineering">Software Engineering</option>
-                      <option value="Ecommerce (Shopify + WordPress + Wix)">Ecommerce (Shopify + WordPress + Wix)</option>
-                    </select>
-                    <Textarea placeholder="Message" className="min-h-40" />
-                    <Separator />
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="text-muted-foreground text-sm">
-                        Prefer call? +923144240550
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Input
+                          placeholder="Your name"
+                          name="name"
+                          value={contactForm.name}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, name: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Your email"
+                          name="email"
+                          type="email"
+                          required
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm((prev) => ({ ...prev, email: e.target.value }))}
+                        />
                       </div>
-                      <Button variant="brand-secondary" shape="pill" className="w-fit">
-                        Send message
-                      </Button>
-                    </div>
+                      <CourseMultiSelect
+                        value={contactForm.courses}
+                        onChange={(courses) => setContactForm((prev) => ({ ...prev, courses }))}
+                        placeholder="Search and select courses…"
+                        required
+                      />
+                      <Textarea
+                        placeholder="Message"
+                        className="min-h-40"
+                        name="message"
+                        value={contactForm.message}
+                        onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
+                      />
+                      <Separator />
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-muted-foreground text-sm">
+                          {contactSent ? "Thanks! We’ll get back soon." : "Prefer call? +923144240550"}
+                        </div>
+                        <Button variant="brand-secondary" shape="pill" className="w-fit" type="submit">
+                          Send message
+                        </Button>
+                      </div>
+                    </form>
                   </CardContent>
                 </Card>
               </div>

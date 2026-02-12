@@ -8,7 +8,7 @@ import { MailIcon } from "lucide-react"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
-import { cn, logger } from "@/lib/helpers"
+import { cn, getApiDisplayMessage, logger } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 import { apiService } from "@/lib/services"
 import { ApiResponse } from "@/utils/interfaces"
@@ -47,7 +47,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
       const data: ApiResponse<null> = await apiService.sendMagicLink(formData.email.trim())
       logger({ type: LoggerLevel.INFO, message: JSON.stringify(data) })
       if (data.success) {
-        const message = data.detail || data.message
+        const message = getApiDisplayMessage(data, "Magic link sent.")
         setResponseMessage(message)
         if (message.includes("requested")) {
           setResponseStatus(ResponseStatus.INFO)
@@ -56,7 +56,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
         }
         logger({ type: LoggerLevel.INFO, message, showToast: true })
       } else {
-        const message = data.detail || data.message
+        const message = getApiDisplayMessage(data, "Unable to send magic link.")
         setResponseMessage(message)
         setResponseStatus(ResponseStatus.ERROR)
         logger({ type: LoggerLevel.ERROR, message, showToast: true })

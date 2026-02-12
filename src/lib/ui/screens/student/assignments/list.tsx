@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useMemo } from "react"
 import { ArrowRightIcon, FlameIcon, TrophyIcon, TargetIcon, StarIcon, ZapIcon } from "lucide-react"
 
-import { STUDENT_ASSIGNMENTS } from "@/lib/data/student-assignments"
+import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
@@ -31,14 +31,15 @@ function getGradeBadge(marks: number) {
 }
 
 export const StudentAssignmentsListScreen = () => {
+  const { assignments } = useCourses()
   const keys = useMemo(
-    () => STUDENT_ASSIGNMENTS.map((a) => storageKey(a.id)),
-    []
+    () => assignments.map((a) => storageKey(a.id)),
+    [assignments]
   )
   const rawByKey = keys.map((key) => ({ key, value: localStorage.getItem(key) }))
 
   const rows = useMemo(() => {
-    return STUDENT_ASSIGNMENTS.map((a) => ({
+    return assignments.map((a) => ({
       assignment: a,
       submission: (() => {
         const raw = rawByKey.find((raw) => raw?.key === storageKey(a.id))

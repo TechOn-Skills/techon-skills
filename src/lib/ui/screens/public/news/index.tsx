@@ -9,21 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/lib/ui/useable-components/card"
-
-const posts = [
-  {
-    title: "New batch starting soon",
-    description: "Enroll now for Web Development, Mobile App Development, and Software Engineering.",
-  },
-  {
-    title: "Assignment-based learning",
-    description: "Submit assignments, get marks, and track your progress inside your dashboard.",
-  },
-  {
-    title: "Portfolio-ready projects",
-    description: "Build real projects that you can show to clients or interviewers.",
-  },
-]
+import { NEWS_POSTS } from "@/utils/constants"
 
 export const PublicNewsScreen = () => {
   return (
@@ -45,7 +31,7 @@ export const PublicNewsScreen = () => {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {posts.map((p) => (
+          {NEWS_POSTS.map((p) => (
             <Card key={p.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
               <CardHeader>
                 <CardTitle>{p.title}</CardTitle>

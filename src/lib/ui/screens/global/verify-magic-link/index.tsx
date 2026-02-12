@@ -1,6 +1,6 @@
 "use client"
 
-import { logger } from "@/lib/helpers"
+import { getApiDisplayMessage, logger } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { CONFIG, VERIFY_MAGIC_LINK_STATUS_CONTENT } from "@/utils/constants"
 import { MagicLinkStatus } from "@/utils/enums"
@@ -25,7 +25,7 @@ export const VerifyMagicLinkScreen = () => {
             if (user_id) {
                 const data: ApiResponse<IUserProfileInfo> = await apiService.verifyMagicLink(user_id)
                 if (!data.success) {
-                    logger({ type: LoggerLevel.ERROR, message: data.message, showToast: true })
+                    logger({ type: LoggerLevel.ERROR, message: getApiDisplayMessage(data, "Unable to verify magic link."), showToast: true })
                     setVerifyingStatus(MagicLinkStatus.ERROR)
                 } else {
                     setVerifyingStatus(MagicLinkStatus.VERIFIED)

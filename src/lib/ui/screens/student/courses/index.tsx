@@ -6,7 +6,8 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { CheckCircle2Icon, Loader2Icon, SearchIcon, SparklesIcon } from "lucide-react"
 
-import { PUBLIC_COURSES } from "@/lib/data/public-courses"
+import { useCourses } from "@/lib/providers/courses"
+import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import {
     Card,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/ui/useable-components/card"
 
 export const StudentCoursesScreen = () => {
+    const { courses } = useCourses()
     const [toast, setToast] = useState<null | { status: "loading" | "success"; text: string }>(null)
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -35,11 +37,16 @@ export const StudentCoursesScreen = () => {
     }
 
     const filteredCourses = useMemo(() => {
-        if (!searchQuery.trim()) return PUBLIC_COURSES
+        if (!searchQuery.trim()) return courses
 
         const query = searchQuery.toLowerCase().trim()
 
-        return PUBLIC_COURSES.filter((course) => {
+        return courses.filter((course) => {
+            const durationStr = formatCourseDuration(course)
+            const priceStr = formatCoursePrice(course)
+            const sections = course.modules[0]?.sections ?? []
+            const projects = course.modules[0]?.projects ?? []
+
             // Search in title
             if (course.title.toLowerCase().includes(query)) return true
 
@@ -47,29 +54,29 @@ export const StudentCoursesScreen = () => {
             if (course.subtitle.toLowerCase().includes(query)) return true
 
             // Search in duration
-            if (course.duration.toLowerCase().includes(query)) return true
+            if (durationStr.toLowerCase().includes(query)) return true
 
             // Search in price
-            if (course.price.toLowerCase().includes(query)) return true
+            if (priceStr.toLowerCase().includes(query)) return true
 
             // Search in technologies
-            if (course.technologies.some((tech) => tech.label.toLowerCase().includes(query))) return true
+            if (course.technologiesSection.technologies.some((tech) => tech.label.toLowerCase().includes(query))) return true
 
             // Search in sections
-            if (course.sections.some((section) =>
+            if (sections.some((section) =>
                 section.title.toLowerCase().includes(query) ||
                 section.description.toLowerCase().includes(query)
             )) return true
 
             // Search in projects
-            if (course.projects.some((project) =>
+            if (projects.some((project) =>
                 project.title.toLowerCase().includes(query) ||
                 project.description.toLowerCase().includes(query)
             )) return true
 
             return false
         })
-    }, [searchQuery])
+    }, [searchQuery, courses])
 
     return (
         <div className="w-full py-10">
@@ -109,7 +116,7 @@ export const StudentCoursesScreen = () => {
                                                 {c.subtitle}
                                             </CardDescription>
                                             <div className="text-muted-foreground mt-2 text-xs">
-                                                Duration: <span className="font-semibold">{c.duration}</span> • {c.price}
+                                                Duration: <span className="font-semibold">{formatCourseDuration(c)}</span> • {formatCoursePrice(c)}
                                             </div>
                                         </div>
                                         <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
@@ -119,8 +126,8 @@ export const StudentCoursesScreen = () => {
                                     </div>
 
                                     <div className="grid gap-2 sm:grid-cols-2">
-                                        {c.technologies.slice(0, 4).map((t) => (
-                                            <div key={t.id} className="flex items-start gap-2 rounded-2xl border bg-background/40 p-3">
+                                        {c.technologiesSection.technologies.slice(0, 4).map((t) => (
+                                            <div key={t.label} className="flex items-start gap-2 rounded-2xl border bg-background/40 p-3">
                                                 <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
                                                 <div className="text-sm">
                                                     <div className="font-semibold">{t.label}</div>
@@ -144,7 +151,7 @@ export const StudentCoursesScreen = () => {
                                             Enroll now
                                         </Button>
                                         <Button asChild variant="ghost" shape="pill">
-                                            <Link href={`/contact?course=${encodeURIComponent(c.title)}`}>Contact</Link>
+                                            <Link href={`/contact?course=${encodeURIComponent(c.slug)}`}>Contact</Link>
                                         </Button>
                                     </div>
                                 </CardContent>

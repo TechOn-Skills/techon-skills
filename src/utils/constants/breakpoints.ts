@@ -1,0 +1,2 @@
+export const MOBILE_BREAKPOINT = 425
+export const DESKTOP_BREAKPOINT = 768

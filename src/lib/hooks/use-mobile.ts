@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 
-const MOBILE_BREAKPOINT = 425
-const DESKTOP_BREAKPOINT = 768
+import { DESKTOP_BREAKPOINT, MOBILE_BREAKPOINT } from "@/utils/constants"
 
 const getWidth = () => {
   if (typeof window === "undefined") {

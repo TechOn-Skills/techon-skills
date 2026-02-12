@@ -11,7 +11,8 @@ import {
   TrophyIcon,
 } from "lucide-react"
 
-import { PUBLIC_COURSES } from "@/lib/data/public-courses"
+import { useCourses } from "@/lib/providers/courses"
+import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import {
   Card,
@@ -22,26 +23,28 @@ import {
 } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Icons } from "@/utils/constants"
+import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 export const PublicCoursesScreen = () => {
+  const { courses } = useCourses()
   const [searchQuery, setSearchQuery] = useState("")
   const catalog = useMemo(
     () =>
-      PUBLIC_COURSES.map((course) => {
+      courses.map((course) => {
+        const display = COURSE_DISPLAY_BY_SLUG[course.slug]
+        const projects = course.modules[0]?.projects ?? []
         return {
           slug: course.slug,
           title: course.title,
           description: course.subtitle,
-          price: course.price,
-          duration: course.duration,
-          icon: Icons[course.icon] ?? Icons.code,
-          highlight: course.highlight,
-          benefits: course.benefits?.length
-            ? course.benefits
-            : course.projects?.map((project) => project.title).slice(0, 3) ?? [],
+          price: formatCoursePrice(course),
+          duration: formatCourseDuration(course),
+          icon: Icons[display?.icon ?? "code"] ?? Icons.code,
+          highlight: display?.highlight,
+          benefits: display?.benefits?.length ? display.benefits : projects.map((p) => p.title).slice(0, 3),
         }
       }),
-    []
+    [courses]
   )
 
   const filteredCatalog = useMemo(() => {
@@ -70,7 +73,7 @@ export const PublicCoursesScreen = () => {
 
       return false
     })
-  }, [searchQuery])
+  }, [searchQuery, catalog])
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
@@ -177,7 +180,7 @@ export const PublicCoursesScreen = () => {
                         <Link href={`/courses/${c.slug}`}>View details</Link>
                       </Button>
                       <Button asChild variant="brand-secondary" shape="pill" className="shrink-0">
-                        <Link href={`/contact?course=${encodeURIComponent(c.title)}`}>
+                        <Link href={`/contact?course=${encodeURIComponent(c.slug)}`}>
                           Enroll now
                           <ArrowRightIcon className="size-4" />
                         </Link>

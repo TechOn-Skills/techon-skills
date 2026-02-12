@@ -1,15 +1,7 @@
 import Link from "next/link"
 
 import { cn } from "@/lib/helpers"
-import { COMPANY_NAME } from "@/utils/constants"
-
-const FOOTER_LINKS = [
-  { label: "FAQs", href: "/faqs" },
-  { label: "Terms of Service", href: "/terms-of-service" },
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Refund Policy", href: "/refund-policy" },
-  { label: "Cookie Policy", href: "/cookie-policy" },
-]
+import { COMPANY_NAME, FOOTER_LINKS } from "@/utils/constants"
 
 export const WebappFooter = ({ className }: { className?: string }) => {
   return (

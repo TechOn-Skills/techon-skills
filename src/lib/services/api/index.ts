@@ -126,6 +126,26 @@ class ApiService {
         return parsedResponse;
     }
 
+    submitForm = async <T>(formData: T): Promise<ApiResponse<T>> => {
+        const path = `${CONFIG.BACKEND_PATHS.FORM.SUBMIT}`;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify(formData),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            },
+        })
+        if (!response) {
+            return { success: false, message: "Unable to reach server" } as ApiResponse<T>;
+        }
+        const parsedResponse: ApiResponse<T> = await response.json();
+
+        return parsedResponse;
+    }
 }
 
 export const apiService = new ApiService();

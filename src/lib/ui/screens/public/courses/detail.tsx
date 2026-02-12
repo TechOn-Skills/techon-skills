@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
@@ -8,34 +9,45 @@ import {
   GraduationCapIcon,
   ListChecksIcon,
   RocketIcon,
+  SparklesIcon,
   TrophyIcon,
 } from "lucide-react"
 
-import { getPublicCourse } from "@/lib/data/public-courses"
+import { useCourses } from "@/lib/providers/courses"
+import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { TechLogoCard } from "@/lib/ui/useable-components/tech-logos"
-import { Icons } from "@/utils/constants"
+import { techIdFromLabel } from "@/lib/helpers"
+import { COURSE_DETAIL, HERO_GRADIENT_CLASS } from "@/utils/constants/course-detail"
+import { CONFIG } from "@/utils/constants/config"
 
-const HERO_GRADIENT_CLASS =
-  "bg-[radial-gradient(circle_at_top,rgba(79,195,232,0.3),transparent_60%),radial-gradient(circle_at_bottom,rgba(242,140,40,0.2),transparent_55%)]"
+const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  rocket: RocketIcon,
+  "graduation-cap": GraduationCapIcon,
+  "clipboard-list": ClipboardListIcon,
+  "list-checks": ListChecksIcon,
+  trophy: TrophyIcon,
+}
 
 export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
-  const course = getPublicCourse(slug)
+  const { getCourseBySlug } = useCourses()
+  const course = getCourseBySlug(slug)
 
   if (!course) {
+    const { notFound } = COURSE_DETAIL
     return (
       <div className="w-full px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
         <div className="mx-auto max-w-4xl">
           <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
             <CardHeader>
-              <CardTitle>Course not found</CardTitle>
-              <CardDescription>Go back to courses.</CardDescription>
+              <CardTitle>{notFound.title}</CardTitle>
+              <CardDescription>{notFound.description}</CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild variant="brand-secondary" shape="pill">
-                <Link href="/courses">View all courses</Link>
+                <Link href={CONFIG.ROUTES.PUBLIC.COURSES}>{notFound.backLabel}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -43,6 +55,8 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
       </div>
     )
   }
+
+  const { hero, articleSection, steps: stepsSection, infoCard, cta } = COURSE_DETAIL
 
   return (
     <div className="w-full">
@@ -54,7 +68,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 rounded-full border bg-background/50 px-3 py-1 text-xs font-semibold">
                   <CheckCircle2Icon className="size-4 text-(--brand-highlight)" />
-                  {course.duration} • {course.price}
+                  {formatCourseDuration(course)} • {formatCoursePrice(course)}
                 </div>
                 <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
                   {course.title}
@@ -65,35 +79,28 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <Button asChild size="xl" shape="pill" variant="brand-secondary">
-                    <Link href={`/contact?course=${encodeURIComponent(course.title)}`}>
-                      Enroll now
+                    <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                      {hero.enrollLabel}
                       <ArrowRightIcon className="size-4" />
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="xl" shape="pill">
-                    <Link href="/courses">Back to courses</Link>
+                    <Link href={CONFIG.ROUTES.PUBLIC.COURSES}>{hero.backToCoursesLabel}</Link>
                   </Button>
                 </div>
 
                 <div className="text-muted-foreground text-sm leading-7">
-                  TechOn Skills offers **job opportunities to deserving candidates** who show consistent performance,
-                  strong projects, and discipline during the course journey.
+                  {hero.careerNote}
                 </div>
               </div>
 
               <Card className="bg-background/55 backdrop-blur supports-backdrop-filter:bg-background/45">
                 <CardHeader>
-                  <CardTitle>What you’ll become</CardTitle>
-                  <CardDescription>
-                    A confident builder with real projects and a structured submission + marks flow.
-                  </CardDescription>
+                  <CardTitle>{hero.cardTitle}</CardTitle>
+                  <CardDescription>{hero.cardDescription}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  {[
-                    "Build portfolio-worthy projects",
-                    "Submit assignments and get marks",
-                    "Learn industry workflows (Git, deployments, clean code)",
-                  ].map((t) => (
+                  {hero.bullets.map((t) => (
                     <div key={t} className="flex items-start gap-2">
                       <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
                       <div>{t}</div>
@@ -108,59 +115,73 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
 
       <div className="px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
         <div className="mx-auto max-w-6xl space-y-8">
-          <div className="space-y-2">
-            <div className="text-sm font-semibold text-secondary">Curriculum</div>
-            <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-              A smooth, step-by-step learning journey
-            </h2>
-            <p className="text-muted-foreground max-w-3xl text-pretty">
-              Each phase is designed to keep you moving forward: clear concepts, practical practice, and meaningful outcomes.
-            </p>
-          </div>
+          {course.articleFeatures.length > 0 && (
+            <>
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs font-semibold">
+                  <SparklesIcon className="size-3.5 text-(--brand-highlight)" />
+                  {articleSection.badgeLabel}
+                </div>
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                  {articleSection.heading}
+                </h2>
+                <p className="text-muted-foreground max-w-3xl text-pretty">
+                  {articleSection.subtext}
+                </p>
+              </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            {course.sections.map((s) => {
-              const SectionIcon = Icons[s.icon] ?? Icons.layers
-              return (
-                <Card key={s.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-11 shrink-0 items-center justify-center rounded-2xl">
-                        <SectionIcon className="size-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <CardTitle className="text-base">{s.title}</CardTitle>
-                        <CardDescription className="text-xs leading-6">{s.description}</CardDescription>
+              <div className="space-y-16">
+                {course.articleFeatures.map((feature, idx) => (
+                  <div
+                    key={feature.name}
+                    className="grid gap-8 lg:grid-cols-2 lg:gap-12 lg:items-center"
+                  >
+                    <div className={idx % 2 === 1 ? "lg:order-2" : ""}>
+                      <div className="relative overflow-hidden rounded-2xl">
+                        <div className="aspect-4/3 w-full overflow-hidden rounded-2xl border bg-muted/50 shadow-lg">
+                          <Image
+                            src={feature.image}
+                            alt=""
+                            width={800}
+                            height={600}
+                            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                          />
+                        </div>
+                        <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-border/40" />
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-2xl border bg-background/40 p-4 text-sm">
-                      <div className="text-muted-foreground leading-7">
-                        Learn → practice → submit → marks. This is how you lock in skills fast.
+                    <div className={idx % 2 === 1 ? "lg:order-1" : ""}>
+                      <div className="space-y-3">
+                        <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                          {feature.name}
+                        </h3>
+                        <p className="text-muted-foreground leading-7">
+                          {feature.description}
+                        </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <div className="text-sm font-semibold text-secondary">Technologies</div>
             <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-              Tools you’ll master (with real projects)
+              {course.technologiesSection.title}
             </h3>
             <p className="text-muted-foreground max-w-3xl text-pretty">
-              You won’t just “see” these technologies — you’ll build with them, submit work, and track marks.
+              {course.technologiesSection.description}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {course.technologies.map((t, idx) => (
+            {course.technologiesSection.technologies.map((t, idx) => (
               <TechLogoCard
-                key={t.id + t.label}
-                id={t.id}
+                key={t.label}
+                id={techIdFromLabel(t.label)}
                 label={t.label}
                 delayMs={idx * 80}
               />
@@ -168,101 +189,46 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm font-semibold text-secondary">Projects</div>
+            <div className="text-sm font-semibold text-secondary">{stepsSection.label}</div>
             <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-              Projects that make you confident
+              {stepsSection.heading}
             </h3>
             <p className="text-muted-foreground max-w-3xl text-pretty">
-              Every project is designed to create “proof of skill” — the kind that upgrades your resume and confidence fast.
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {course.projects.map((p) => (
-              <Card key={p.title} className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
-                <CardHeader>
-                  <CardTitle className="text-lg">{p.title}</CardTitle>
-                  <CardDescription className="text-sm leading-7">{p.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-2xl border bg-background/40 p-4 text-sm">
-                    <div className="text-muted-foreground leading-7">
-                      You’ll submit this work from your dashboard — and your marks keep momentum high.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-sm font-semibold text-secondary">Your step‑by‑step path</div>
-            <h3 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-              From day 1 to job-ready outcomes
-            </h3>
-            <p className="text-muted-foreground max-w-3xl text-pretty">
-              This is the exact flow students follow inside the platform. It keeps motivation high and results measurable.
+              {stepsSection.subtext}
             </p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-5">
-            {[
-              {
-                title: "Step 1: Enroll",
-                description: "Choose your track and set your weekly study plan.",
-                icon: RocketIcon,
-              },
-              {
-                title: "Step 2: Learn",
-                description: "Attend structured lectures and understand core concepts.",
-                icon: GraduationCapIcon,
-              },
-              {
-                title: "Step 3: Practice",
-                description: "Work on guided tasks and real projects.",
-                icon: ClipboardListIcon,
-              },
-              {
-                title: "Step 4: Submit",
-                description: "Submit assignments directly from your dashboard.",
-                icon: ListChecksIcon,
-              },
-              {
-                title: "Step 5: Marks + Growth",
-                description: "Get marks, see progress, and qualify for career support.",
-                icon: TrophyIcon,
-              },
-            ].map((s) => (
-              <Card
-                key={s.title}
-                className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50"
-              >
-                <CardHeader className="space-y-3">
-                  <div className="bg-background/40 relative overflow-hidden rounded-2xl border p-4">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(70,208,255,0.22),transparent_60%)]" />
-                    <div className="relative flex items-center gap-2">
-                      <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-9 items-center justify-center rounded-xl">
-                        <s.icon className="size-4" />
-                      </span>
-                      <div className="text-sm font-semibold">{s.title}</div>
+            {stepsSection.items.map((s) => {
+              const StepIcon = STEP_ICONS[s.iconKey] ?? RocketIcon
+              return (
+                <Card
+                  key={s.title}
+                  className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50"
+                >
+                  <CardHeader className="space-y-3">
+                    <div className="bg-background/40 relative overflow-hidden rounded-2xl border p-4">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(70,208,255,0.22),transparent_60%)]" />
+                      <div className="relative flex items-center gap-2">
+                        <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-9 items-center justify-center rounded-xl">
+                          <StepIcon className="size-4" />
+                        </span>
+                        <div className="text-sm font-semibold">{s.title}</div>
+                      </div>
                     </div>
-                  </div>
-                  <CardDescription className="text-sm leading-7">{s.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
+                    <CardDescription className="text-sm leading-7">{s.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              )
+            })}
           </div>
 
           <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
             <CardContent className="grid gap-6 p-6 sm:grid-cols-3 sm:p-8">
-              {[
-                { k: "Weekly plan", v: "2–4 live sessions + practice" },
-                { k: "Assignments", v: "Submit weekly tasks + projects" },
-                { k: "Career support", v: "For top performers" },
-              ].map((s) => (
-                <div key={s.k} className="rounded-2xl border bg-background/40 p-5">
-                  <div className="text-muted-foreground text-xs">{s.k}</div>
-                  <div className="mt-1 text-xl font-semibold">{s.v}</div>
+              {infoCard.items.map((item) => (
+                <div key={item.key} className="rounded-2xl border bg-background/40 p-5">
+                  <div className="text-muted-foreground text-xs">{item.label}</div>
+                  <div className="mt-1 text-xl font-semibold">{item.value}</div>
                 </div>
               ))}
             </CardContent>
@@ -272,14 +238,12 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
 
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <div className="text-lg font-semibold">Ready to start?</div>
-              <div className="text-muted-foreground text-sm">
-                Send your details and we’ll guide you to enrollment.
-              </div>
+              <div className="text-lg font-semibold">{cta.heading}</div>
+              <div className="text-muted-foreground text-sm">{cta.subtext}</div>
             </div>
             <Button asChild size="xl" shape="pill" variant="brand-secondary">
-              <Link href={`/contact?course=${encodeURIComponent(course.title)}`}>
-                Enroll now
+              <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                {cta.buttonLabel}
                 <ArrowRightIcon className="size-4" />
               </Link>
             </Button>

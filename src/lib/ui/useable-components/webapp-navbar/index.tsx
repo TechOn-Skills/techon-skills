@@ -15,17 +15,10 @@ import {
   SheetTrigger,
 } from "@/lib/ui/useable-components/sheet"
 import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
-import { COMPANY_NAME } from "@/utils/constants"
+import { COMPANY_NAME, NAV_ITEMS } from "@/utils/constants"
 import { SheetContentSide } from "@/utils/enums"
 import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
 import { ContinueToDashboardDialog } from "@/lib/ui/useable-components/continue-dashboard-dialog"
-
-
-const NAV_ITEMS = [
-  { label: "Courses", href: "/courses" },
-  { label: "News", href: "/news" },
-  { label: "Contact", href: "/contact" },
-]
 
 export const WebappNavbar = ({ className }: { className?: string }) => {
 

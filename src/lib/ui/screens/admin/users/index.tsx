@@ -20,102 +20,13 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { cn } from "@/lib/helpers"
-import type { IUser } from "@/utils/interfaces"
-
-const DEMO_USERS: IUser[] = [
-  {
-    id: "1",
-    name: "Ahmad Hassan",
-    email: "ahmad.hassan@example.com",
-    phone: "+92 300 1234567",
-    role: "student",
-    status: "active",
-    enrolledCourse: "Web Development",
-    joinedDate: "Jan 15, 2026",
-    lastActive: "2 hours ago"
-  },
-  {
-    id: "2",
-    name: "Fatima Ali",
-    email: "fatima.ali@example.com",
-    phone: "+92 301 2345678",
-    role: "student",
-    status: "active",
-    enrolledCourse: "Mobile Development",
-    joinedDate: "Jan 10, 2026",
-    lastActive: "5 minutes ago"
-  },
-  {
-    id: "3",
-    name: "Muhammad Khan",
-    email: "muhammad.khan@example.com",
-    phone: "+92 302 3456789",
-    role: "student",
-    status: "active",
-    enrolledCourse: "Software Engineering",
-    joinedDate: "Jan 5, 2026",
-    lastActive: "1 day ago"
-  },
-  {
-    id: "4",
-    name: "Sarah Ahmed",
-    email: "sarah.ahmed@example.com",
-    phone: "+92 303 4567890",
-    role: "instructor",
-    status: "active",
-    joinedDate: "Dec 1, 2025",
-    lastActive: "10 minutes ago"
-  },
-  {
-    id: "5",
-    name: "Ali Raza",
-    email: "ali.raza@example.com",
-    phone: "+92 304 5678901",
-    role: "student",
-    status: "inactive",
-    enrolledCourse: "Web Development",
-    joinedDate: "Dec 20, 2025",
-    lastActive: "1 week ago"
-  },
-  {
-    id: "6",
-    name: "Zainab Malik",
-    email: "zainab.malik@example.com",
-    phone: "+92 305 6789012",
-    role: "student",
-    status: "active",
-    enrolledCourse: "Ecommerce",
-    joinedDate: "Jan 20, 2026",
-    lastActive: "3 hours ago"
-  },
-  {
-    id: "7",
-    name: "Hassan Ali",
-    email: "hassan.ali@example.com",
-    phone: "+92 306 7890123",
-    role: "student",
-    status: "suspended",
-    enrolledCourse: "Web Development",
-    joinedDate: "Dec 15, 2025",
-    lastActive: "2 weeks ago"
-  },
-  {
-    id: "8",
-    name: "Ayesha Khan",
-    email: "ayesha.khan@example.com",
-    phone: "+92 307 8901234",
-    role: "student",
-    status: "active",
-    enrolledCourse: "Mobile Development",
-    joinedDate: "Jan 12, 2026",
-    lastActive: "30 minutes ago"
-  },
-]
+import type { IAdminUserListItem } from "@/utils/interfaces"
+import { DEMO_USERS } from "@/utils/constants"
 
 export const AdminUsersScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"all" | IUser["role"]>("all")
-  const [statusFilter, setStatusFilter] = useState<"all" | IUser["status"]>("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | IAdminUserListItem["role"]>("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | IAdminUserListItem["status"]>("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
 
   const filteredUsers = useMemo(() => {

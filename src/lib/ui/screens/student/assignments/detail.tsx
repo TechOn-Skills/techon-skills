@@ -4,30 +4,24 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { ArrowLeftIcon, CheckCircle2Icon, SaveIcon, SparklesIcon, TrophyIcon, ZapIcon } from "lucide-react"
 
-import { STUDENT_ASSIGNMENTS } from "@/lib/data/student-assignments"
+import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { cn } from "@/lib/helpers"
 import type { ISubmission } from "@/utils/interfaces"
+import { MOTIVATIONAL_QUOTES } from "@/utils/constants"
 
 function storageKey(id: string) {
   return `student_assignment_submission:${id}`
 }
 
-const motivationalQuotes = [
-  "Code is poetry written in logic. Keep writing! ✨",
-  "Every bug you fix makes you stronger. You've got this! 💪",
-  "Great developers are made through practice, not perfection. 🚀",
-  "Your future self will thank you for the work you do today. 🌟",
-  "Learning to code is learning to create. Keep building! 🎨",
-]
-
 export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: string }) => {
+  const { getAssignmentById } = useCourses()
   const assignment = useMemo(
-    () => STUDENT_ASSIGNMENTS.find((a) => a.id === assignmentId),
-    [assignmentId]
+    () => getAssignmentById(assignmentId),
+    [assignmentId, getAssignmentById]
   )
 
   const key = storageKey(assignmentId)
@@ -36,7 +30,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
   const [text, setText] = useState(() => saved?.text ?? "")
   const [showConfetti, setShowConfetti] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | null>(null)
-  const [randomQuote] = useState(() => motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)])
+  const [randomQuote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)])
 
   // Auto-save draft
   useEffect(() => {
@@ -172,6 +166,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
                   </div>
                 </div>
 
+                {assignment.requirements.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-sm font-semibold">✅ Requirements</div>
                   <ul className="space-y-2">
@@ -183,6 +178,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
                     ))}
                   </ul>
                 </div>
+                )}
 
                 <Separator />
 

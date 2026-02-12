@@ -1,47 +1,62 @@
 "use client"
 
-import { ChangeEvent, useMemo, useState } from "react"
+import { ChangeEvent, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { CheckCircle2Icon, SparklesIcon, ZapIcon } from "lucide-react"
+import toast from "react-hot-toast"
 
+import { getApiDisplayMessage } from "@/lib/helpers"
+import { apiService } from "@/lib/services/api"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { useCourses } from "@/lib/providers/courses"
+import { CourseMultiSelect } from "@/lib/ui/useable-components/course-multi-select"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
-
-const COURSE_OPTIONS = [
-  "Full‑Stack Web Development",
-  "Mobile Application Development",
-  "Software Engineering",
-  "Ecommerce (Shopify + WordPress + Wix)",
-] as const
+import type { IContactForm, IContactFormCourse } from "@/utils/interfaces"
 
 export const PublicContactScreen = () => {
   const params = useSearchParams()
-  const selectedCourse = params.get("course")
+  const { getCourseBySlug } = useCourses()
+  const selectedCourseFromUrl = params.get("course")
+  const initialCourse = selectedCourseFromUrl
+    ? getCourseBySlug(selectedCourseFromUrl)
+    : null
 
   const [sent, setSent] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    courses: IContactFormCourse[]
+    message: string
+  }>({
     name: "",
     email: "",
-    course: "",
+    courses: initialCourse ? [{ slug: initialCourse.slug, title: initialCourse.title }] : [],
     message: "",
   })
 
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value
     }))
   }
 
-  const selected = useMemo(() => {
-    if (formData.course) return formData.course
-    if (selectedCourse) return selectedCourse
-    return ""
-  }, [formData.course, selectedCourse])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.email.trim()) return
+    const toastId = toast.loading("Sending message...")
+    const response = await apiService.submitForm<IContactForm>(formData)
+    toast.dismiss(toastId)
+    if (response.success) {
+      toast.success(getApiDisplayMessage(response, "Thanks! Message received. We'll get back soon."))
+      setSent(true)
+    } else {
+      toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
+    }
+  }
 
   return (
     <div className="w-full px-4 py-12 sm:px-6 lg:px-8 2xl:px-10">
@@ -107,13 +122,7 @@ export const PublicContactScreen = () => {
               <CardContent className="space-y-4">
                 <form
                   className="space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    if (formData.email.trim()) {
-
-                    }
-                    setSent(true)
-                  }}
+                  onSubmit={handleSubmit}
                 >
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
@@ -132,20 +141,12 @@ export const PublicContactScreen = () => {
                       onChange={handleChange}
                     />
                   </div>
-                  <select
-                    value={selected}
-                    onChange={handleChange}
-                    name="course"
+                  <CourseMultiSelect
+                    value={formData.courses}
+                    onChange={(courses) => setFormData((prev) => ({ ...prev, courses }))}
+                    placeholder="Search and select courses…"
                     required
-                    className="border-input bg-transparent dark:bg-input/30 h-11 w-full rounded-full border px-4 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                  >
-                    <option value="">Select a course</option>
-                    {COURSE_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  />
 
                   <Textarea
                     placeholder="Tell us your goal (e.g., job in 6 months, freelance clients, ecommerce store)…"

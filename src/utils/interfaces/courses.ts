@@ -1,21 +1,76 @@
-import { TechId } from "../types"
+/**
+ * Course schema types matching the backend Mongoose Course schema exactly.
+ * Only these fields exist on the course hierarchy; use these chunks across the webapp.
+ */
+
+// ----- Backend schema (exact match) -----
+
+export interface ICourseTechnology {
+  label: string
+  description: string
+  logo: string
+}
+
+export interface ICourseTechnologiesSection {
+  title: string
+  description: string
+  technologies: ICourseTechnology[]
+}
+
+export interface ICourseQuizQuestion {
+  question: string
+  options: string[]
+  correctAnswerIndex: number
+}
+
+export interface ICourseProject {
+  title: string
+  description: string
+  attachments: string[]
+  dueDate: Date | string
+  isCompleted?: boolean
+}
 
 export interface ICourseSection {
-    title: string
-    description: string
-    icon: string
+  title: string
+  description: string
+  quiz?: {
+    questions: ICourseQuizQuestion[]
+  }
 }
 
-export interface IPublicCourse {
-    slug: string
-    title: string
-    subtitle: string
-    duration: string
-    price: string
-    icon: string
-    highlight?: string
-    benefits?: string[]
-    sections: ICourseSection[]
-    technologies: { id: TechId; label: string }[]
-    projects: { title: string; description: string }[]
+export interface ICourseModule {
+  name: string
+  description: string
+  sections: ICourseSection[]
+  finalQuiz?: {
+    questions: ICourseQuizQuestion[]
+  }
+  projects: ICourseProject[]
 }
+
+export interface ICourseArticleFeature {
+  name: string
+  description: string
+  image: string
+}
+
+/** Full Course document shape matching backend CourseSchema. */
+export interface ICourse {
+  title: string
+  heroDescription: string
+  courseDurationInMonths: number
+  feePerMonth: number
+  totalFee: number
+  totalNumberOfInstallments: number
+  currency: string
+  subtitle: string
+  subDescription: string
+  slug: string
+  technologiesSection: ICourseTechnologiesSection
+  modules: ICourseModule[]
+  articleFeatures: ICourseArticleFeature[]
+}
+
+/** Contact form / API: course reference for linking to Course documents (slug + title). */
+export type IContactFormCourse = Pick<ICourse, "slug" | "title">

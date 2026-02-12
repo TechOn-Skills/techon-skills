@@ -15,6 +15,9 @@ export const CONFIG = {
     },
     BACKEND_PATHS: {
         GRAPHQL: "graphql-techonskills",
+        FORM: {
+            SUBMIT: "/contact-form/submit",
+        },
         AUTH: {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",

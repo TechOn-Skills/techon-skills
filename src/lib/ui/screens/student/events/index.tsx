@@ -17,111 +17,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
 import type { IEvent } from "@/utils/interfaces"
-
-const DEMO_EVENTS: IEvent[] = [
-  {
-    id: "e-1",
-    title: "Build Your First React App",
-    description: "A hands-on workshop where you'll learn React fundamentals by building a real-world application from scratch. Perfect for beginners!",
-    type: "workshop",
-    date: "2026-02-05",
-    time: "2:00 PM",
-    duration: "2 hours",
-    location: "Online via Google Meet",
-    isOnline: true,
-    spotsLeft: 12,
-    totalSpots: 30,
-    isRegistered: false,
-    tags: ["React", "Frontend", "Beginner Friendly"],
-    instructor: "Sarah Ahmed"
-  },
-  {
-    id: "e-2",
-    title: "Career Pathways in Tech",
-    description: "Join industry experts as they share insights about different tech career paths, salary expectations, and how to stand out in job applications.",
-    type: "webinar",
-    date: "2026-02-08",
-    time: "6:00 PM",
-    duration: "1.5 hours",
-    location: "Online via Zoom",
-    isOnline: true,
-    spotsLeft: 45,
-    totalSpots: 100,
-    isRegistered: true,
-    tags: ["Career", "Industry Insights", "Q&A Session"],
-    instructor: "Multiple Speakers"
-  },
-  {
-    id: "e-3",
-    title: "48-Hour Hackathon Challenge",
-    description: "Test your skills in our weekend hackathon! Build innovative solutions, collaborate with peers, and win exciting prizes. All skill levels welcome.",
-    type: "hackathon",
-    date: "2026-02-15",
-    time: "9:00 AM",
-    duration: "48 hours",
-    location: "TechOn Skills Campus, Lahore",
-    isOnline: false,
-    spotsLeft: 8,
-    totalSpots: 50,
-    isRegistered: false,
-    tags: ["Competition", "Team Building", "Prizes"],
-  },
-  {
-    id: "e-4",
-    title: "API Design Best Practices",
-    description: "Deep dive into RESTful API design, authentication patterns, and modern backend architecture. Bring your questions!",
-    type: "workshop",
-    date: "2026-02-20",
-    time: "3:00 PM",
-    duration: "3 hours",
-    location: "Online via Google Meet",
-    isOnline: true,
-    spotsLeft: 18,
-    totalSpots: 25,
-    isRegistered: false,
-    tags: ["Backend", "APIs", "Advanced"],
-    instructor: "Muhammad Ali"
-  },
-  {
-    id: "e-5",
-    title: "Tech Networking Mixer",
-    description: "Connect with fellow students, alumni, and industry professionals. Expand your network and discover opportunities in the tech community.",
-    type: "networking",
-    date: "2026-02-25",
-    time: "5:00 PM",
-    duration: "2 hours",
-    location: "TechOn Skills Campus, Lahore",
-    isOnline: false,
-    spotsLeft: 35,
-    totalSpots: 80,
-    isRegistered: false,
-    tags: ["Networking", "Community", "Opportunities"],
-  },
-  {
-    id: "e-6",
-    title: "Resume & Portfolio Review Session",
-    description: "Get personalized feedback on your resume and portfolio from hiring managers. Learn what recruiters look for and how to make your application stand out.",
-    type: "career",
-    date: "2026-03-01",
-    time: "4:00 PM",
-    duration: "2 hours",
-    location: "Online via Zoom",
-    isOnline: true,
-    spotsLeft: 20,
-    totalSpots: 30,
-    isRegistered: true,
-    tags: ["Career", "Resume", "Portfolio"],
-    instructor: "Career Team"
-  },
-]
-
-const eventTypeConfig = {
-  workshop: { label: "Workshop", color: "bg-blue-500/20 text-blue-600 dark:text-blue-400" },
-  webinar: { label: "Webinar", color: "bg-purple-500/20 text-purple-600 dark:text-purple-400" },
-  hackathon: { label: "Hackathon", color: "bg-orange-500/20 text-orange-600 dark:text-orange-400" },
-  networking: { label: "Networking", color: "bg-green-500/20 text-green-600 dark:text-green-400" },
-  career: { label: "Career", color: "bg-pink-500/20 text-pink-600 dark:text-pink-400" },
-}
+import { DEMO_EVENTS, EVENT_TYPE_CONFIG } from "@/utils/constants"
 
 export const StudentEventsScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState<"all" | IEvent["type"]>("all")
@@ -242,7 +138,7 @@ export const StudentEventsScreen = () => {
       <div className="grid gap-6 lg:grid-cols-2">
         {filteredEvents.map((event, idx) => {
           const isRegistered = registrations.has(event.id)
-          const typeConfig = eventTypeConfig[event.type]
+          const typeConfig = EVENT_TYPE_CONFIG[event.type]
           const spotsPercentage = (event.spotsLeft / event.totalSpots) * 100
 
           return (
