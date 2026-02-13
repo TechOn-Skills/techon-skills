@@ -55,6 +55,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
           setResponseStatus(ResponseStatus.SUCCESS)
         }
         logger({ type: LoggerLevel.INFO, message, showToast: true })
+        setFormData({ email: "" })
       } else {
         const message = getApiDisplayMessage(data, "Unable to send magic link.")
         setResponseMessage(message)

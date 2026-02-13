@@ -24,7 +24,8 @@ function getToastLevel(type: LoggerLevel) {
 export const logger = (
     { type, message, error, showToast = false }: ILoggerProps
 ) => {
-    if (NODE_ENV === Environment.DEVELOPMENT && typeof window !== "undefined") {
+    if (typeof window !== "undefined") return;
+    if (NODE_ENV === Environment.DEVELOPMENT) {
         console.log(`[${LOGGER_LEVELS_PREFIX[type]}]:\t${message}\n${error ? `Error: ${error}` : ""}`);
         if (showToast) {
             const toastLevel = getToastLevel(type);
@@ -47,5 +48,7 @@ export const logger = (
                     break;
             }
         }
+    } else {
+        return;
     }
 }

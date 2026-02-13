@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 import {
   ArrowRightIcon,
   AwardIcon,
@@ -8,11 +9,13 @@ import {
   CodeIcon,
   FileCheck2Icon,
   GraduationCapIcon,
+  MessageCircleIcon,
   SparklesIcon,
   SmartphoneIcon,
   StarsIcon,
   StoreIcon,
   WrenchIcon,
+  XIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -28,6 +31,8 @@ import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import type { IContactForm, IContactFormCourse } from "@/utils/interfaces"
+
+const CONTACT_MODAL_SHOWN_KEY = "techon_contact_modal_shown"
 
 const FEATURED_COURSE_ICONS: Record<string, typeof CodeIcon> = {
   code: CodeIcon,
@@ -54,6 +59,22 @@ export const LandingPageScreen = () => {
     message: "",
   })
   const [contactSent, setContactSent] = useState(false)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
+
+  // Show contact modal on first visit; persist "shown" in localStorage so it only appears once.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const alreadyShown = localStorage.getItem(CONTACT_MODAL_SHOWN_KEY)
+    if (alreadyShown === "true") return
+    const t = setTimeout(() => setContactModalOpen(true), 500)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (contactModalOpen && typeof window !== "undefined") {
+      localStorage.setItem(CONTACT_MODAL_SHOWN_KEY, "true")
+    }
+  }, [contactModalOpen])
 
   useEffect(() => {
     // Smooth scrolling + reveal animations (no scroll-snap to avoid footer jump).
@@ -90,8 +111,106 @@ export const LandingPageScreen = () => {
     }
   }, [])
 
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!contactForm.email.trim()) return
+    const toastId = toast.loading("Sending message...")
+    const response = await apiService.submitForm<IContactForm>(contactForm)
+    toast.dismiss(toastId)
+    if (response.success) {
+      toast.success(getApiDisplayMessage(response, "Thanks! We'll get back soon."))
+      setContactSent(true)
+      setContactForm({ name: "", email: "", courses: [], message: "" })
+      setContactModalOpen(false)
+    } else {
+      toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
+    }
+  }
+
   return (
     <div className="w-full">
+      <DialogPrimitive.Root open={contactModalOpen} onOpenChange={setContactModalOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-md transition-all duration-500" />
+          <DialogPrimitive.Content
+            className="fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border-0 shadow-2xl outline-none focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-4 duration-500"
+            style={{
+              background: "linear-gradient(135deg, rgba(79,195,232,0.12), rgba(242,140,40,0.08), var(--card))",
+              boxShadow: "0 0 0 1px rgba(79,195,232,0.2), 0 25px 50px -12px rgba(0,0,0,0.35)",
+            }}
+          >
+            <div className="relative p-6 sm:p-8">
+              <div className="absolute right-4 top-4">
+                <DialogPrimitive.Close asChild>
+                  <button
+                    type="button"
+                    className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-highlight)"
+                    aria-label="Close"
+                  >
+                    <XIcon className="size-5" />
+                  </button>
+                </DialogPrimitive.Close>
+              </div>
+              <div className="flex items-start gap-3 pr-10">
+                <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-lg">
+                  <MessageCircleIcon className="size-6" />
+                </span>
+                <div className="min-w-0">
+                  <DialogPrimitive.Title className="text-xl font-semibold tracking-tight">
+                    Say hello — we’d love to help
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Description className="text-muted-foreground mt-1 text-sm leading-6">
+                    Tell us your name, interests, and a quick message. We’ll get back soon.
+                  </DialogPrimitive.Description>
+                </div>
+              </div>
+
+              <form className="mt-6 space-y-4" onSubmit={handleContactSubmit}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    placeholder="Your name"
+                    name="name"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, name: e.target.value }))}
+                    className="rounded-xl border-background/60 bg-background/50 transition-colors focus:bg-background"
+                  />
+                  <Input
+                    placeholder="Your email"
+                    name="email"
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, email: e.target.value }))}
+                    className="rounded-xl border-background/60 bg-background/50 transition-colors focus:bg-background"
+                  />
+                </div>
+                <CourseMultiSelect
+                  value={contactForm.courses}
+                  onChange={(courses) => setContactForm((prev) => ({ ...prev, courses }))}
+                  placeholder="Search and select courses…"
+                  required
+                />
+                <Textarea
+                  placeholder="Message"
+                  className="min-h-32 rounded-xl border-background/60 bg-background/50 transition-colors focus:bg-background"
+                  name="message"
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
+                />
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-muted-foreground text-sm">
+                    {contactSent ? "Thanks! We’ll get back soon." : "Prefer call? +923144240550"}
+                  </span>
+                  <Button variant="brand-secondary" shape="pill" className="w-fit" type="submit">
+                    Send message
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-32 left-1/2 h-144 w-240 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,195,232,0.22),transparent_60%)] blur-3xl" />
         <div className="absolute -bottom-40 -left-40 h-112 w-md rounded-full bg-[radial-gradient(circle_at_center,rgba(242,140,40,0.16),transparent_65%)] blur-3xl" />
@@ -203,40 +322,37 @@ export const LandingPageScreen = () => {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredCourses.map((c) => (
-                  <Card
-                    key={c.title}
-                    className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <CardHeader>
-                      <div className="flex items-center gap-3">
-                        <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
-                          <c.icon className="size-5" />
-                        </span>
-                        <div>
-                          <CardTitle className="text-base">{c.title}</CardTitle>
-                          <CardDescription className="text-xs leading-5">
-                            {c.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2 text-sm">
-                        {c.bullets.slice(0, 2).map((b) => (
-                          <div key={b} className="flex items-start gap-2">
-                            <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
-                            <div className="text-sm">{b}</div>
+                  <Link key={c.title} href={`/courses/${c.slug}`} className="block transition-all hover:-translate-y-0.5 hover:shadow-lg">
+                    <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50 h-full cursor-pointer">
+                      <CardHeader>
+                        <div className="flex items-center gap-3">
+                          <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
+                            <c.icon className="size-5" />
+                          </span>
+                          <div>
+                            <CardTitle className="text-base">{c.title}</CardTitle>
+                            <CardDescription className="text-xs leading-5">
+                              {c.description}
+                            </CardDescription>
                           </div>
-                        ))}
-                      </div>
-                      <Button asChild shape="pill" className="w-fit">
-                        <Link href={`/courses/${c.slug}`}>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          {c.bullets.slice(0, 2).map((b) => (
+                            <div key={b} className="flex items-start gap-2">
+                              <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
+                              <div className="text-sm">{b}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-foreground shrink-0 whitespace-nowrap inline-flex w-fit items-center gap-2 text-sm font-medium">
                           View details
                           <ArrowRightIcon className="size-4" />
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -461,22 +577,7 @@ export const LandingPageScreen = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <form
-                      className="space-y-4"
-                      onSubmit={async (e) => {
-                        e.preventDefault()
-                        if (!contactForm.email.trim()) return
-                        const toastId = toast.loading("Sending message...")
-                        const response = await apiService.submitForm<IContactForm>(contactForm)
-                        toast.dismiss(toastId)
-                        if (response.success) {
-                          toast.success(getApiDisplayMessage(response, "Thanks! We'll get back soon."))
-                          setContactSent(true)
-                        } else {
-                          toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
-                        }
-                      }}
-                    >
+                    <form className="space-y-4" onSubmit={handleContactSubmit}>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Input
                           placeholder="Your name"
