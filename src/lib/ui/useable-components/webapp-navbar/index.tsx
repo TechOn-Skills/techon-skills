@@ -49,9 +49,8 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
                   <Image
                     src={TechOnLogo}
                     alt={COMPANY_NAME}
-                    width={28}
-                    height={28}
-                    className="size-7"
+                    width={60}
+                    height={60}
                     priority
                   />
                   <span className="truncate">{COMPANY_NAME}</span>
@@ -85,9 +84,8 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
             <Image
               src={TechOnLogo}
               alt={COMPANY_NAME}
-              width={32}
-              height={32}
-              className="size-8"
+              width={52}
+              height={52}
               priority
             />
             <div className="min-w-0 leading-tight">
