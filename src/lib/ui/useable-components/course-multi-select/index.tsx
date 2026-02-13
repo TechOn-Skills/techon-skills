@@ -75,7 +75,7 @@ export function CourseMultiSelect({
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "border-border bg-card text-foreground placeholder:text-muted-foreground flex h-11 w-full min-h-11 flex-wrap items-center gap-2 rounded-full border px-4 py-2 text-left text-sm outline-none transition-colors",
+          "border-border bg-card text-foreground placeholder:text-muted-foreground flex min-h-11 w-full flex-wrap items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-2",
           "disabled:pointer-events-none disabled:opacity-50",
           open && "border-ring ring-2 ring-ring/30"
@@ -85,13 +85,13 @@ export function CourseMultiSelect({
         aria-label={placeholder}
       >
         {value.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-1.5">
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {value.map((course) => (
               <span
                 key={course.slug}
-                className="border-border text-foreground inline-flex items-center gap-1 rounded-full border bg-transparent px-2.5 py-0.5 text-xs"
+                className="border-border text-foreground inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border bg-transparent px-2.5 py-0.5 text-xs"
               >
-                {course.title}
+                <span className="min-w-0 truncate">{course.title}</span>
                 <button
                   type="button"
                   onClick={(e) => removeCourse(e, course.slug)}
