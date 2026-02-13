@@ -82,6 +82,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
     }
     localStorage.setItem(key, JSON.stringify(next))
     setShowConfetti(true)
+    setText("")
   }
 
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length

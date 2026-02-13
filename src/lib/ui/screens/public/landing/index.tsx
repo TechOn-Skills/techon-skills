@@ -120,6 +120,7 @@ export const LandingPageScreen = () => {
     if (response.success) {
       toast.success(getApiDisplayMessage(response, "Thanks! We'll get back soon."))
       setContactSent(true)
+      setContactForm({ name: "", email: "", courses: [], message: "" })
       setContactModalOpen(false)
     } else {
       toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
@@ -321,40 +322,37 @@ export const LandingPageScreen = () => {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {featuredCourses.map((c) => (
-                  <Card
-                    key={c.title}
-                    className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <CardHeader>
-                      <div className="flex items-center gap-3">
-                        <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
-                          <c.icon className="size-5" />
-                        </span>
-                        <div>
-                          <CardTitle className="text-base">{c.title}</CardTitle>
-                          <CardDescription className="text-xs leading-5">
-                            {c.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2 text-sm">
-                        {c.bullets.slice(0, 2).map((b) => (
-                          <div key={b} className="flex items-start gap-2">
-                            <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
-                            <div className="text-sm">{b}</div>
+                  <Link key={c.title} href={`/courses/${c.slug}`} className="block transition-all hover:-translate-y-0.5 hover:shadow-lg">
+                    <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50 h-full cursor-pointer">
+                      <CardHeader>
+                        <div className="flex items-center gap-3">
+                          <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
+                            <c.icon className="size-5" />
+                          </span>
+                          <div>
+                            <CardTitle className="text-base">{c.title}</CardTitle>
+                            <CardDescription className="text-xs leading-5">
+                              {c.description}
+                            </CardDescription>
                           </div>
-                        ))}
-                      </div>
-                      <Button asChild shape="pill" className="w-fit">
-                        <Link href={`/courses/${c.slug}`}>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          {c.bullets.slice(0, 2).map((b) => (
+                            <div key={b} className="flex items-start gap-2">
+                              <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
+                              <div className="text-sm">{b}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-foreground shrink-0 whitespace-nowrap inline-flex w-fit items-center gap-2 text-sm font-medium">
                           View details
                           <ArrowRightIcon className="size-4" />
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </div>
