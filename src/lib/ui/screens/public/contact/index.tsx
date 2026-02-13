@@ -53,6 +53,12 @@ export const PublicContactScreen = () => {
     if (response.success) {
       toast.success(getApiDisplayMessage(response, "Thanks! Message received. We'll get back soon."))
       setSent(true)
+      setFormData({
+        name: "",
+        email: "",
+        courses: [],
+        message: "",
+      })
     } else {
       toast.error(getApiDisplayMessage(response, "Failed to send message. Please try again."))
     }

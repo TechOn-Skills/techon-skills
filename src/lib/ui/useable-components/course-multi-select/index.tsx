@@ -75,9 +75,9 @@ export function CourseMultiSelect({
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "border-border bg-card text-foreground placeholder:text-muted-foreground flex min-h-11 w-full flex-wrap items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm outline-none transition-colors",
+          "border-border bg-card text-foreground placeholder:text-muted-foreground flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-2",
-          "disabled:pointer-events-none disabled:opacity-50",
+          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
           open && "border-ring ring-2 ring-ring/30"
         )}
         aria-haspopup="listbox"
@@ -95,7 +95,7 @@ export function CourseMultiSelect({
                 <button
                   type="button"
                   onClick={(e) => removeCourse(e, course.slug)}
-                  className="text-muted-foreground hover:text-foreground rounded-full p-0.5 transition-colors"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer rounded-full p-0.5 transition-colors"
                   aria-label={`Remove ${course.title}`}
                 >
                   <XIcon className="size-3" />
