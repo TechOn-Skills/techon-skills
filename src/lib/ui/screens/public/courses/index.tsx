@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import {
   ArrowRightIcon,
@@ -26,6 +27,7 @@ import { Icons } from "@/utils/constants"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 export const PublicCoursesScreen = () => {
+  const router = useRouter()
   const { courses } = useCourses()
   const [searchQuery, setSearchQuery] = useState("")
   const catalog = useMemo(
@@ -116,7 +118,8 @@ export const PublicCoursesScreen = () => {
                 key={c.slug}
                 className="group rounded-3xl bg-[linear-gradient(135deg,rgba(79,195,232,0.35),rgba(242,140,40,0.20),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl"
               >
-                <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden">
+                <Link href={`/courses/${c.slug}`} className="block">
+                  <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden cursor-pointer h-full">
                   <div className="pointer-events-none relative h-1.5 w-full bg-[linear-gradient(to_right,rgba(79,195,232,0.7),rgba(242,140,40,0.6))] opacity-70 transition-opacity group-hover:opacity-100" />
                   <CardHeader className="space-y-4">
                     <div className="flex items-start gap-3">
@@ -176,18 +179,27 @@ export const PublicCoursesScreen = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button asChild variant="outline" shape="pill">
-                        <Link href={`/courses/${c.slug}`}>View details</Link>
-                      </Button>
-                      <Button asChild variant="brand-secondary" shape="pill" className="shrink-0">
-                        <Link href={`/contact?course=${encodeURIComponent(c.slug)}`}>
-                          Enroll now
-                          <ArrowRightIcon className="size-4" />
-                        </Link>
+                      <span className="text-foreground shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-sm font-medium">
+                        View details
+                      </span>
+                      <Button
+                        type="button"
+                        variant="brand-secondary"
+                        shape="pill"
+                        className="shrink-0"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
+                        }}
+                      >
+                        Enroll now
+                        <ArrowRightIcon className="size-4" />
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
               </div>
             ))}
           </div>

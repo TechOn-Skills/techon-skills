@@ -10,6 +10,19 @@
   /* selected text color */
 }
 
+/* Action buttons and clickable links: pointer cursor; loading/disabled: not-allowed + red */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[data-loading="true"] {
+  cursor: not-allowed;
+}
+
 :root {
   color-scheme: light;
 
