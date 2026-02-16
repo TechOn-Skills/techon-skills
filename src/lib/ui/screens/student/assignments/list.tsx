@@ -36,17 +36,32 @@ export const StudentAssignmentsListScreen = () => {
     () => assignments.map((a) => storageKey(a.id)),
     [assignments]
   )
-  const rawByKey = keys.map((key) => ({ key, value: localStorage.getItem(key) }))
+  const rawByKey = useMemo(() => {
+    if (typeof window === "undefined") return []
+
+    return keys.map((key) => {
+      const raw = localStorage.getItem(key)
+      if (!raw) return { key, value: null }
+
+      try {
+        return {
+          key,
+          value: JSON.parse(raw) as ISubmission,
+        }
+      } catch {
+        return { key, value: null }
+      }
+    })
+  }, [keys])
 
   const rows = useMemo(() => {
     return assignments.map((a) => ({
       assignment: a,
-      submission: (() => {
-        const raw = rawByKey.find((raw) => raw?.key === storageKey(a.id))
-        return raw ? (JSON.parse(raw.value as string) as ISubmission) : null
-      })(),
+      submission:
+        rawByKey.find((r) => r.key === storageKey(a.id))?.value ?? null,
     }))
-  }, [rawByKey])
+  }, [rawByKey, assignments])
+
 
   // Fun stats calculations
   const stats = useMemo(() => {
