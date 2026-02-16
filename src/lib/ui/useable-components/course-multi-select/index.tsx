@@ -85,7 +85,7 @@ export function CourseMultiSelect({
         aria-label={placeholder}
       >
         {value.length > 0 ? (
-          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          <span className="flex min-w-0 max-h-24 flex-1 flex-wrap items-center gap-1.5 overflow-y-auto overflow-x-hidden">
             {value.map((course) => (
               <span
                 key={course.slug}
@@ -113,7 +113,7 @@ export function CourseMultiSelect({
 
       {open && (
         <div
-          className="border-border bg-popover text-popover-foreground absolute top-full z-50 mt-1.5 max-h-72 w-full overflow-hidden rounded-lg border shadow-md"
+          className="border-border bg-popover text-popover-foreground absolute top-full z-50 mt-1.5 max-h-[min(20rem,70vh)] w-full overflow-hidden rounded-lg border shadow-md"
           role="listbox"
         >
           <div className="border-border border-b p-2">
@@ -126,7 +126,7 @@ export function CourseMultiSelect({
               autoFocus
             />
           </div>
-          <div className="max-h-56 overflow-y-auto p-1">
+          <div className="max-h-[min(16rem,50vh)] overflow-y-auto overflow-x-hidden p-1">
             {filteredCourses.length === 0 ? (
               <div className="text-muted-foreground py-6 text-center text-sm">
                 No courses match your search.

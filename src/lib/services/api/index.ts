@@ -1,7 +1,7 @@
 import { fetchURL } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
 import { FetchMethod } from "@/utils/enums";
-import { ApiResponse, ICheckStudentStatus, IUser, IUserProfileInfo } from "@/utils/interfaces";
+import { ApiResponse, IUser, IUserProfileInfo } from "@/utils/interfaces";
 
 class ApiService {
     constructor() { }
@@ -126,7 +126,7 @@ class ApiService {
         return parsedResponse;
     }
 
-    submitForm = async <T>(formData: T): Promise<ApiResponse<T>> => {
+    submitContactForm = async <T>(formData: T): Promise<ApiResponse<T>> => {
         const path = `${CONFIG.BACKEND_PATHS.FORM.SUBMIT}`;
         const response = await fetchURL({
             path,
