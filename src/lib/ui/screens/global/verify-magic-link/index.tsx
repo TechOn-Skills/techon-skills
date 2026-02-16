@@ -48,7 +48,7 @@ export const VerifyMagicLinkScreen = () => {
         handleVerifyMagicLink()
     }, [handleVerifyMagicLink])
 
-    if (!user_id) {
+    if (!user_id && typeof window !== "undefined") {
         logger({ type: LoggerLevel.ERROR, message: "Unable to verify magic link please try again", showToast: true })
         router.push(CONFIG.ROUTES.PUBLIC.HOME)
         return null
