@@ -23,7 +23,7 @@ export const WebappFooter = ({ className }: { className?: string }) => {
 
           <div className="space-y-2">
             <div className="text-sm font-semibold">Contact</div>
-            <div className="text-(--text-on-dark)/75 text-sm">Phone: +923144240550</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Phone: +923257720992</div>
             <div className="text-(--text-on-dark)/75 text-sm">Email: info@cloudrika.com</div>
             <div className="text-(--text-on-dark)/75 text-sm">Address: Lahore Punjab Pakistan</div>
           </div>
