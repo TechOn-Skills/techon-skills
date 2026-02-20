@@ -1,3 +1,4 @@
+"use client";
 import { getConfig } from "@/lib/services"
 import { CONFIG } from "@/utils/constants"
 import { LoggerLevel } from "@/utils/enums"
