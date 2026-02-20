@@ -88,7 +88,7 @@ export const PublicContactScreen = () => {
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {[
-                  "Phone: +923144240550",
+                  "Phone: +923257720992",
                   "Email: info@cloudrika.com",
                   "Address: Lahore Punjab Pakistan",
                 ].map((t) => (
