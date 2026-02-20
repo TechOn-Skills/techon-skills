@@ -290,7 +290,7 @@ export const LandingPageScreen = () => {
                             <span className="text-muted-foreground">{"Thanks! We'll get back soon."}</span>
                           ) : (
                             <>
-                              <span className="text-muted-foreground">Prefer call? +923144240550</span>
+                              <span className="text-muted-foreground">Prefer call? +923257720992</span>
                               <Button variant="outline" size="sm" shape="pill" asChild>
                                 <a href="https://wa.me/923144240550" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5">
                                   <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -655,7 +655,7 @@ export const LandingPageScreen = () => {
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     {[
-                      { k: "Phone", v: "+923144240550" },
+                      { k: "Phone", v: "+923257720992" },
                       { k: "Email", v: "info@cloudrika.com" },
                       { k: "Address", v: "Lahore Punjab Pakistan" },
                     ].map((r) => (
@@ -791,7 +791,7 @@ export const LandingPageScreen = () => {
                                 <span className="text-muted-foreground">{"Thanks! We'll get back soon."}</span>
                               ) : (
                                 <>
-                                  <span className="text-muted-foreground">Prefer call? +923144240550</span>
+                                  <span className="text-muted-foreground">Prefer call? +923257720992</span>
                                   <Button variant="outline" size="sm" shape="pill" asChild>
                                     <a href="https://wa.me/923144240550" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5">
                                       <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
