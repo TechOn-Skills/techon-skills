@@ -171,10 +171,10 @@ export const COURSES: ICourse[] = [
       "Become business-ready: launch stores, build sites fast, and deliver client work with confidence.",
     subDescription:
       "Client-ready stores/sites, Shopify + WP + Wix mastery, SEO + conversion setup.",
-    courseDurationInMonths: 6,
+    courseDurationInMonths: 3,
     feePerMonth: 2500,
-    totalFee: 15000,
-    totalNumberOfInstallments: 6,
+    totalFee: 7500,
+    totalNumberOfInstallments: 3,
     currency: "PKR",
     technologiesSection: {
       title: "Tools you'll master (with real projects)",
