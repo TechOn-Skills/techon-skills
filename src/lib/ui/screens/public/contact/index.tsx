@@ -229,7 +229,7 @@ export const PublicContactScreen = () => {
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap items-center gap-2 text-sm">
                           {sent ? (
-                            <span className="text-muted-foreground">Thanks! Message received. You can now continue to dashboard with your email.</span>
+                            <span className="text-muted-foreground">Thanks! Message received. Our team will get back to you soon.</span>
                           ) : (
                             <>
                               <span className="text-muted-foreground">We reply quickly. Or reach us on</span>
