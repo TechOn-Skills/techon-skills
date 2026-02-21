@@ -31,6 +31,7 @@ import {
 import { CourseMultiSelect } from "@/lib/ui/useable-components/course-multi-select"
 import type { IContactFormSubmission } from "@/utils/interfaces/contact-form"
 import type { IContactFormCourse } from "@/utils/interfaces/courses"
+import { SheetContentSide } from "@/utils/enums"
 
 export const AdminContactSubmissionsScreen = () => {
   const [submissions, setSubmissions] = useState<IContactFormSubmission[]>([])
@@ -287,7 +288,7 @@ function SendEmailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md">
+      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
         <SheetHeader>
           <SheetTitle>Send email</SheetTitle>
           <SheetDescription>
@@ -382,7 +383,7 @@ function AssignCoursesSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md">
+      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
         <SheetHeader>
           <SheetTitle>Assign courses</SheetTitle>
           <SheetDescription>
