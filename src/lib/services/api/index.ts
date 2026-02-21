@@ -1,7 +1,7 @@
-import { fetchURL } from "@/lib/helpers";
+import { fetchURL, logger } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
-import { FetchMethod } from "@/utils/enums";
-import { ApiResponse, IUser, IUserProfileInfo } from "@/utils/interfaces";
+import { FetchMethod, LoggerLevel } from "@/utils/enums";
+import { ApiResponse, IContactFormSubmission, IUser, IUserProfileInfo } from "@/utils/interfaces";
 
 class ApiService {
     constructor() { }
@@ -41,8 +41,24 @@ class ApiService {
         return parsedResponse;
     }
 
-    approveStudentRegistrationRequest = async (email: string): Promise<ApiResponse<IUser>> => {
-        const path = `${CONFIG.BACKEND_PATHS.AUTH.APPROVE_STUDENT_REGISTRATION_REQUEST}?email=${email}`;
+    getStudentRegistrationRequests = async (): Promise<ApiResponse<IUser[]>> => {
+        const path = CONFIG.BACKEND_PATHS.AUTH.LIST_STUDENT_REGISTRATION_REQUESTS;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.GET,
+            },
+        });
+        if (!response) {
+            return { success: false, message: "Unable to reach server", data: [] } as ApiResponse<IUser[]>;
+        }
+        const parsedResponse: ApiResponse<IUser[]> = await response.json();
+        return { ...parsedResponse, data: parsedResponse.data ?? [] };
+    }
+
+    approveStudentRegistrationRequest = async (user_id: string): Promise<ApiResponse<IUser>> => {
+        const path = `${CONFIG.BACKEND_PATHS.AUTH.APPROVE_STUDENT_REGISTRATION_REQUEST}?user_id=${user_id}`;
         const response = await fetchURL({
             path,
             isGraphQL: false,
@@ -145,6 +161,51 @@ class ApiService {
         const parsedResponse: ApiResponse<T> = await response.json();
 
         return parsedResponse;
+    }
+
+    getContactFormSubmissions = async (): Promise<ApiResponse<IContactFormSubmission[]>> => {
+        const path = CONFIG.BACKEND_PATHS.FORM.GET_CONTACT_SUBMISSIONS;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: { method: FetchMethod.GET },
+        });
+        if (!response) {
+            return { success: false, message: "Unable to reach server", data: [] } as ApiResponse<IContactFormSubmission[]>;
+        }
+        const parsed = await response.json() as ApiResponse<IContactFormSubmission[]>;
+        logger({ type: LoggerLevel.INFO, message: "Contact form submissions", error: JSON.stringify(parsed) });
+        return { ...parsed, data: parsed.data ?? [] };
+    }
+
+    sendEmailToContact = async (submissionId: string, subject: string, body: string): Promise<ApiResponse<unknown>> => {
+        const path = CONFIG.BACKEND_PATHS.FORM.SEND_EMAIL;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify({ submissionId, subject, body }),
+                headers: { "Content-Type": "application/json" },
+            },
+        });
+        if (!response) return { success: false, message: "Unable to reach server" } as ApiResponse<unknown>;
+        return response.json() as Promise<ApiResponse<unknown>>;
+    }
+
+    assignCoursesToContact = async (submissionId: string, courseSlugs: string[]): Promise<ApiResponse<unknown>> => {
+        const path = CONFIG.BACKEND_PATHS.FORM.ASSIGN_COURSES;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify({ submissionId, courseSlugs }),
+                headers: { "Content-Type": "application/json" },
+            },
+        });
+        if (!response) return { success: false, message: "Unable to reach server" } as ApiResponse<unknown>;
+        return response.json() as Promise<ApiResponse<unknown>>;
     }
 }
 
