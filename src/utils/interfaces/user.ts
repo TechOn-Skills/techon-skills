@@ -25,4 +25,6 @@ export interface IUser {
 export interface IUserContextProvider {
     userProfileInfo: IUserProfileInfo | null;
     userData: IUser | null;
+    /** True after the first attempt to load user profile (success or failure). */
+    profileLoaded: boolean;
 }
