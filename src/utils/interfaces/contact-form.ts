@@ -7,3 +7,14 @@ export interface IContactForm {
     courses: IContactFormCourse[];
     phone: string;
 }
+
+export interface IContactFormSubmission {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    message?: string;
+    courses: IContactFormCourse[];
+    createdAt: string;
+}
+

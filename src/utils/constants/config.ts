@@ -17,10 +17,14 @@ export const CONFIG = {
         GRAPHQL: "graphql-techonskills",
         FORM: {
             SUBMIT: "/contact-form/submit",
+            GET_CONTACT_SUBMISSIONS: "/contact-form/get-contact-form-requests",
+            SEND_EMAIL: "/contact-form/send-email",
+            ASSIGN_COURSES: "/contact-form/assign-courses",
         },
         AUTH: {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+            LIST_STUDENT_REGISTRATION_REQUESTS: "/auth/get-student-registration-requests",
             APPROVE_STUDENT_REGISTRATION_REQUEST: "/auth/approve-student-registration-request",
             TOGGLE_BLOCK_STUDENT: "/auth/toggle-block-student",
             TOGGLE_SUSPEND_STUDENT: "/auth/toggle-suspend-student",
@@ -48,6 +52,8 @@ export const CONFIG = {
         },
         ADMIN: {
             DASHBOARD: "/admin/dashboard",
+            REGISTRATION_REQUESTS: "/admin/registration-requests",
+            CONTACT_SUBMISSIONS: "/admin/contact-submissions",
             USERS: "/admin/users",
             TICKETS: "/admin/tickets",
             NEWS: "/admin/news",

@@ -1,45 +1,53 @@
 "use client";
 import { IUser, IUserContextProvider, IUserProfileInfo } from "@/utils/interfaces";
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { apiService } from "../services";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@apollo/client/react";
+import { GET_USER_PROFILE_INFO } from "@/lib/graphql";
 import { LoggerLevel } from "@/utils/enums/logger";
 import { logger } from "../helpers";
 import { CONFIG } from "@/utils/constants";
 
-
-
 const UserContext = createContext<IUserContextProvider | null>(null);
 
-export const UserProvider = ({ children }: { children: ReactNode }) => {
-    const [userProfileInfo, setUserProfileInfo] = useState<IUserProfileInfo | null>(null);
-    const [userData, setUserData] = useState<IUser | null>(null);
+interface UserProfileQueryResult {
+    userProfileInfo?: IUserProfileInfo;
+}
 
-    const handleGetUserProfileInfo = async () => {
-        const response = await apiService.getUserProfileInfo<IUserProfileInfo>();
-        if (response.success && response.data) {
-            return response.data;
-        } else {
-            return null;
-        }
-    }
+export const UserProvider = ({ children }: { children: ReactNode }) => {
+    const [userData] = useState<IUser | null>(null);
+
+    const { data, loading, error } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO);
+
+    const userProfileInfo = useMemo(() => {
+        const raw = data?.userProfileInfo;
+        if (!raw) return null;
+        return { id: raw.id, email: raw.email, role: raw.role, status: raw.status };
+    }, [data?.userProfileInfo]);
+
+    const profileLoaded = !loading;
 
     useEffect(() => {
-        handleGetUserProfileInfo().then((userProfileInfoData) => {
-            if (userProfileInfoData) {
-                localStorage.setItem(CONFIG.STORAGE_KEYS.USER.PROFILE, JSON.stringify(userProfileInfoData));
-                setUserProfileInfo(userProfileInfoData);
-            }
-        }).catch((error) => {
+        if (userProfileInfo) {
+            localStorage.setItem(CONFIG.STORAGE_KEYS.USER.PROFILE, JSON.stringify(userProfileInfo));
+        }
+    }, [userProfileInfo]);
+
+    useEffect(() => {
+        if (error) {
             logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error), showToast: true });
-            setUserProfileInfo(null);
-        });
-    }, []);
+        }
+    }, [error]);
+
+    const value = useMemo(
+        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, profileLoaded }),
+        [userProfileInfo, userData, profileLoaded, error]
+    );
 
     return (
-        <UserContext.Provider value={{ userProfileInfo, userData }}>
+        <UserContext.Provider value={value}>
             {children}
         </UserContext.Provider>
-    )
+    );
 }
 
 export const useUser = () => {
