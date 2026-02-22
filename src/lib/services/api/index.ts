@@ -78,6 +78,12 @@ class ApiService {
         return handleApiResponse<IContactFormSubmission[]>(response);
     }
 
+    getStudentRegistrationRequests = async (): Promise<ApiResponse<IUser[]>> => {
+        const path = CONFIG.BACKEND_PATHS.AUTH.GET_STUDENT_REGISTRATION_REQUESTS;
+        const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.GET } });
+        return handleApiResponse<IUser[]>(response);
+    }
+
     sendEmailToContact = async (submissionId: string, subject: string, body: string): Promise<ApiResponse<unknown>> => {
         const path = CONFIG.BACKEND_PATHS.FORM.SEND_EMAIL;
         const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.POST, body: JSON.stringify({ submissionId, subject, body }), headers: { "Content-Type": "application/json" } } });

@@ -8,7 +8,7 @@ import {
     SettingsIcon,
 } from "lucide-react"
 
-import { cn } from "@/lib/helpers"
+import { cn, logger } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
@@ -18,13 +18,24 @@ import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { apiService } from "@/lib/services"
+import { toast } from "react-hot-toast"
+import { LoggerLevel } from "@/utils/enums"
 
 export const AdminAppbar = ({ className }: { className?: string }) => {
     const router = useRouter()
 
-    const handleLogout = useCallback(() => {
-        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
-        router.push(CONFIG.ROUTES.PUBLIC.HOME)
+    const handleLogout = useCallback(async () => {
+        try {
+            const response = await apiService.logout()
+            if (response.success) {
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
+                router.replace(CONFIG.ROUTES.PUBLIC.HOME)
+            }
+        } catch (error) {
+            logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error) })
+            toast.error("Failed to logout")
+        }
     }, [router])
     return (
         <header
