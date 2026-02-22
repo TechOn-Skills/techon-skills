@@ -25,7 +25,7 @@ export const CONFIG = {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
             LOGOUT: "/auth/logout",
-            LIST_STUDENT_REGISTRATION_REQUESTS: "/auth/get-student-registration-requests",
+            GET_STUDENT_REGISTRATION_REQUESTS: "/auth/get-student-registration-requests",
             APPROVE_STUDENT_REGISTRATION_REQUEST: "/auth/approve-student-registration-request",
             TOGGLE_BLOCK_STUDENT: "/auth/toggle-block-student",
             TOGGLE_SUSPEND_STUDENT: "/auth/toggle-suspend-student",

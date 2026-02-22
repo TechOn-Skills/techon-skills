@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import {
   SearchIcon,
   MailIcon,
@@ -17,7 +17,6 @@ import { apiService } from "@/lib/services"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
-import type { IStudentRegistrationRequest } from "@/utils/interfaces/registration-request"
 import { IUser } from "@/utils/interfaces"
 
 export const AdminRegistrationRequestsScreen = () => {
@@ -26,23 +25,25 @@ export const AdminRegistrationRequestsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [approvingId, setApprovingId] = useState<string | null>(null)
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true)
-    const response = await apiService.getStudentRegistrationRequests()
-    setLoading(false)
-    if (response.success && response.data) {
-      setRequests(response.data)
-    } else {
-      setRequests([])
-      if (!response.success) {
-        toast.error(getApiDisplayMessage(response, "Failed to load registration requests."))
-      }
-    }
-  }, [])
+
 
   useEffect(() => {
+    const fetchRequests = async () => {
+      setLoading(true)
+      const studentRegistrationRequests = await apiService.getStudentRegistrationRequests()
+      if (studentRegistrationRequests?.data?.length && studentRegistrationRequests.data.length > 0) {
+        setRequests(studentRegistrationRequests.data)
+      } else {
+        setRequests([])
+        if (!studentRegistrationRequests.success) {
+          toast.error(getApiDisplayMessage(studentRegistrationRequests, "Failed to load registration requests."))
+        }
+      }
+      setLoading(false)
+    }
+
     fetchRequests()
-  }, [fetchRequests])
+  }, [])
 
   const handleApprove = async (id: string) => {
     setApprovingId(id)

@@ -6,6 +6,7 @@ import { GET_USER_PROFILE_INFO } from "@/lib/graphql";
 import { LoggerLevel } from "@/utils/enums/logger";
 import { logger } from "../helpers";
 import { CONFIG } from "@/utils/constants";
+import { usePathname } from "next/navigation";
 
 const UserContext = createContext<IUserContextProvider | null>(null);
 
@@ -16,7 +17,11 @@ interface UserProfileQueryResult {
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [userData] = useState<IUser | null>(null);
 
-    const { data, loading, error } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO);
+    const pathname = usePathname();
+    const { data, loading, error, refetch: refetchUserProfileInfo } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO, {
+        fetchPolicy: "network-only",
+        skip: !pathname || pathname === CONFIG.ROUTES.AUTH.VERIFY_MAGIC_LINK,
+    });
 
     const userProfileInfo = useMemo(() => {
         const raw = data?.userProfileInfo;
@@ -37,6 +42,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error), showToast: true });
         }
     }, [error]);
+    useEffect(() => {
+        if (pathname && pathname !== CONFIG.ROUTES.AUTH.VERIFY_MAGIC_LINK) { refetchUserProfileInfo() }
+    }, [pathname, refetchUserProfileInfo])
 
     const value = useMemo(
         () => ({ userProfileInfo: error ? null : userProfileInfo, userData, profileLoaded }),
