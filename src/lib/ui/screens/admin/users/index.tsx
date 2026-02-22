@@ -40,8 +40,8 @@ export const AdminUsersScreen = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
 
-  const { data, loading, error } = useQuery<{ users: GraphQLUser[] }>(GET_USERS)
-  const users = useMemo(() => data?.users ?? [], [data?.users])
+  const { data, loading, error } = useQuery<{ getUsers: GraphQLUser[] }>(GET_USERS)
+  const users = useMemo(() => data?.getUsers ?? [], [data?.getUsers])
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
