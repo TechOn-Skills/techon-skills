@@ -21,11 +21,11 @@ export const WebappFooter = ({ className }: { className?: string }) => {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 w-72">
             <div className="text-sm font-semibold">Contact</div>
             <div className="text-(--text-on-dark)/75 text-sm">Phone: +923257720992</div>
             <div className="text-(--text-on-dark)/75 text-sm">Email: info@cloudrika.com</div>
-            <div className="text-(--text-on-dark)/75 text-sm">Address: Lahore Punjab Pakistan</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan</div>
           </div>
 
           <div className="space-y-2">

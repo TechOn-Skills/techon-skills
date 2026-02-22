@@ -90,7 +90,7 @@ export const PublicContactScreen = () => {
                 {[
                   "Phone: +923257720992",
                   "Email: info@cloudrika.com",
-                  "Address: Lahore Punjab Pakistan",
+                  "Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan",
                 ].map((t) => (
                   <div key={t} className="flex items-start gap-2">
                     <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
