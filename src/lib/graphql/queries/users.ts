@@ -2,14 +2,30 @@ import { gql } from "@apollo/client";
 
 export const GET_USERS = gql`
     query GetUsers {
-        users {
-            _id
+        getUsers {
+            id
             email
+            fullName
+            phoneNumber
+            profilePicture
             role
             status
+            isDeleted
             isBlocked
             isSuspended
-            isDeleted
+            enrolledCourses {
+                title 
+                slug
+            }
+            requestedCourses {
+                title 
+                slug
+            }
+            payments {
+                amount
+            }
+            createdAt
+            updatedAt
         }
     }
 `;
