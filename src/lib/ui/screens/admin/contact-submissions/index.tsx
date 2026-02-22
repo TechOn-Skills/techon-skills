@@ -11,6 +11,8 @@ import {
   SendIcon,
   BookOpenIcon,
   PhoneIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -33,21 +35,27 @@ import type { IContactFormSubmission } from "@/utils/interfaces/contact-form"
 import type { IContactFormCourse } from "@/utils/interfaces/courses"
 import { SheetContentSide } from "@/utils/enums"
 
+const PAGE_SIZE = 10
+
 export const AdminContactSubmissionsScreen = () => {
   const [submissions, setSubmissions] = useState<IContactFormSubmission[]>([])
+  const [total, setTotal] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [sendEmailOpen, setSendEmailOpen] = useState<IContactFormSubmission | null>(null)
   const [assignCoursesOpen, setAssignCoursesOpen] = useState<IContactFormSubmission | null>(null)
 
-  const fetchSubmissions = useCallback(async () => {
+  const fetchSubmissions = useCallback(async (pageNum: number) => {
     setLoading(true)
-    const response = await apiService.getContactFormSubmissions()
+    const response = await apiService.getContactFormSubmissions(pageNum, PAGE_SIZE)
     setLoading(false)
     if (response.success && response.data) {
       setSubmissions(response.data)
+      setTotal(response.total)
     } else {
       setSubmissions([])
+      if (response.total !== undefined) setTotal(response.total)
       if (!response.success) {
         toast.error(getApiDisplayMessage(response, "Failed to load contact submissions."))
       }
@@ -55,8 +63,8 @@ export const AdminContactSubmissionsScreen = () => {
   }, [])
 
   useEffect(() => {
-    fetchSubmissions()
-  }, [fetchSubmissions])
+    fetchSubmissions(page)
+  }, [fetchSubmissions, page])
 
   const filteredSubmissions = submissions.filter(
     (s) =>
@@ -82,10 +90,13 @@ export const AdminContactSubmissionsScreen = () => {
         <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.20),rgba(255,138,61,0.10),transparent_70%)] p-px">
           <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
             <CardContent className="p-6">
-              <div className="text-muted-foreground text-xs mb-1">Total submissions</div>
-              <div className="text-3xl font-semibold tracking-tight text-(--brand-primary)">
-                {loading ? "—" : submissions.length}
+              <div className="text-muted-foreground text-xs mb-1">
+                {total != null ? "Total submissions" : "Submissions on this page"}
               </div>
+              <div className="text-3xl font-semibold tracking-tight text-(--brand-primary)">
+                {loading ? "—" : total != null ? total : submissions.length}
+              </div>
+              <div className="text-muted-foreground text-xs mt-1">Page {page}{total != null ? ` of ${Math.ceil(total / PAGE_SIZE) || 1}` : ""}</div>
             </CardContent>
           </Card>
         </div>
@@ -110,7 +121,7 @@ export const AdminContactSubmissionsScreen = () => {
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
                 <Loader2Icon className="size-6 animate-spin" />
-                <span>Loading submissions...</span>
+                {page === 1 && <span>Loading submissions...</span>}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -210,6 +221,37 @@ export const AdminContactSubmissionsScreen = () => {
               </div>
             )}
           </CardContent>
+          {!loading && (submissions.length > 0 || page > 1) && (
+            <div className="border-border flex items-center justify-between border-t px-4 py-3">
+              <div className="text-muted-foreground text-sm">
+                {total != null
+                  ? `Page ${page} of ${Math.ceil(total / PAGE_SIZE) || 1}`
+                  : `Page ${page}`}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeftIcon className="size-4" />
+                  <span className="ml-1">Previous</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={total != null ? page * PAGE_SIZE >= total : submissions.length < PAGE_SIZE}
+                >
+                  <span className="mr-1">Next</span>
+                  <ChevronRightIcon className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -241,7 +283,7 @@ export const AdminContactSubmissionsScreen = () => {
         onOpenChange={(open) => !open && setAssignCoursesOpen(null)}
         onSuccess={() => {
           setAssignCoursesOpen(null)
-          fetchSubmissions()
+          fetchSubmissions(page)
         }}
       />
     </div>
