@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   SearchIcon,
   MailIcon,
@@ -9,6 +9,8 @@ import {
   CheckCircle2Icon,
   Loader2Icon,
   UserPlusIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -19,31 +21,35 @@ import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { IUser } from "@/utils/interfaces"
 
+const PAGE_SIZE = 10
+
 export const AdminRegistrationRequestsScreen = () => {
   const [requests, setRequests] = useState<IUser[]>([])
+  const [total, setTotal] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [approvingId, setApprovingId] = useState<string | null>(null)
 
-
+  const fetchRequests = useCallback(async (pageNum: number) => {
+    setLoading(true)
+    const studentRegistrationRequests = await apiService.getStudentRegistrationRequests(pageNum, PAGE_SIZE)
+    if (studentRegistrationRequests?.data?.length !== undefined) {
+      setRequests(studentRegistrationRequests.data ?? [])
+      setTotal(studentRegistrationRequests.total)
+    } else {
+      setRequests([])
+      if (studentRegistrationRequests?.total !== undefined) setTotal(studentRegistrationRequests.total)
+    }
+    if (!studentRegistrationRequests?.success) {
+      toast.error(getApiDisplayMessage(studentRegistrationRequests!, "Failed to load registration requests."))
+    }
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true)
-      const studentRegistrationRequests = await apiService.getStudentRegistrationRequests()
-      if (studentRegistrationRequests?.data?.length && studentRegistrationRequests.data.length > 0) {
-        setRequests(studentRegistrationRequests.data)
-      } else {
-        setRequests([])
-        if (!studentRegistrationRequests.success) {
-          toast.error(getApiDisplayMessage(studentRegistrationRequests, "Failed to load registration requests."))
-        }
-      }
-      setLoading(false)
-    }
-
-    fetchRequests()
-  }, [])
+    queueMicrotask(() => fetchRequests(page))
+  }, [fetchRequests, page])
 
   const handleApprove = async (id: string) => {
     setApprovingId(id)
@@ -53,7 +59,7 @@ export const AdminRegistrationRequestsScreen = () => {
     setApprovingId(null)
     if (response.success) {
       toast.success(getApiDisplayMessage(response, "Registration approved. Student can now sign in."))
-      setRequests((prev) => prev.filter((r) => r._id !== id))
+      fetchRequests(page)
     } else {
       toast.error(getApiDisplayMessage(response, "Failed to approve registration. Please try again."))
     }
@@ -81,10 +87,13 @@ export const AdminRegistrationRequestsScreen = () => {
         <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.20),rgba(255,138,61,0.10),transparent_70%)] p-px">
           <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
             <CardContent className="p-6">
-              <div className="text-muted-foreground text-xs mb-1">Pending requests</div>
-              <div className="text-3xl font-semibold tracking-tight text-(--brand-primary)">
-                {loading ? "—" : requests.length}
+              <div className="text-muted-foreground text-xs mb-1">
+                {total != null ? "Total pending requests" : "Requests on this page"}
               </div>
+              <div className="text-3xl font-semibold tracking-tight text-(--brand-primary)">
+                {loading ? "—" : total != null ? total : requests.length}
+              </div>
+              <div className="text-muted-foreground text-xs mt-1">Page {page}{total != null ? ` of ${Math.ceil(total / PAGE_SIZE) || 1}` : ""}</div>
             </CardContent>
           </Card>
         </div>
@@ -109,7 +118,7 @@ export const AdminRegistrationRequestsScreen = () => {
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
                 <Loader2Icon className="size-6 animate-spin" />
-                <span>Loading registration requests...</span>
+                {page === 1 && <span>Loading registration requests...</span>}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -178,6 +187,37 @@ export const AdminRegistrationRequestsScreen = () => {
               </div>
             )}
           </CardContent>
+          {!loading && (requests.length > 0 || page > 1) && (
+            <div className="border-border flex items-center justify-between border-t px-4 py-3">
+              <div className="text-muted-foreground text-sm">
+                {total != null
+                  ? `Page ${page} of ${Math.ceil(total / PAGE_SIZE) || 1}`
+                  : `Page ${page}`}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeftIcon className="size-4" />
+                  <span className="ml-1">Previous</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={total != null ? page * PAGE_SIZE >= total : requests.length < PAGE_SIZE}
+                >
+                  <span className="mr-1">Next</span>
+                  <ChevronRightIcon className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 

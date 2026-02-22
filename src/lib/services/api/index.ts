@@ -72,14 +72,14 @@ class ApiService {
         return handleApiResponse<T>(response);
     }
 
-    getContactFormSubmissions = async (): Promise<ApiResponse<IContactFormSubmission[]>> => {
-        const path = CONFIG.BACKEND_PATHS.FORM.GET_CONTACT_SUBMISSIONS;
+    getContactFormSubmissions = async (page: number, limit: number): Promise<ApiResponse<IContactFormSubmission[]>> => {
+        const path = `${CONFIG.BACKEND_PATHS.FORM.GET_CONTACT_SUBMISSIONS}?page=${page}&limit=${limit}`;
         const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.GET } });
         return handleApiResponse<IContactFormSubmission[]>(response);
     }
 
-    getStudentRegistrationRequests = async (): Promise<ApiResponse<IUser[]>> => {
-        const path = CONFIG.BACKEND_PATHS.AUTH.GET_STUDENT_REGISTRATION_REQUESTS;
+    getStudentRegistrationRequests = async (page: number, limit: number): Promise<ApiResponse<IUser[]>> => {
+        const path = `${CONFIG.BACKEND_PATHS.AUTH.GET_STUDENT_REGISTRATION_REQUESTS}?page=${page}&limit=${limit}`;
         const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.GET } });
         return handleApiResponse<IUser[]>(response);
     }
