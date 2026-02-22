@@ -657,7 +657,7 @@ export const LandingPageScreen = () => {
                     {[
                       { k: "Phone", v: "+923257720992" },
                       { k: "Email", v: "info@cloudrika.com" },
-                      { k: "Address", v: "Lahore Punjab Pakistan" },
+                      { k: "Address", v: "8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan" },
                     ].map((r) => (
                       <div key={r.k} className="rounded-2xl border bg-background/40 p-4">
                         <div className="text-muted-foreground text-xs">{r.k}</div>
