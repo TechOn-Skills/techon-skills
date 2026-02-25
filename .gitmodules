@@ -1,0 +1,3 @@
+[submodule "courses/software-engineering"]
+	path = courses/software-engineering
+	url = https://github.com/AhmadRazaKhokhar1/software-engineering-1-year.git
