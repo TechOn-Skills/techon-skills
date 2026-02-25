@@ -1,6 +1,6 @@
-import { fetchURL, handleApiResponse, logger } from "@/lib/helpers";
+import { fetchURL, handleApiResponse } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
-import { FetchMethod, LoggerLevel } from "@/utils/enums";
+import { FetchMethod } from "@/utils/enums";
 import { ApiResponse, IContactFormSubmission, IUser, IUserProfileInfo } from "@/utils/interfaces";
 
 class ApiService {
