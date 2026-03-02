@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from "@/utils/enums/user";
+import { UserRole, UserStatus, SelectedCourse } from "@/utils/enums";
 
 export interface IUserProfileInfo {
     id: string;
@@ -20,11 +20,11 @@ export interface IUser {
     isVerified: boolean;
     createdAt: Date;
     updatedAt: Date;
+    enrolledCourses: SelectedCourse[];
 }
 
 export interface IUserContextProvider {
     userProfileInfo: IUserProfileInfo | null;
     userData: IUser | null;
-    /** True after the first attempt to load user profile (success or failure). */
     profileLoaded: boolean;
 }

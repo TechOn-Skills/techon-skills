@@ -34,7 +34,7 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
 
   if (!profileLoaded) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
       </div>
     );
@@ -43,7 +43,7 @@ export function AdminRouteGuard({ children }: { children: ReactNode }) {
   const role = userProfileInfo?.role;
   if (!userProfileInfo || role === UserRole.STUDENT || (role && !ADMIN_ROLES.includes(role))) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
       </div>
     );

@@ -109,69 +109,69 @@ export const StudentCoursesScreen = () => {
                             className="group rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.30),rgba(255,138,61,0.14),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl"
                         >
                             <Link href={`/courses/${c.slug}`} className="block">
-                            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden animate-in fade-in fade-out duration-300 cursor-pointer h-full">
-                                <div className="relative h-1.5 w-full bg-[linear-gradient(to_right,rgba(70,208,255,0.75),rgba(255,138,61,0.6))] opacity-70 transition-opacity group-hover:opacity-100" />
-                                <CardHeader className="space-y-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <CardTitle className="text-xl">{c.title}</CardTitle>
-                                            <CardDescription className="text-sm leading-6">
-                                                {c.subtitle}
-                                            </CardDescription>
-                                            <div className="text-muted-foreground mt-2 text-xs">
-                                                Duration: <span className="font-semibold">{formatCourseDuration(c)}</span> • {formatCoursePrice(c)}
-                                            </div>
-                                        </div>
-                                        <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
-                                            <SparklesIcon className="size-3.5" />
-                                            Best value
-                                        </span>
-                                    </div>
-
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                        {c.technologiesSection.technologies.slice(0, 4).map((t) => (
-                                            <div key={t.label} className="flex items-start gap-2 rounded-2xl border bg-background/40 p-3">
-                                                <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
-                                                <div className="text-sm">
-                                                    <div className="font-semibold">{t.label}</div>
-                                                    <div className="text-muted-foreground text-xs">Real projects</div>
+                                <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden animate-in fade-in fade-out duration-300 cursor-pointer h-full">
+                                    <div className="relative h-1.5 w-full bg-[linear-gradient(to_right,rgba(70,208,255,0.75),rgba(255,138,61,0.6))] opacity-70 transition-opacity group-hover:opacity-100" />
+                                    <CardHeader className="space-y-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <CardTitle className="text-xl">{c.title}</CardTitle>
+                                                <CardDescription className="text-sm leading-6">
+                                                    {c.subtitle}
+                                                </CardDescription>
+                                                <div className="text-muted-foreground mt-2 text-xs">
+                                                    Duration: <span className="font-semibold">{formatCourseDuration(c)}</span> • {formatCoursePrice(c)}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="text-foreground shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-sm font-medium">
-                                        View details
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="brand-secondary"
-                                            shape="pill"
-                                            onClick={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                handleEnroll()
-                                            }}
-                                        >
-                                            Enroll now
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            shape="pill"
-                                            onClick={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
-                                            }}
-                                        >
-                                            Contact
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                            <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
+                                                <SparklesIcon className="size-3.5" />
+                                                Best value
+                                            </span>
+                                        </div>
+
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            {c.technologiesSection.technologies.slice(0, 4).map((t) => (
+                                                <div key={t.label} className="flex items-start gap-2 rounded-2xl border bg-background/40 p-3">
+                                                    <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
+                                                    <div className="text-sm">
+                                                        <div className="font-semibold">{t.label}</div>
+                                                        <div className="text-muted-foreground text-xs">Real projects</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-foreground shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-sm font-medium">
+                                            View details
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="brand-secondary"
+                                                shape="pill"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    handleEnroll()
+                                                }}
+                                            >
+                                                Enroll now
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                shape="pill"
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
+                                                }}
+                                            >
+                                                Contact
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </Link>
                         </div>
                     ))}

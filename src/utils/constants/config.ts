@@ -66,6 +66,7 @@ export const CONFIG = {
         STUDENT: {
             HOME: "/student",
             DASHBOARD: "/student/dashboard",
+            MY_ENROLLED_COURSES: "/student/my-enrolled-courses",
             PROFILE: "/student/profile",
             SETTINGS: "/student/settings",
             ASSIGNMENTS: "/student/assignments",
