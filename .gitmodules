@@ -1,0 +1,3 @@
+[submodule "src/lib/courses"]
+	path = src/lib/courses
+	url = https://github.com/AhmadRazaKhokhar1/Web-and-mobile-app-development-courses.git
