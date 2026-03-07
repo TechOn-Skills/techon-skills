@@ -1,23 +1,36 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { CalendarIcon, ClockIcon, PlayIcon, SparklesIcon, TrophyIcon, TargetIcon, ZapIcon } from "lucide-react"
+import { useQuery } from "@apollo/client/react"
+import { CalendarIcon, ClockIcon, Loader2Icon, PlayIcon, SparklesIcon, TrophyIcon, TargetIcon, ZapIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
-import type { ILecture } from "@/utils/interfaces"
-import { LECTURES } from "@/utils/constants"
+import { GET_UPCOMING_LECTURES } from "@/lib/graphql"
+
+type LectureApi = { id: string; courseName?: string | null; title: string; meetUrl?: string | null; durationMins: number; startAt: string }
 
 export const StudentMyLecturesScreen = () => {
   const [now, setNow] = useState<number>(() => Date.now())
+  const { data, loading, error } = useQuery<{ getUpcomingLectures: LectureApi[] }>(GET_UPCOMING_LECTURES, { variables: { limit: 3 } })
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(t)
   }, [now])
 
-  const upcoming = useMemo(() => LECTURES.slice(0, 3), [])
+  const upcoming = useMemo(() => {
+    const list = data?.getUpcomingLectures ?? []
+    return list.map((l) => ({
+      id: l.id,
+      course: l.courseName ?? "Course",
+      title: l.title,
+      meetUrl: l.meetUrl ?? "#",
+      durationMins: l.durationMins ?? 60,
+      startAt: l.startAt,
+    }))
+  }, [data?.getUpcomingLectures])
 
   const toCountdown = (startAtMs: number) => {
     const diff = Math.max(0, startAtMs - now)
@@ -81,9 +94,23 @@ export const StudentMyLecturesScreen = () => {
             <h2 className="text-xl font-semibold">Upcoming Lectures</h2>
             <span className="text-sm text-muted-foreground">Next 3 classes</span>
           </div>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+              <Loader2Icon className="size-6 animate-spin" />
+              <span>Loading lectures...</span>
+            </div>
+          ) : error ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <p className="text-destructive">Failed to load lectures. Please try again.</p>
+            </div>
+          ) : upcoming.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground rounded-3xl border border-dashed">
+              <p>No upcoming lectures scheduled.</p>
+            </div>
+          ) : (
           <div className="grid gap-6 lg:grid-cols-3">
             {upcoming.map((l, idx) => {
-              const startAtMs = now + l.startOffsetSeconds * 1000
+              const startAtMs = new Date(l.startAt).getTime()
               const c = toCountdown(startAtMs)
               const startsAt = new Date(startAtMs)
               return (
@@ -98,7 +125,7 @@ export const StudentMyLecturesScreen = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <CardTitle className="text-lg">{l.title}</CardTitle>
-                          <CardDescription className="text-sm">{l.course}</CardDescription>
+                          <CardDescription className="text-sm">{l.course ?? "Course"}</CardDescription>
                         </div>
                         <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
                           <SparklesIcon className="size-3.5" />
@@ -131,7 +158,7 @@ export const StudentMyLecturesScreen = () => {
                       </div>
 
                       <Button asChild variant="brand-secondary" size="lg" shape="pill" className="w-full">
-                        <a href={l.meetUrl} target="_blank" rel="noreferrer">
+                        <a href={l.meetUrl ?? "#"} target="_blank" rel="noreferrer">
                           <PlayIcon className="size-4" />
                           Join live class
                         </a>
@@ -142,6 +169,7 @@ export const StudentMyLecturesScreen = () => {
               )
             })}
           </div>
+          )}
         </div>
 
         {/* Quick Actions */}

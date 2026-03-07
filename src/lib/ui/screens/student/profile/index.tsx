@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useQuery } from "@apollo/client/react"
 import {
   AwardIcon,
   BriefcaseIcon,
@@ -9,6 +10,7 @@ import {
   GithubIcon,
   GlobeIcon,
   LinkedinIcon,
+  Loader2Icon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
@@ -23,21 +25,40 @@ import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn } from "@/lib/helpers"
+import { GET_USER_PROFILE_INFO } from "@/lib/graphql"
+
+type ProfileApi = { id: string; email: string; fullName?: string | null; phoneNumber?: string | null; profilePicture?: string | null; createdAt?: string }
 
 export const StudentProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false)
+  const { data, loading, error } = useQuery<{ userProfileInfo: ProfileApi | null }>(GET_USER_PROFILE_INFO)
+  const apiProfile = data?.userProfileInfo
+
+  const hasSynced = useRef(false)
   const [profile, setProfile] = useState({
-    name: "Alex Johnson",
-    email: "alex.johnson@example.com",
-    phone: "+92 300 1234567",
+    name: "",
+    email: "",
+    phone: "",
     location: "Lahore, Pakistan",
     bio: "Passionate about web development and creating impactful digital experiences. Currently learning full-stack development to build my dream career in tech.",
-    github: "alexjohnson",
-    linkedin: "alexjohnson",
-    portfolio: "alexjohnson.dev",
-    enrolledDate: "January 2026",
-    currentCourse: "Full-Stack Web Development",
+    github: "",
+    linkedin: "",
+    portfolio: "",
+    enrolledDate: "—",
+    currentCourse: "—",
   })
+
+  useEffect(() => {
+    if (!apiProfile || hasSynced.current) return
+    hasSynced.current = true
+    setProfile((prev) => ({
+      ...prev,
+      name: apiProfile.fullName ?? prev.name,
+      email: apiProfile.email ?? prev.email,
+      phone: apiProfile.phoneNumber ?? prev.phone,
+      enrolledDate: apiProfile.createdAt ? new Date(apiProfile.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : prev.enrolledDate,
+    }))
+  }, [apiProfile])
 
   // Calculate profile completion
   const profileCompletion = (() => {
@@ -62,6 +83,22 @@ export const StudentProfileScreen = () => {
     { id: 4, title: "5 Streak Master", icon: AwardIcon, date: "Locked", color: "text-gray-400", locked: true },
     { id: 5, title: "10 Projects Milestone", icon: BriefcaseIcon, date: "Locked", color: "text-gray-400", locked: true },
   ]
+
+  if (loading) {
+    return (
+      <div className="w-full py-10 flex items-center justify-center gap-2 text-muted-foreground">
+        <Loader2Icon className="size-6 animate-spin" />
+        <span>Loading profile...</span>
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="w-full py-10 text-center text-muted-foreground">
+        <p className="text-destructive">Failed to load profile. Please try again.</p>
+      </div>
+    )
+  }
 
   const stats = [
     { label: "Assignments Completed", value: "12/15", icon: BriefcaseIcon, percentage: 80 },

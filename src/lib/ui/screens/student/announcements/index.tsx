@@ -1,23 +1,25 @@
 "use client"
 
 import { useState } from "react"
-import { BookmarkIcon, ChevronDownIcon, HeartIcon, MegaphoneIcon, SparklesIcon, ThumbsUpIcon } from "lucide-react"
+import { useQuery } from "@apollo/client/react"
+import { BookmarkIcon, ChevronDownIcon, HeartIcon, Loader2Icon, MegaphoneIcon, SparklesIcon, ThumbsUpIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
+import { GET_ANNOUNCEMENTS } from "@/lib/graphql"
 import type { IAnnouncement } from "@/utils/interfaces"
-import { ANNOUNCEMENTS, ANNOUNCEMENT_CATEGORY_CONFIG } from "@/utils/constants"
+import { ANNOUNCEMENT_CATEGORY_CONFIG } from "@/utils/constants"
+
+type AnnouncementApi = { id: string; title: string; content: string; date: string; isNew: boolean; category: IAnnouncement["category"] }
 
 export const StudentAnnouncementsScreen = () => {
+  const { data, loading, error } = useQuery<{ getAnnouncements: AnnouncementApi[] }>(GET_ANNOUNCEMENTS)
+  const announcements = data?.getAnnouncements ?? []
+
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set())
-  const [reactions, setReactions] = useState<Record<string, { likes: number; hearts: number }>>({
-    "a-1": { likes: 24, hearts: 18 },
-    "a-2": { likes: 32, hearts: 15 },
-    "a-3": { likes: 19, hearts: 22 },
-    "a-4": { likes: 28, hearts: 31 },
-  })
+  const [reactions, setReactions] = useState<Record<string, { likes: number; hearts: number }>>({})
   const [userReactions, setUserReactions] = useState<Record<string, "like" | "heart" | null>>({})
 
   const toggleExpanded = (id: string) => {
@@ -66,7 +68,23 @@ export const StudentAnnouncementsScreen = () => {
     })
   }
 
-  const newCount = ANNOUNCEMENTS.filter(a => a.isNew).length
+  const newCount = announcements.filter(a => a.isNew).length
+
+  if (loading) {
+    return (
+      <div className="w-full py-10 flex items-center justify-center gap-2 text-muted-foreground">
+        <Loader2Icon className="size-6 animate-spin" />
+        <span>Loading announcements...</span>
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="w-full py-10 text-center text-muted-foreground">
+        <p className="text-destructive">Failed to load announcements. Please try again.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
@@ -88,11 +106,11 @@ export const StudentAnnouncementsScreen = () => {
       </div>
 
       <div className="space-y-4">
-        {ANNOUNCEMENTS.map((a, idx) => {
+        {announcements.map((a, idx) => {
           const isExpanded = expanded.has(a.id)
           const isBookmarked = bookmarked.has(a.id)
           const userReaction = userReactions[a.id]
-          const config = ANNOUNCEMENT_CATEGORY_CONFIG[a.category]
+          const config = ANNOUNCEMENT_CATEGORY_CONFIG[a.category] ?? { emoji: "📢", color: "text-blue-600 dark:text-blue-400" }
 
           return (
             <div
@@ -167,7 +185,7 @@ export const StudentAnnouncementsScreen = () => {
                             )}
                           >
                             <ThumbsUpIcon className={cn("size-4", userReaction === "like" && "fill-current")} />
-                            <span className="text-xs font-semibold">{reactions[a.id]?.likes || 0}</span>
+                            <span className="text-xs font-semibold">{reactions[a.id]?.likes ?? 0}</span>
                           </Button>
                           <Button
                             type="button"
@@ -181,7 +199,7 @@ export const StudentAnnouncementsScreen = () => {
                             )}
                           >
                             <HeartIcon className={cn("size-4", userReaction === "heart" && "fill-current")} />
-                            <span className="text-xs font-semibold">{reactions[a.id]?.hearts || 0}</span>
+                            <span className="text-xs font-semibold">{reactions[a.id]?.hearts ?? 0}</span>
                           </Button>
                         </div>
                         <div className="text-xs text-muted-foreground">

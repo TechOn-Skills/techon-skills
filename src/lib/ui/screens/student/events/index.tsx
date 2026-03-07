@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useQuery, useMutation } from "@apollo/client/react"
 import {
   CalendarIcon,
   ClockIcon,
+  Loader2Icon,
   MapPinIcon,
   SparklesIcon,
   TrophyIcon,
@@ -12,32 +14,32 @@ import {
   FilterIcon,
   CheckCircle2Icon
 } from "lucide-react"
+import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
+import { GET_EVENTS, REGISTER_FOR_EVENT, UNREGISTER_FROM_EVENT } from "@/lib/graphql"
 import type { IEvent } from "@/utils/interfaces"
-import { DEMO_EVENTS, EVENT_TYPE_CONFIG } from "@/utils/constants"
+import { EVENT_TYPE_CONFIG } from "@/utils/constants"
+
+type EventApi = { id: string; title: string; description: string; type: IEvent["type"]; date: string; time: string; duration: string; location: string; isOnline: boolean; totalSpots: number; spotsLeft: number; isRegistered: boolean; tags: string[]; instructor?: string | null }
 
 export const StudentEventsScreen = () => {
   const [selectedFilter, setSelectedFilter] = useState<"all" | IEvent["type"]>("all")
-  const [registrations, setRegistrations] = useState<Set<string>>(new Set(DEMO_EVENTS.filter(e => e.isRegistered).map(e => e.id)))
+  const { data, loading, error, refetch } = useQuery<{ getEvents: EventApi[] }>(GET_EVENTS)
+  const [registerForEvent, { loading: registering }] = useMutation(REGISTER_FOR_EVENT, { onCompleted: () => { refetch(); toast.success("Registered for event"); }, onError: (e) => toast.error(e.message) })
+  const [unregisterFromEvent, { loading: unregistering }] = useMutation(UNREGISTER_FROM_EVENT, { onCompleted: () => { refetch(); toast.success("Registration cancelled"); }, onError: (e) => toast.error(e.message) })
 
+  const events = data?.getEvents ?? []
   const filteredEvents = useMemo(() => {
-    if (selectedFilter === "all") return DEMO_EVENTS
-    return DEMO_EVENTS.filter(e => e.type === selectedFilter)
-  }, [selectedFilter])
+    if (selectedFilter === "all") return events
+    return events.filter(e => e.type === selectedFilter)
+  }, [events, selectedFilter])
 
-  const handleRegister = (eventId: string) => {
-    setRegistrations(prev => {
-      const next = new Set(prev)
-      if (next.has(eventId)) {
-        next.delete(eventId)
-      } else {
-        next.add(eventId)
-      }
-      return next
-    })
+  const handleRegister = (eventId: string, isRegistered: boolean) => {
+    if (isRegistered) unregisterFromEvent({ variables: { eventId } })
+    else registerForEvent({ variables: { eventId } })
   }
 
   const filters = [
@@ -89,7 +91,7 @@ export const StudentEventsScreen = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-muted-foreground text-xs mb-1">Upcoming Events</div>
-                  <div className="text-3xl font-semibold tracking-tight">{DEMO_EVENTS.length}</div>
+                  <div className="text-3xl font-semibold tracking-tight">{events.length}</div>
                 </div>
                 <div className="bg-(--brand-primary) text-(--text-on-dark) size-12 rounded-2xl flex items-center justify-center">
                   <CalendarIcon className="size-6" />
@@ -105,7 +107,7 @@ export const StudentEventsScreen = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-muted-foreground text-xs mb-1">Your Registrations</div>
-                  <div className="text-3xl font-semibold tracking-tight">{registrations.size}</div>
+                  <div className="text-3xl font-semibold tracking-tight">{events.filter(e => e.isRegistered).length}</div>
                 </div>
                 <div className="bg-(--brand-primary) text-(--text-on-dark) size-12 rounded-2xl flex items-center justify-center">
                   <CheckCircle2Icon className="size-6" />
@@ -122,7 +124,7 @@ export const StudentEventsScreen = () => {
                 <div>
                   <div className="text-muted-foreground text-xs mb-1">Available Spots</div>
                   <div className="text-3xl font-semibold tracking-tight">
-                    {DEMO_EVENTS.reduce((sum, e) => sum + e.spotsLeft, 0)}
+                    {events.reduce((sum, e) => sum + e.spotsLeft, 0)}
                   </div>
                 </div>
                 <div className="bg-(--brand-primary) text-(--text-on-dark) size-12 rounded-2xl flex items-center justify-center">
@@ -135,11 +137,21 @@ export const StudentEventsScreen = () => {
       </div>
 
       {/* Events Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+          <Loader2Icon className="size-6 animate-spin" />
+          <span>Loading events...</span>
+        </div>
+      ) : error ? (
+        <div className="py-12 text-center text-muted-foreground">
+          <p className="text-destructive">Failed to load events. Please try again.</p>
+        </div>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-2">
         {filteredEvents.map((event, idx) => {
-          const isRegistered = registrations.has(event.id)
-          const typeConfig = EVENT_TYPE_CONFIG[event.type]
-          const spotsPercentage = (event.spotsLeft / event.totalSpots) * 100
+          const isRegistered = event.isRegistered
+          const typeConfig = EVENT_TYPE_CONFIG[event.type] ?? { label: event.type, color: "bg-gray-500/20 text-gray-600" }
+          const spotsPercentage = event.totalSpots > 0 ? (event.spotsLeft / event.totalSpots) * 100 : 0
 
           return (
             <div
@@ -172,7 +184,7 @@ export const StudentEventsScreen = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {event.tags.map((tag) => (
+                    {(event.tags ?? []).map((tag) => (
                       <span
                         key={tag}
                         className="text-xs bg-background/60 border rounded-full px-3 py-1 text-muted-foreground"
@@ -234,8 +246,8 @@ export const StudentEventsScreen = () => {
                     variant={isRegistered ? "outline" : "brand-secondary"}
                     shape="pill"
                     className="w-full"
-                    onClick={() => handleRegister(event.id)}
-                    disabled={event.spotsLeft === 0 && !isRegistered}
+                    onClick={() => handleRegister(event.id, isRegistered)}
+                    disabled={(event.spotsLeft === 0 && !isRegistered) || registering || unregistering}
                   >
                     {isRegistered ? (
                       <>
@@ -257,6 +269,7 @@ export const StudentEventsScreen = () => {
           )
         })}
       </div>
+      )}
 
       {/* Motivational Footer */}
       <div className="mt-10 rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px">

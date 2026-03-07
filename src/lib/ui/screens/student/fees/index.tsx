@@ -2,20 +2,23 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useMemo, useState } from "react"
-import { CheckCircle2Icon, CopyIcon, CreditCardIcon, UploadIcon, XIcon } from "lucide-react"
+import { useQuery } from "@apollo/client/react"
+import { CheckCircle2Icon, CopyIcon, CreditCardIcon, Loader2Icon, UploadIcon, XIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
+import { useUser } from "@/lib/providers/user"
+import { GET_BANKS, GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import type { IFeeEntry } from "@/utils/interfaces"
 import type { FeeStatus } from "@/utils/types"
-import { BANK_DETAILS, FEES_DATA } from "@/utils/constants"
 
 export const StudentFeesScreen = () => {
+  const { userProfileInfo } = useUser()
+  const userId = userProfileInfo?.id ?? ""
   const [open, setOpen] = useState(false)
   const [modalStep, setModalStep] = useState<"bank" | "upload">("bank")
   const [selectedFee, setSelectedFee] = useState<IFeeEntry | null>(null)
-
   const [storedStatus, setStoredStatus] = useState<Record<string, FeeStatus>>(() => {
     if (typeof window === "undefined") return {}
     try {
@@ -26,12 +29,36 @@ export const StudentFeesScreen = () => {
     }
   })
 
-  const rows = useMemo(() => {
-    return FEES_DATA.map((f) => ({
-      ...f,
-      status: storedStatus[f.id] ?? f.status,
-    }))
-  }, [storedStatus])
+  const { data: paymentsData, loading: paymentsLoading } = useQuery<{ getPaymentsByUser: Array<{ id: string; amount: number; paymentDate: string; paymentStatus: string; isPaid: boolean; courseDetails?: { installmentNumber: number } }> }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
+  const { data: banksData } = useQuery<{ getBanks: Array<{ id: string; name: string; accountNumber?: string | null; accountTitle?: string | null }> }>(GET_BANKS)
+
+  const bankDetails = useMemo(() => {
+    const banks = banksData?.getBanks ?? []
+    const first = banks[0]
+    if (!first) return { accountNumber: "", bankName: "", accountTitle: "" }
+    return {
+      accountNumber: first.accountNumber ?? "",
+      bankName: first.name,
+      accountTitle: first.accountTitle ?? "",
+    }
+  }, [banksData?.getBanks])
+
+  const rows = useMemo((): IFeeEntry[] => {
+    const payments = paymentsData?.getPaymentsByUser ?? []
+    if (payments.length === 0) return []
+    return payments.map((p) => {
+      const status: FeeStatus = p.isPaid ? "paid" : (storedStatus[p.id] ?? (p.paymentStatus === "PAID" ? "paid" : "pending"))
+      const inst = p.courseDetails?.installmentNumber ?? 0
+      const month = inst > 0 ? `Installment ${inst}` : new Date(p.paymentDate).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+      return {
+        id: p.id,
+        month,
+        amount: "PKR " + (p.amount?.toLocaleString() ?? "0"),
+        dueDate: p.paymentDate.split("T")[0] ?? p.paymentDate,
+        status,
+      }
+    })
+  }, [paymentsData?.getPaymentsByUser, storedStatus])
 
   const handlePayNow = (fee: IFeeEntry) => {
     setSelectedFee(fee)
@@ -69,6 +96,16 @@ export const StudentFeesScreen = () => {
         </p>
       </div>
 
+      {paymentsLoading ? (
+        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+          <Loader2Icon className="size-6 animate-spin" />
+          <span>Loading fees...</span>
+        </div>
+      ) : !userId ? (
+        <div className="py-12 text-center text-muted-foreground">
+          <p>Please sign in to view your fees.</p>
+        </div>
+      ) : (
       <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-auto">
         <CardContent className="p-0">
           <table className="w-full text-left text-sm">
@@ -123,6 +160,7 @@ export const StudentFeesScreen = () => {
           </table>
         </CardContent>
       </Card>
+      )}
 
       {/* Pay now modal */}
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -156,27 +194,29 @@ export const StudentFeesScreen = () => {
                     <div className="rounded-2xl border bg-background/40 p-4">
                       <div className="text-muted-foreground text-xs">Account Number</div>
                       <div className="mt-1 flex items-center justify-between gap-2">
-                        <div className="font-mono text-lg font-semibold">{BANK_DETAILS.accountNumber}</div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          shape="pill"
-                          onClick={() => copyToClipboard(BANK_DETAILS.accountNumber)}
-                        >
-                          <CopyIcon className="size-4" />
-                        </Button>
+                        <div className="font-mono text-lg font-semibold">{bankDetails.accountNumber || "—"}</div>
+                        {bankDetails.accountNumber && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            shape="pill"
+                            onClick={() => copyToClipboard(bankDetails.accountNumber)}
+                          >
+                            <CopyIcon className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
                     <div className="rounded-2xl border bg-background/40 p-4">
                       <div className="text-muted-foreground text-xs">Bank Name</div>
-                      <div className="mt-1 font-semibold">{BANK_DETAILS.bankName}</div>
+                      <div className="mt-1 font-semibold">{bankDetails.bankName || "—"}</div>
                     </div>
 
                     <div className="rounded-2xl border bg-background/40 p-4">
                       <div className="text-muted-foreground text-xs">Account Title</div>
-                      <div className="mt-1 font-semibold">{BANK_DETAILS.accountTitle}</div>
+                      <div className="mt-1 font-semibold">{bankDetails.accountTitle || "—"}</div>
                     </div>
                   </CardContent>
                 </Card>
