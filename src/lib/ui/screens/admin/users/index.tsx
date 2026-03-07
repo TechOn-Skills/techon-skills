@@ -21,12 +21,13 @@ import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { cn } from "@/lib/helpers"
 
-type UserRole = "student" | "instructor" | "admin"
-type UserStatus = "active" | "inactive" | "suspended"
+type UserRole = "STUDENT" | "INSTRUCTOR" | "ADMIN" | "SUPER_ADMIN"
+type UserStatus = "ACTIVE" | "INACTIVE"
 
 interface GraphQLUser {
-  _id: string
+  id: string
   email: string
+  fullName?: string | null
   role: UserRole
   status: UserStatus
   isBlocked: boolean
@@ -37,7 +38,7 @@ interface GraphQLUser {
 export const AdminUsersScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all")
-  const [statusFilter, setStatusFilter] = useState<"all" | UserStatus>("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | UserStatus | "suspended">("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
 
   const { data, loading, error } = useQuery<{ getUsers: GraphQLUser[] }>(GET_USERS)
@@ -45,30 +46,39 @@ export const AdminUsersScreen = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch =
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.fullName ?? "").toLowerCase().includes(searchLower)
       const matchesRole = roleFilter === "all" || user.role === roleFilter
-      const matchesStatus = statusFilter === "all" || user.status === statusFilter
+      const matchesStatus =
+        statusFilter === "all"
+          ? true
+          : statusFilter === "suspended"
+            ? user.isSuspended
+            : user.status === statusFilter
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [users, searchQuery, roleFilter, statusFilter])
 
   const stats = [
     { label: "Total Users", value: users.length, color: "text-blue-600" },
-    { label: "Active Students", value: users.filter((u) => u.role === "student" && u.status === "active").length, color: "text-green-600" },
-    { label: "Instructors", value: users.filter((u) => u.role === "instructor").length, color: "text-purple-600" },
-    { label: "Suspended", value: users.filter((u) => u.status === "suspended").length, color: "text-red-600" },
+    { label: "Active Students", value: users.filter((u) => u.role === "STUDENT" && u.status === "ACTIVE").length, color: "text-green-600" },
+    { label: "Instructors", value: users.filter((u) => u.role === "INSTRUCTOR").length, color: "text-purple-600" },
+    { label: "Suspended", value: users.filter((u) => u.isSuspended).length, color: "text-red-600" },
   ]
 
-  const statusConfig = {
-    active: { label: "Active", color: "bg-green-500/20 text-green-600 dark:text-green-400" },
-    inactive: { label: "Inactive", color: "bg-gray-500/20 text-gray-600 dark:text-gray-400" },
+  const statusConfig: Record<string, { label: string; color: string }> = {
+    ACTIVE: { label: "Active", color: "bg-green-500/20 text-green-600 dark:text-green-400" },
+    INACTIVE: { label: "Inactive", color: "bg-gray-500/20 text-gray-600 dark:text-gray-400" },
     suspended: { label: "Suspended", color: "bg-red-500/20 text-red-600 dark:text-red-400" },
   }
 
-  const roleConfig = {
-    student: { label: "Student", color: "text-blue-600 dark:text-blue-400" },
-    instructor: { label: "Instructor", color: "text-purple-600 dark:text-purple-400" },
-    admin: { label: "Admin", color: "text-orange-600 dark:text-orange-400" },
+  const roleConfig: Record<string, { label: string; color: string }> = {
+    STUDENT: { label: "Student", color: "text-blue-600 dark:text-blue-400" },
+    INSTRUCTOR: { label: "Instructor", color: "text-purple-600 dark:text-purple-400" },
+    ADMIN: { label: "Admin", color: "text-orange-600 dark:text-orange-400" },
+    SUPER_ADMIN: { label: "Super Admin", color: "text-amber-600 dark:text-amber-400" },
   }
 
   return (
@@ -124,7 +134,7 @@ export const AdminUsersScreen = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           <FilterIcon className="size-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground shrink-0">Role:</span>
-          {(["all", "student", "instructor", "admin"] as const).map((role) => (
+          {(["all", "STUDENT", "INSTRUCTOR", "ADMIN"] as const).map((role) => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -135,11 +145,11 @@ export const AdminUsersScreen = () => {
                   : "bg-background/70 border hover:bg-background/90"
               )}
             >
-              {role}
+              {role === "all" ? "All" : roleConfig[role]?.label ?? role}
             </button>
           ))}
           <span className="text-sm text-muted-foreground shrink-0 ml-4">Status:</span>
-          {(["all", "active", "inactive", "suspended"] as const).map((status) => (
+          {(["all", "ACTIVE", "INACTIVE", "suspended"] as const).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
@@ -150,7 +160,7 @@ export const AdminUsersScreen = () => {
                   : "bg-background/70 border hover:bg-background/90"
               )}
             >
-              {status}
+              {status === "all" ? "All" : statusConfig[status]?.label ?? status}
             </button>
           ))}
         </div>
@@ -186,7 +196,7 @@ export const AdminUsersScreen = () => {
                   <tbody>
                     {filteredUsers.map((user, idx) => (
                       <tr
-                        key={user._id}
+                        key={user.id}
                         className="border-border border-b transition-colors hover:bg-background/60 animate-in fade-in slide-in-from-bottom-2 duration-500"
                         style={{ animationDelay: `${idx * 50}ms` }}
                       >
@@ -196,8 +206,8 @@ export const AdminUsersScreen = () => {
                               <UserIcon className="size-5" />
                             </div>
                             <div>
-                              <div className="font-semibold truncate max-w-[200px]">{user.email}</div>
-                              <div className="text-muted-foreground text-xs">ID: {user._id}</div>
+                              <div className="font-semibold truncate max-w-[200px]">{user.fullName || user.email}</div>
+                              <div className="text-muted-foreground text-xs">{user.email} · ID: {user.id}</div>
                             </div>
                           </div>
                         </td>
@@ -207,10 +217,10 @@ export const AdminUsersScreen = () => {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold", statusConfig[user.status]?.color ?? "bg-gray-500/20 text-gray-600")}>
-                            {user.status === "active" && <CheckCircle2Icon className="size-3" />}
-                            {user.status === "suspended" && <XCircleIcon className="size-3" />}
-                            {statusConfig[user.status]?.label ?? user.status}
+                          <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold", user.isSuspended ? statusConfig.suspended.color : (statusConfig[user.status]?.color ?? "bg-gray-500/20 text-gray-600"))}>
+                            {user.status === "ACTIVE" && !user.isSuspended && <CheckCircle2Icon className="size-3" />}
+                            {user.isSuspended && <XCircleIcon className="size-3" />}
+                            {user.isSuspended ? statusConfig.suspended.label : (statusConfig[user.status]?.label ?? user.status)}
                           </span>
                         </td>
                         <td className="p-4">
@@ -235,11 +245,11 @@ export const AdminUsersScreen = () => {
                               variant="ghost"
                               size="icon"
                               shape="pill"
-                              onClick={() => setShowActionMenu(showActionMenu === user._id ? null : user._id)}
+                              onClick={() => setShowActionMenu(showActionMenu === user.id ? null : user.id)}
                             >
                               <MoreVerticalIcon className="size-4" />
                             </Button>
-                            {showActionMenu === user._id && (
+                            {showActionMenu === user.id && (
                               <div className="absolute right-0 top-full mt-1 z-10 w-48 rounded-2xl border bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div className="p-2 space-y-1">
                                   <button className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-background/60 transition-colors">

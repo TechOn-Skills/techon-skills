@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const GET_USERS = gql`
-    query GetUsers {
-        getUsers {
+    query GetUsers($includeDeleted: Boolean) {
+        getUsers(includeDeleted: $includeDeleted) {
             id
             email
             fullName
@@ -14,14 +14,17 @@ export const GET_USERS = gql`
             isBlocked
             isSuspended
             enrolledCourses {
-                title 
+                id
+                title
                 slug
             }
             requestedCourses {
-                title 
+                id
+                title
                 slug
             }
             payments {
+                id
                 amount
             }
             createdAt
@@ -47,11 +50,13 @@ export const GET_USER_PROFILE_INFO = gql`
 `;
 
 export const GET_USER_BY_ID = gql`
-    query GetUserById($id: String!) {
-        user(id: $id) {
+    query GetUserById($id: ID!) {
+        getUser(id: $id) {
             id
-            name
             email
+            fullName
+            phoneNumber
+            profilePicture
             role
             status
             isBlocked
@@ -63,10 +68,10 @@ export const GET_USER_BY_ID = gql`
 
 export const GET_USERS_BY_ROLE = gql`
     query GetUsersByRole($role: UserRole!) {
-        usersByRole(role: $role) {
+        getUsersByRole(role: $role) {
             id
-            name
             email
+            fullName
             role
             status
         }
@@ -75,10 +80,10 @@ export const GET_USERS_BY_ROLE = gql`
 
 export const GET_USERS_BY_STATUS = gql`
     query GetUsersByStatus($status: UserStatus!) {
-        usersByStatus(status: $status) {
+        getUsersByStatus(status: $status) {
             id
-            name
             email
+            fullName
             role
             status
         }

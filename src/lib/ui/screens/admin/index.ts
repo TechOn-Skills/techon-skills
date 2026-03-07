@@ -1,4 +1,12 @@
 export * from "./simple"
 export * from "./registration-requests"
 export * from "./contact-submissions"
+export * from "./dashboard"
+export * from "./users"
+export * from "./events"
+export * from "./news"
+export * from "./courses"
+export * from "./tickets"
+export * from "./logs"
+export * from "./settings"
 

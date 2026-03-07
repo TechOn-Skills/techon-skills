@@ -1,11 +1,6 @@
-import { AdminSimpleScreen } from "@/lib/ui/screens/admin"
+import { AdminNewsScreen } from "@/lib/ui/screens/admin"
 
 export default function AdminNewsPage() {
-  return (
-    <AdminSimpleScreen
-      title="News"
-      description="Create and publish announcements here."
-    />
-  )
+  return <AdminNewsScreen />
 }
 

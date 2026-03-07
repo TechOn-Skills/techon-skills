@@ -23,11 +23,15 @@ export const VerifyMagicLinkScreen = () => {
         const toastId = toast.loading("Please wait while we verify your magic link...")
         try {
             if (user_id) {
-                const data: ApiResponse<IUserProfileInfo> = await apiService.verifyMagicLink(user_id)
+                const data = await apiService.verifyMagicLink(user_id) as ApiResponse<{ user?: IUserProfileInfo; accessToken?: string; refreshToken?: string }>
                 if (!data.success) {
                     logger({ type: LoggerLevel.ERROR, message: getApiDisplayMessage(data, "Unable to verify magic link."), showToast: true })
                     setVerifyingStatus(MagicLinkStatus.ERROR)
                 } else {
+                    const token = data.data?.accessToken
+                    if (token && typeof window !== "undefined") {
+                        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN, token)
+                    }
                     setVerifyingStatus(MagicLinkStatus.VERIFIED)
                     router.push(CONFIG.ROUTES.STUDENT.DASHBOARD)
                 }

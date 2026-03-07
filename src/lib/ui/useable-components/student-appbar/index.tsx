@@ -29,6 +29,7 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
         try {
             const response = await apiService.logout()
             if (response.success) {
+                Object.values(CONFIG.STORAGE_KEYS.AUTH).forEach((key) => localStorage.removeItem(key))
                 localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
                 router.replace(CONFIG.ROUTES.PUBLIC.HOME)
             }
