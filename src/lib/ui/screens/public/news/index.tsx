@@ -55,7 +55,7 @@ export const PublicNewsScreen = () => {
               </CardHeader>
               <CardContent>
                 <Button asChild variant="ghost" shape="pill" className="justify-between">
-                  <Link href="/contact">
+                  <Link href={`/news/${p.id}`}>
                     Learn more
                     <ArrowRightIcon className="size-4 text-muted-foreground" />
                   </Link>

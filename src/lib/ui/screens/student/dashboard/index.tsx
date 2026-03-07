@@ -42,7 +42,7 @@ export const StudentMyLecturesScreen = () => {
   }
 
 
-  const dailyStreak = 12 // Demo streak
+  const dailyStreak = 0 // TODO: replace with getStudentDashboard or activity API when available
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">

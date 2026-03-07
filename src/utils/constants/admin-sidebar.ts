@@ -1,4 +1,4 @@
-import { CalendarIcon, LogsIcon, NewspaperIcon, SettingsIcon, TicketIcon, UsersIcon, LayoutDashboardIcon, UserPlusIcon, InboxIcon } from "lucide-react"
+import { CalendarIcon, FileTextIcon, LogsIcon, NewspaperIcon, SettingsIcon, TicketIcon, UsersIcon, LayoutDashboardIcon, UserPlusIcon, InboxIcon } from "lucide-react"
 import { CONFIG } from "./config"
 
 export const ADMIN_SIDEBAR_ITEMS = [
@@ -8,6 +8,7 @@ export const ADMIN_SIDEBAR_ITEMS = [
     { label: "Users", href: CONFIG.ROUTES.ADMIN.USERS, icon: UsersIcon, disabled: false },
     { label: "Tickets", href: CONFIG.ROUTES.ADMIN.TICKETS, icon: TicketIcon, disabled: false },
     { label: "News", href: CONFIG.ROUTES.ADMIN.NEWS, icon: NewspaperIcon, disabled: false },
+    { label: "Articles", href: CONFIG.ROUTES.ADMIN.ARTICLES, icon: FileTextIcon, disabled: false },
     { label: "Logs", href: CONFIG.ROUTES.ADMIN.LOGS, icon: LogsIcon, disabled: false },
     { label: "Settings", href: CONFIG.ROUTES.ADMIN.SETTINGS, icon: SettingsIcon, disabled: false },
     { label: "Events", href: CONFIG.ROUTES.ADMIN.EVENTS, icon: CalendarIcon, disabled: false },

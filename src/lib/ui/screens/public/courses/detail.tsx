@@ -2,19 +2,22 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useQuery } from "@apollo/client/react"
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
   ClipboardListIcon,
   GraduationCapIcon,
   ListChecksIcon,
+  Loader2Icon,
   RocketIcon,
   SparklesIcon,
   TrophyIcon,
 } from "lucide-react"
 
 import { useCourses } from "@/lib/providers/courses"
-import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
+import { formatCourseDuration, formatCoursePrice, mapApiCourseToICourse, type IApiCourse } from "@/lib/helpers"
+import { GET_COURSE_BY_SLUG } from "@/lib/graphql"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
@@ -32,8 +35,30 @@ const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 }
 
 export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
-  const { getCourseBySlug } = useCourses()
-  const course = getCourseBySlug(slug)
+  const { getCourseBySlug, loading: coursesLoading } = useCourses()
+  const courseFromList = getCourseBySlug(slug)
+
+  const { data: slugData, loading: slugLoading } = useQuery<{ getCourseBySlug: IApiCourse | null }>(GET_COURSE_BY_SLUG, {
+    variables: { slug },
+    skip: !slug || !!courseFromList,
+  })
+
+  const courseBySlug = slugData?.getCourseBySlug
+    ? mapApiCourseToICourse(slugData.getCourseBySlug)
+    : null
+  const course = courseFromList ?? courseBySlug ?? null
+  const loading = coursesLoading || (!!slug && !courseFromList && slugLoading)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-4 py-12">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2Icon className="size-6 animate-spin" />
+          <span>Loading course...</span>
+        </div>
+      </div>
+    )
+  }
 
   if (!course) {
     const { notFound } = COURSE_DETAIL

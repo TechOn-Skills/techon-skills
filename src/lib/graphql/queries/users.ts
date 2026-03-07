@@ -45,6 +45,11 @@ export const GET_USER_PROFILE_INFO = gql`
             status
             createdAt
             updatedAt
+            enrolledCourses {
+                id
+                title
+                slug
+            }
         }
     }
 `;
@@ -62,6 +67,22 @@ export const GET_USER_BY_ID = gql`
             isBlocked
             isSuspended
             isDeleted
+            enrolledCourses {
+                id
+                title
+                slug
+            }
+            requestedCourses {
+                id
+                title
+                slug
+            }
+            payments {
+                id
+                amount
+            }
+            createdAt
+            updatedAt
         }
     }
 `;

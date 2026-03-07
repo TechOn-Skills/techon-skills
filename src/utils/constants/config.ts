@@ -31,12 +31,17 @@ export const CONFIG = {
             TOGGLE_SUSPEND_STUDENT: "/auth/toggle-suspend-student",
             TOGGLE_DELETE_STUDENT: "/auth/toggle-delete-student",
             GET_USER_PROFILE_INFO: "/auth/get-user-profile-info",
-        }
+            SEND_EMAIL_TO_USER: "/auth/send-email-to-user",
+        },
+        UPLOAD: {
+            IMAGE: "/upload/image",
+        },
     },
     ROUTES: {
         PUBLIC: {
             HOME: "/",
             COURSES: "/courses",
+            ARTICLES: "/articles",
             ABOUT: "/about",
             CONTACT: "/contact",
             FAQS: "/faqs",
@@ -62,6 +67,7 @@ export const CONFIG = {
             SETTINGS: "/admin/settings",
             EVENTS: "/admin/events",
             COURSES: "/admin/courses",
+            ARTICLES: "/admin/articles",
         },
         STUDENT: {
             HOME: "/student",

@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   BriefcaseIcon,
   FileCheck2Icon,
+  Loader2Icon,
   SearchIcon,
   SparklesIcon,
   TrophyIcon,
@@ -28,13 +29,13 @@ import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 export const PublicCoursesScreen = () => {
   const router = useRouter()
-  const { courses } = useCourses()
+  const { courses, loading: coursesLoading } = useCourses()
   const [searchQuery, setSearchQuery] = useState("")
   const catalog = useMemo(
     () =>
       courses.map((course) => {
-        const display = COURSE_DISPLAY_BY_SLUG[course.slug]
-        const projects = course.modules[0]?.projects ?? []
+        const display = COURSE_DISPLAY_BY_SLUG[course.slug] ?? { icon: "code", benefits: [] }
+        const projects = course.modules?.[0]?.projects ?? []
         return {
           slug: course.slug,
           title: course.title,
@@ -43,7 +44,7 @@ export const PublicCoursesScreen = () => {
           duration: formatCourseDuration(course),
           icon: Icons[display?.icon ?? "code"] ?? Icons.code,
           highlight: display?.highlight,
-          benefits: display?.benefits?.length ? display.benefits : projects.map((p) => p.title).slice(0, 3),
+          benefits: (display?.benefits?.length ? display.benefits : projects.map((p) => p.title).slice(0, 3)) ?? [],
         }
       }),
     [courses]
@@ -101,7 +102,14 @@ export const PublicCoursesScreen = () => {
           />
         </div>
 
-        {filteredCatalog.length === 0 ? (
+        {coursesLoading && catalog.length === 0 ? (
+          <div className="flex min-h-[400px] items-center justify-center rounded-3xl border bg-background/70 backdrop-blur">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2Icon className="size-6 animate-spin" />
+              <span>Loading courses...</span>
+            </div>
+          </div>
+        ) : filteredCatalog.length === 0 ? (
           <div className="flex min-h-[400px] items-center justify-center rounded-3xl border bg-background/70 backdrop-blur">
             <div className="text-center">
               <SearchIcon className="mx-auto size-12 text-muted-foreground/50" />

@@ -1,5 +1,5 @@
 "use client";
-import { IUser, IUserContextProvider, IUserProfileInfo } from "@/utils/interfaces";
+import { IUser, IUserContextProvider, IUserProfileInfo, IEnrolledCourseFromApi } from "@/utils/interfaces";
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_USER_PROFILE_INFO } from "@/lib/graphql";
@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 const UserContext = createContext<IUserContextProvider | null>(null);
 
 interface UserProfileQueryResult {
-    userProfileInfo?: IUserProfileInfo;
+    userProfileInfo?: IUserProfileInfo & { enrolledCourses?: IEnrolledCourseFromApi[] };
 }
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
@@ -28,6 +28,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         if (!raw) return null;
         return { id: raw.id, email: raw.email, role: raw.role, status: raw.status };
     }, [data?.userProfileInfo]);
+
+    const enrolledCoursesFromApi = useMemo((): IEnrolledCourseFromApi[] => {
+        return data?.userProfileInfo?.enrolledCourses ?? [];
+    }, [data?.userProfileInfo?.enrolledCourses]);
 
     const profileLoaded = !loading;
 
@@ -47,8 +51,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, [pathname, refetchUserProfileInfo])
 
     const value = useMemo(
-        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, profileLoaded }),
-        [userProfileInfo, userData, profileLoaded, error]
+        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, enrolledCoursesFromApi, profileLoaded }),
+        [userProfileInfo, userData, enrolledCoursesFromApi, profileLoaded, error]
     );
 
     return (

@@ -1,11 +1,9 @@
 /**
  * Display-only mapping for courses (icon, highlight, benefits).
  * Not part of the course schema; used when rendering course cards and landing.
+ * Courses loaded from API use this by slug; use COURSE_DISPLAY_BY_SLUG[slug] ?? { icon: "code", benefits: [] } for unknown slugs.
  */
-export const COURSE_DISPLAY_BY_SLUG: Record<
-  string,
-  { icon: string; highlight?: string; benefits?: string[] }
-> = {
+export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: string; benefits?: string[] }> = {
   "software-engineering": {
     icon: "wrench",
     highlight: "Career track",

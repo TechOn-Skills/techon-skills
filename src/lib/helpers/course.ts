@@ -1,4 +1,4 @@
-import type { ICourse } from "@/utils/interfaces"
+import type { ICourse, ICourseTechnologiesSection } from "@/utils/interfaces"
 
 /** Format course duration for display (e.g. "6 Months", "1 Year"). */
 export function formatCourseDuration(course: ICourse): string {
@@ -11,4 +11,50 @@ export function formatCourseDuration(course: ICourse): string {
 export function formatCoursePrice(course: ICourse): string {
   const { currency, feePerMonth } = course
   return `${currency} ${feePerMonth.toLocaleString()} / month`
+}
+
+/** API course shape (GraphQL) – technologies at top level, no modules. */
+export interface IApiCourse {
+  id?: string
+  title: string
+  slug: string
+  heroDescription: string
+  subtitle: string
+  subDescription: string
+  courseDurationInMonths: number
+  feePerMonth: number
+  totalFee: number
+  totalNumberOfInstallments: number
+  currency: string
+  technologies: Array<{ label: string; description: string; logo: string }>
+  articleFeatures: Array<{ name: string; description: string; image: string }>
+}
+
+/** Map API course to ICourse (adds technologiesSection, empty modules). */
+export function mapApiCourseToICourse(
+  api: IApiCourse,
+  technologiesSectionFallback: ICourseTechnologiesSection = {
+    title: "Tools you'll master (with real projects)",
+    description: "You won't just “see” these technologies — you'll build with them, submit work, and track marks.",
+    technologies: api.technologies ?? [],
+  }
+): ICourse {
+  return {
+    title: api.title,
+    heroDescription: api.heroDescription,
+    courseDurationInMonths: api.courseDurationInMonths,
+    feePerMonth: api.feePerMonth,
+    totalFee: api.totalFee,
+    totalNumberOfInstallments: api.totalNumberOfInstallments,
+    currency: api.currency,
+    subtitle: api.subtitle,
+    subDescription: api.subDescription,
+    slug: api.slug,
+    technologiesSection: {
+      ...technologiesSectionFallback,
+      technologies: api.technologies ?? technologiesSectionFallback.technologies,
+    },
+    modules: [],
+    articleFeatures: api.articleFeatures ?? [],
+  }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useMutation } from "@apollo/client/react"
 import {
   SearchIcon,
   MailIcon,
@@ -11,14 +12,25 @@ import {
   UserPlusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ImagePlusIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
 import { getApiDisplayMessage } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
+import { UPDATE_USER_INPUT } from "@/lib/graphql"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/lib/ui/useable-components/sheet"
+import { SheetContentSide } from "@/utils/enums"
 import { IUser } from "@/utils/interfaces"
 
 const PAGE_SIZE = 10
@@ -30,6 +42,7 @@ export const AdminRegistrationRequestsScreen = () => {
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [approvalSheetUser, setApprovalSheetUser] = useState<IUser | null>(null)
 
   const fetchRequests = useCallback(async (pageNum: number) => {
     setLoading(true)
@@ -51,19 +64,7 @@ export const AdminRegistrationRequestsScreen = () => {
     queueMicrotask(() => fetchRequests(page))
   }, [fetchRequests, page])
 
-  const handleApprove = async (id: string) => {
-    setApprovingId(id)
-    const toastId = toast.loading("Approving registration...")
-    const response = await apiService.approveStudentRegistrationRequest(id)
-    toast.dismiss(toastId)
-    setApprovingId(null)
-    if (response.success) {
-      toast.success(getApiDisplayMessage(response, "Registration approved. Student can now sign in."))
-      fetchRequests(page)
-    } else {
-      toast.error(getApiDisplayMessage(response, "Failed to approve registration. Please try again."))
-    }
-  }
+  const openApprovalSheet = (user: IUser) => setApprovalSheetUser(user)
 
   const filteredRequests = requests.filter(
     (r) =>
@@ -167,17 +168,10 @@ export const AdminRegistrationRequestsScreen = () => {
                             variant="brand-secondary"
                             size="sm"
                             shape="pill"
-                            onClick={() => handleApprove(req._id)}
-                            disabled={approvingId === req._id}
+                            onClick={() => openApprovalSheet(req)}
                           >
-                            {approvingId === req._id ? (
-                              <Loader2Icon className="size-4 animate-spin" />
-                            ) : (
-                              <CheckCircle2Icon className="size-4" />
-                            )}
-                            <span className="ml-2">
-                              {approvingId === req._id ? "Approving..." : "Approve"}
-                            </span>
+                            <CheckCircle2Icon className="size-4" />
+                            <span className="ml-2">Approve</span>
                           </Button>
                         </td>
                       </tr>
@@ -236,6 +230,166 @@ export const AdminRegistrationRequestsScreen = () => {
           </p>
         </div>
       )}
+
+      <ApproveRegistrationSheet
+        user={approvalSheetUser}
+        open={!!approvalSheetUser}
+        onOpenChange={(open) => !open && setApprovalSheetUser(null)}
+        onSuccess={() => {
+          setApprovalSheetUser(null)
+          fetchRequests(page)
+        }}
+      />
     </div>
+  )
+}
+
+function ApproveRegistrationSheet({
+  user,
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  user: IUser | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess: () => void
+}) {
+  const [fullName, setFullName] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [profileFile, setProfileFile] = useState<File | null>(null)
+  const [profilePreview, setProfilePreview] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [updateUser] = useMutation(UPDATE_USER_INPUT)
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.fullName ?? "")
+      setPhoneNumber(user.phoneNumber ?? "")
+      setProfileFile(null)
+      setProfilePreview(null)
+    }
+  }, [user?._id])
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setProfileFile(file)
+      setProfilePreview(URL.createObjectURL(file))
+    } else {
+      setProfileFile(null)
+      setProfilePreview(null)
+    }
+  }
+
+  const handleApprove = async () => {
+    if (!user) return
+    if (!fullName.trim()) {
+      toast.error("Please enter the student's full name.")
+      return
+    }
+    setSaving(true)
+    const toastId = toast.loading("Updating profile and approving...")
+    try {
+      let profilePictureUrl: string | undefined
+      if (profileFile) {
+        const uploadRes = await apiService.uploadImage(profileFile, "profiles", user._id)
+        if (uploadRes.success && uploadRes.data?.url) profilePictureUrl = uploadRes.data.url
+      }
+      await updateUser({
+        variables: {
+          input: {
+            id: user._id,
+            fullName: fullName.trim(),
+            phoneNumber: phoneNumber.trim() || undefined,
+            profilePicture: profilePictureUrl,
+          },
+        },
+      })
+      const response = await apiService.approveStudentRegistrationRequest(user._id)
+      toast.dismiss(toastId)
+      setSaving(false)
+      if (response.success) {
+        toast.success(getApiDisplayMessage(response, "Registration approved. Student can now sign in."))
+        onSuccess()
+        onOpenChange(false)
+      } else {
+        toast.error(getApiDisplayMessage(response, "Failed to approve registration. Please try again."))
+      }
+    } catch (e) {
+      toast.dismiss(toastId)
+      setSaving(false)
+      toast.error(e instanceof Error ? e.message : "Failed to update profile and approve.")
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Approve registration</SheetTitle>
+          <SheetDescription>
+            {user ? (
+              <>
+                Complete the student profile, then approve. Email: <span className="font-medium text-foreground">{user.email}</span>
+              </>
+            ) : null}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 px-4">
+          <div>
+            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Full name *</label>
+            <Input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Student's full name"
+              className="rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Phone number</label>
+            <Input
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="e.g. +92 300 1234567"
+              className="rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Profile picture</label>
+            <div className="flex items-center gap-4">
+              <label className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 border-dashed border-muted-foreground/30 hover:border-(--brand-primary)/50 cursor-pointer transition-colors overflow-hidden bg-muted/30">
+                {profilePreview ? (
+                  <img src={profilePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <ImagePlusIcon className="size-8 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground mt-1">Upload</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+              </label>
+              {profileFile && (
+                <span className="text-sm text-muted-foreground truncate max-w-[160px]">{profileFile.name}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <SheetFooter className="flex-row gap-2 sm:flex-row">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="brand-secondary"
+            onClick={handleApprove}
+            disabled={saving || !fullName.trim()}
+          >
+            {saving ? <Loader2Icon className="size-4 animate-spin" /> : <CheckCircle2Icon className="size-4" />}
+            <span className="ml-2">{saving ? "Saving..." : "Save & approve"}</span>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
