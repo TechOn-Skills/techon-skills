@@ -1,4 +1,5 @@
 export * from "./announcements";
+export * from "./articles";
 export * from "./banks";
 export * from "./courses";
 export * from "./dashboard";

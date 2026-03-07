@@ -23,8 +23,15 @@ export interface IUser {
     enrolledCourses: SelectedCourse[];
 }
 
+export interface IEnrolledCourseFromApi {
+    id: string;
+    title: string;
+    slug: string;
+}
+
 export interface IUserContextProvider {
     userProfileInfo: IUserProfileInfo | null;
     userData: IUser | null;
+    enrolledCoursesFromApi: IEnrolledCourseFromApi[];
     profileLoaded: boolean;
 }

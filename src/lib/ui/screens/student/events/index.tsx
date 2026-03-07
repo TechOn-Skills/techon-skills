@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useMemo } from "react"
 import { useQuery, useMutation } from "@apollo/client/react"
 import {
@@ -12,7 +13,8 @@ import {
   UsersIcon,
   VideoIcon,
   FilterIcon,
-  CheckCircle2Icon
+  CheckCircle2Icon,
+  ArrowRightIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -240,12 +242,12 @@ export const StudentEventsScreen = () => {
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="flex flex-col sm:flex-row gap-2">
                   <Button
                     type="button"
                     variant={isRegistered ? "outline" : "brand-secondary"}
                     shape="pill"
-                    className="w-full"
+                    className="w-full sm:flex-1"
                     onClick={() => handleRegister(event.id, isRegistered)}
                     disabled={(event.spotsLeft === 0 && !isRegistered) || registering || unregistering}
                   >
@@ -262,6 +264,12 @@ export const StudentEventsScreen = () => {
                         Register Now
                       </>
                     )}
+                  </Button>
+                  <Button asChild variant="ghost" shape="pill" className="w-full sm:w-auto">
+                    <Link href={`/student/events/${event.id}`} className="gap-2">
+                      View details
+                      <ArrowRightIcon className="size-4" />
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>

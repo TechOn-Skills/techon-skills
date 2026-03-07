@@ -1,3 +1,4 @@
+import { getConfig } from "@/lib/services/config";
 import { fetchURL, handleApiResponse } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
 import { FetchMethod } from "@/utils/enums";
@@ -94,6 +95,27 @@ class ApiService {
         const path = CONFIG.BACKEND_PATHS.FORM.ASSIGN_COURSES;
         const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.POST, body: JSON.stringify({ submissionId, courseSlugs }), headers: { "Content-Type": "application/json" } } });
         return handleApiResponse<unknown>(response);
+    }
+
+    sendEmailToUser = async (userId: string, subject: string, body: string): Promise<ApiResponse<unknown>> => {
+        const path = CONFIG.BACKEND_PATHS.AUTH.SEND_EMAIL_TO_USER;
+        const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.POST, body: JSON.stringify({ userId, subject, body }), headers: { "Content-Type": "application/json" } } });
+        return handleApiResponse<unknown>(response);
+    }
+
+    uploadImage = async (file: File, dirName: string, slug: string): Promise<ApiResponse<{ url: string; filename: string }>> => {
+        const { BACKEND_URL } = getConfig();
+        const path = CONFIG.BACKEND_PATHS.UPLOAD.IMAGE;
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("dirName", dirName);
+        formData.append("slug", slug);
+        const response = await fetch(`${BACKEND_URL}${path}`, { method: FetchMethod.POST, body: formData, credentials: "include" });
+        const json = await response.json();
+        if (json?.data?.url) {
+            json.data.url = json.data.url.startsWith("http") ? json.data.url : `${BACKEND_URL.replace(/\/$/, "")}${json.data.url}`;
+        }
+        return json as ApiResponse<{ url: string; filename: string }>;
     }
 }
 

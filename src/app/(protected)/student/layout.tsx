@@ -1,10 +1,12 @@
 import { StudentLayout } from "@/lib/layouts";
-import { StudentRouteGuard } from "@/lib/route-guards";
+import { StudentFeeGate, StudentRouteGuard } from "@/lib/route-guards";
 
 export default function StudentRootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <StudentLayout>
-            <StudentRouteGuard>{children}</StudentRouteGuard>
-        </StudentLayout>
+        <StudentRouteGuard>
+            <StudentFeeGate>
+                <StudentLayout>{children}</StudentLayout>
+            </StudentFeeGate>
+        </StudentRouteGuard>
     )
 }

@@ -325,6 +325,28 @@ export function getCourseRoutesBySlug(slug: string): Record<string, Record<strin
     return null;
 }
 
+/** Map content slug (e.g. software-engineering-1-year) to LECTURE_ROUTES key (e.g. SOFTWARE_ENGINEERING_1_YEAR). Used to derive allowed courses from API enrolledCourses[].slug. */
+export function getLectureRouteKeyBySlug(slug: string): string | null {
+    for (const [key, routes] of Object.entries(LECTURE_ROUTES)) {
+        if (getCourseSlugFromLectureRoutes(routes as Record<string, Record<string, string>>) === slug) return key;
+    }
+    return null;
+}
+
+/** Map API course slug (from backend Course.slug) to content slug used in LECTURE_ROUTES / submodule. Admin-assigned courses use these slugs; content lives under src/lib/courses/<contentSlug>. */
+export const API_COURSE_SLUG_TO_CONTENT_SLUG: Record<string, string> = {
+    "software-engineering": "software-engineering-1-year",
+    "web-development": "web-development-3-months",
+    "full-stack-web-6-months": "full-stack-web-6-months",
+    "full-stack-web-development": "full-stack-web-6-months",
+    "mobile-app-development": "full-stack-web-6-months",
+    "ecommerce": "wordpress-wix-shopify-3-months",
+    "wordpress-wix-shopify": "wordpress-wix-shopify-3-months",
+    "wordpress-wix-shopify-3-months": "wordpress-wix-shopify-3-months",
+    "software-engineering-1-year": "software-engineering-1-year",
+    "web-development-3-months": "web-development-3-months",
+};
+
 export type ModuleWithChapters = { moduleSlug: string; moduleTitle: string; chapters: ChapterEntry[] };
 
 /** Get chapters grouped by module, preserving module order. */

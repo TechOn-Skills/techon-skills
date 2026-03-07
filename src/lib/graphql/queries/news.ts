@@ -6,6 +6,20 @@ export const GET_NEWS_POSTS = gql`
             id
             title
             description
+            createdAt
+            updatedAt
+        }
+    }
+`;
+
+export const GET_NEWS_POST = gql`
+    query GetNewsPost($id: ID!) {
+        getNewsPost(id: $id) {
+            id
+            title
+            description
+            createdAt
+            updatedAt
         }
     }
 `;

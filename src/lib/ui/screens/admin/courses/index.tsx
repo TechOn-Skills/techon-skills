@@ -1,14 +1,69 @@
 "use client"
 
+import { useState, useCallback } from "react"
 import { useQuery, useMutation } from "@apollo/client/react"
-import { BookOpenIcon, Loader2Icon, Trash2Icon } from "lucide-react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import {
+  BookOpenIcon,
+  Loader2Icon,
+  Trash2Icon,
+  PlusIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CheckIcon,
+  LayoutGridIcon,
+  BanknoteIcon,
+  CpuIcon,
+  FileImageIcon,
+  ListChecksIcon,
+} from "lucide-react"
 import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
-import { GET_COURSES, DELETE_COURSE } from "@/lib/graphql"
+import { Input } from "@/lib/ui/useable-components/input"
+import { GET_COURSES, DELETE_COURSE, CREATE_COURSE } from "@/lib/graphql"
+import { cn } from "@/lib/helpers"
 
 type CourseRow = { id: string; title: string; slug: string; subtitle?: string; totalFee?: number; feePerMonth?: number; courseDurationInMonths?: number }
+
+type TechnologyItem = { label: string; description: string; logo: string }
+type ArticleFeatureItem = { name: string; description: string; image: string }
+
+const STEPS = [
+  { id: 1, label: "Basics", description: "Title, slug, subtitle", icon: LayoutGridIcon },
+  { id: 2, label: "Pricing & duration", description: "Fees and hero", icon: BanknoteIcon },
+  { id: 3, label: "Technologies", description: "Tools & logos", icon: CpuIcon },
+  { id: 4, label: "Article features", description: "Highlights", icon: FileImageIcon },
+  { id: 5, label: "Review", description: "Confirm & create", icon: ListChecksIcon },
+] as const
+
+const TOTAL_STEPS = STEPS.length
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+}
+
+const defaultTech: TechnologyItem = { label: "", description: "", logo: "" }
+const defaultArticle: ArticleFeatureItem = { name: "", description: "", image: "" }
+
+const initialForm = {
+  title: "",
+  slug: "",
+  subtitle: "",
+  subDescription: "",
+  heroDescription: "",
+  courseDurationInMonths: 6,
+  feePerMonth: 0,
+  totalFee: 0,
+  totalNumberOfInstallments: 6,
+  currency: "PKR",
+  technologies: [] as TechnologyItem[],
+  articleFeatures: [] as ArticleFeatureItem[],
+}
 
 export const AdminCoursesScreen = () => {
   const { data, loading, error, refetch } = useQuery<{ getCourses: CourseRow[] }>(GET_COURSES)
@@ -16,22 +71,93 @@ export const AdminCoursesScreen = () => {
     onCompleted: () => { toast.success("Course deleted"); refetch() },
     onError: (e) => toast.error(e.message),
   })
+  const [createCourse, { loading: creating }] = useMutation(CREATE_COURSE, {
+    onCompleted: () => { toast.success("Course created"); setAddOpen(false); resetForm(); refetch() },
+    onError: (e) => toast.error(e.message),
+  })
 
   const courses = data?.getCourses ?? []
+  const [addOpen, setAddOpen] = useState(false)
+  const [step, setStep] = useState(1)
+  const [form, setForm] = useState(initialForm)
+
+  const resetForm = useCallback(() => {
+    setForm(initialForm)
+    setStep(1)
+  }, [])
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this course? This cannot be undone.")) return
     deleteCourse({ variables: { input: { id } } })
   }
 
+  const setTitle = (title: string) => {
+    setForm((f) => ({ ...f, title, slug: f.slug || slugify(title) }))
+  }
+  const setSlug = (slug: string) => setForm((f) => ({ ...f, slug }))
+
+  const addTechnology = () => setForm((f) => ({ ...f, technologies: [...f.technologies, { ...defaultTech }] }))
+  const removeTechnology = (i: number) => setForm((f) => ({ ...f, technologies: f.technologies.filter((_, idx) => idx !== i) }))
+  const updateTechnology = (i: number, field: keyof TechnologyItem, value: string) => {
+    setForm((f) => ({
+      ...f,
+      technologies: f.technologies.map((t, idx) => (idx === i ? { ...t, [field]: value } : t)),
+    }))
+  }
+
+  const addArticleFeature = () => setForm((f) => ({ ...f, articleFeatures: [...f.articleFeatures, { ...defaultArticle }] }))
+  const removeArticleFeature = (i: number) => setForm((f) => ({ ...f, articleFeatures: f.articleFeatures.filter((_, idx) => idx !== i) }))
+  const updateArticleFeature = (i: number, field: keyof ArticleFeatureItem, value: string) => {
+    setForm((f) => ({
+      ...f,
+      articleFeatures: f.articleFeatures.map((a, idx) => (idx === i ? { ...a, [field]: value } : a)),
+    }))
+  }
+
+  const canNext = () => {
+    if (step === 1) return form.title.trim() && form.slug.trim() && form.subtitle.trim() && form.subDescription.trim()
+    if (step === 2) return form.heroDescription.trim() && form.courseDurationInMonths > 0 && form.feePerMonth >= 0 && form.totalFee >= 0 && form.totalNumberOfInstallments > 0
+    if (step === 3) return form.technologies.length > 0 && form.technologies.every((t) => t.label.trim() && t.description.trim() && t.logo.trim())
+    if (step === 4) return form.articleFeatures.length > 0 && form.articleFeatures.every((a) => a.name.trim() && a.description.trim() && a.image.trim())
+    return true
+  }
+
+  const handleCreate = () => {
+    if (!canNext() && step < 5) return
+    createCourse({
+      variables: {
+        input: {
+          title: form.title.trim(),
+          slug: form.slug.trim(),
+          subtitle: form.subtitle.trim(),
+          subDescription: form.subDescription.trim(),
+          heroDescription: form.heroDescription.trim(),
+          courseDurationInMonths: form.courseDurationInMonths,
+          feePerMonth: form.feePerMonth,
+          totalFee: form.totalFee,
+          totalNumberOfInstallments: form.totalNumberOfInstallments,
+          currency: form.currency.trim() || "PKR",
+          technologies: form.technologies.map((t) => ({ label: t.label.trim(), description: t.description.trim(), logo: t.logo.trim() })),
+          articleFeatures: form.articleFeatures.map((a) => ({ name: a.name.trim(), description: a.description.trim(), image: a.image.trim() })),
+        },
+      },
+    })
+  }
+
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
-      <div className="mb-8">
-        <div className="text-sm font-semibold text-secondary">Admin</div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Courses</h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-          Manage course catalog. Courses are created via the API or database; you can delete them here. To add a new course use the API with full details (technologies, articleFeatures).
-        </p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-sm font-semibold text-secondary">Admin</div>
+          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Courses</h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
+            Manage the course catalog. Add new courses with a step-by-step form or delete existing ones.
+          </p>
+        </div>
+        <Button variant="brand-secondary" shape="pill" className="gap-2 shrink-0" onClick={() => setAddOpen(true)}>
+          <PlusIcon className="size-4" />
+          Add course
+        </Button>
       </div>
 
       {loading ? (
@@ -83,12 +209,173 @@ export const AdminCoursesScreen = () => {
             {courses.length === 0 && (
               <div className="py-12 text-center text-muted-foreground">
                 <BookOpenIcon className="size-12 mx-auto mb-4 opacity-50" />
-                <p>No courses in the catalog. Add courses via the API or database.</p>
+                <p>No courses yet. Click &quot;Add course&quot; to create one.</p>
               </div>
             )}
           </CardContent>
         </Card>
       )}
+
+      <DialogPrimitive.Root open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); resetForm(); } }}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0" />
+          <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex flex-col rounded-3xl border bg-background shadow-xl overflow-hidden">
+            <div className="shrink-0 border-b px-6 py-4">
+              <DialogPrimitive.Title className="text-lg font-semibold">Add new course</DialogPrimitive.Title>
+              <p className="text-muted-foreground text-sm mt-0.5">Step {step} of {TOTAL_STEPS}: {STEPS[step - 1].label}</p>
+              <div className="flex gap-1 mt-4">
+                {STEPS.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setStep(s.id)}
+                    className={cn(
+                      "flex-1 rounded-lg py-2 text-xs font-medium transition-colors",
+                      step === s.id ? "bg-(--brand-primary) text-(--text-on-dark)" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {s.id}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {step === 1 && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Title *</label>
+                    <Input value={form.title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Full Stack Web Development" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Slug (URL) *</label>
+                    <Input value={form.slug} onChange={(e) => setSlug(e.target.value)} placeholder="full-stack-web-development" className="font-mono text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Subtitle *</label>
+                    <Input value={form.subtitle} onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="Short tagline for cards" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Sub description *</label>
+                    <textarea
+                      value={form.subDescription}
+                      onChange={(e) => setForm((f) => ({ ...f, subDescription: e.target.value }))}
+                      placeholder="Brief description for course card and listing"
+                      rows={3}
+                      className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Currency</label>
+                    <Input value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} placeholder="PKR" />
+                  </div>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Hero description *</label>
+                    <textarea
+                      value={form.heroDescription}
+                      onChange={(e) => setForm((f) => ({ ...f, heroDescription: e.target.value }))}
+                      placeholder="Main description on course detail page"
+                      rows={4}
+                      className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Duration (months) *</label>
+                      <Input type="number" min={1} value={form.courseDurationInMonths} onChange={(e) => setForm((f) => ({ ...f, courseDurationInMonths: Number(e.target.value) || 0 }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Installments *</label>
+                      <Input type="number" min={1} value={form.totalNumberOfInstallments} onChange={(e) => setForm((f) => ({ ...f, totalNumberOfInstallments: Number(e.target.value) || 0 }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Fee per month *</label>
+                    <Input type="number" min={0} value={form.feePerMonth || ""} onChange={(e) => setForm((f) => ({ ...f, feePerMonth: Number(e.target.value) || 0 }))} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Total fee *</label>
+                    <Input type="number" min={0} value={form.totalFee || ""} onChange={(e) => setForm((f) => ({ ...f, totalFee: Number(e.target.value) || 0 }))} placeholder="0" />
+                  </div>
+                </>
+              )}
+              {step === 3 && (
+                <>
+                  <p className="text-muted-foreground text-sm">Technologies shown on the course detail page (label, description, logo URL).</p>
+                  {form.technologies.map((t, i) => (
+                    <div key={i} className="rounded-xl border p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-muted-foreground">Technology {i + 1}</span>
+                        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeTechnology(i)}>Remove</Button>
+                      </div>
+                      <Input placeholder="Label (e.g. React)" value={t.label} onChange={(e) => updateTechnology(i, "label", e.target.value)} />
+                      <Input placeholder="Description" value={t.description} onChange={(e) => updateTechnology(i, "description", e.target.value)} />
+                      <Input placeholder="Logo URL" value={t.logo} onChange={(e) => updateTechnology(i, "logo", e.target.value)} />
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={addTechnology}>
+                    <PlusIcon className="size-4" /> Add technology
+                  </Button>
+                </>
+              )}
+              {step === 4 && (
+                <>
+                  <p className="text-muted-foreground text-sm">Article/feature highlights (name, description, image URL).</p>
+                  {form.articleFeatures.map((a, i) => (
+                    <div key={i} className="rounded-xl border p-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-muted-foreground">Feature {i + 1}</span>
+                        <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => removeArticleFeature(i)}>Remove</Button>
+                      </div>
+                      <Input placeholder="Name" value={a.name} onChange={(e) => updateArticleFeature(i, "name", e.target.value)} />
+                      <Input placeholder="Description" value={a.description} onChange={(e) => updateArticleFeature(i, "description", e.target.value)} />
+                      <Input placeholder="Image URL" value={a.image} onChange={(e) => updateArticleFeature(i, "image", e.target.value)} />
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={addArticleFeature}>
+                    <PlusIcon className="size-4" /> Add feature
+                  </Button>
+                </>
+              )}
+              {step === 5 && (
+                <div className="space-y-3 text-sm">
+                  <p className="font-medium">{form.title || "—"}</p>
+                  <p className="text-muted-foreground">Slug: <span className="font-mono">{form.slug || "—"}</span></p>
+                  <p className="text-muted-foreground">{form.subtitle || "—"}</p>
+                  <p className="text-muted-foreground">{form.currency} {form.totalFee?.toLocaleString()} total · {form.feePerMonth} / month · {form.courseDurationInMonths} months</p>
+                  <p className="text-muted-foreground">{form.technologies.length} technologies · {form.articleFeatures.length} article features</p>
+                </div>
+              )}
+            </div>
+            <div className="shrink-0 border-t flex justify-between gap-2 px-6 py-4">
+              <div>
+                {step > 1 ? (
+                  <Button type="button" variant="outline" onClick={() => setStep(step - 1)} className="gap-1">
+                    <ChevronLeftIcon className="size-4" /> Previous
+                  </Button>
+                ) : (
+                  <DialogPrimitive.Close asChild>
+                    <Button type="button" variant="outline">Cancel</Button>
+                  </DialogPrimitive.Close>
+                )}
+              </div>
+              {step < TOTAL_STEPS ? (
+                <Button type="button" variant="brand-secondary" onClick={() => setStep(step + 1)} disabled={!canNext()} className="gap-1">
+                  Next <ChevronRightIcon className="size-4" />
+                </Button>
+              ) : (
+                <Button type="button" variant="brand-secondary" onClick={handleCreate} disabled={creating || !canNext()} className="gap-1">
+                  {creating ? <Loader2Icon className="size-4 animate-spin" /> : <CheckIcon className="size-4" />}
+                  Create course
+                </Button>
+              )}
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   )
 }

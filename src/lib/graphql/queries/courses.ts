@@ -7,9 +7,23 @@ export const GET_COURSES = gql`
             title
             slug
             subtitle
+            subDescription
+            heroDescription
             totalFee
             feePerMonth
             courseDurationInMonths
+            totalNumberOfInstallments
+            currency
+            technologies {
+                label
+                description
+                logo
+            }
+            articleFeatures {
+                name
+                description
+                image
+            }
         }
     }
 `;
@@ -44,6 +58,18 @@ export const GET_COURSE_BY_SLUG = gql`
             totalFee
             feePerMonth
             courseDurationInMonths
+            totalNumberOfInstallments
+            currency
+            technologies {
+                label
+                description
+                logo
+            }
+            articleFeatures {
+                name
+                description
+                image
+            }
         }
     }
 `;

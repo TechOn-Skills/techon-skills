@@ -9,7 +9,6 @@ import {
   Loader2Icon,
   InboxIcon,
   SendIcon,
-  BookOpenIcon,
   PhoneIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -21,7 +20,7 @@ import { apiService } from "@/lib/services"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
-import { Textarea } from "@/lib/ui/useable-components/textarea"
+import { RichTextEditor } from "@/lib/ui/useable-components/rich-text-editor"
 import {
   Sheet,
   SheetContent,
@@ -30,9 +29,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/lib/ui/useable-components/sheet"
-import { CourseMultiSelect } from "@/lib/ui/useable-components/course-multi-select"
 import type { IContactFormSubmission } from "@/utils/interfaces/contact-form"
-import type { IContactFormCourse } from "@/utils/interfaces/courses"
 import { SheetContentSide } from "@/utils/enums"
 
 const PAGE_SIZE = 10
@@ -44,7 +41,6 @@ export const AdminContactSubmissionsScreen = () => {
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [sendEmailOpen, setSendEmailOpen] = useState<IContactFormSubmission | null>(null)
-  const [assignCoursesOpen, setAssignCoursesOpen] = useState<IContactFormSubmission | null>(null)
 
   const fetchSubmissions = useCallback(async (pageNum: number) => {
     setLoading(true)
@@ -202,16 +198,6 @@ export const AdminContactSubmissionsScreen = () => {
                               <SendIcon className="size-4" />
                               <span className="ml-2">Send email</span>
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              shape="pill"
-                              onClick={() => setAssignCoursesOpen(sub)}
-                            >
-                              <BookOpenIcon className="size-4" />
-                              <span className="ml-2">Assign courses</span>
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -276,15 +262,6 @@ export const AdminContactSubmissionsScreen = () => {
         open={!!sendEmailOpen}
         onOpenChange={(open) => !open && setSendEmailOpen(null)}
         onSuccess={() => setSendEmailOpen(null)}
-      />
-      <AssignCoursesSheet
-        submission={assignCoursesOpen}
-        open={!!assignCoursesOpen}
-        onOpenChange={(open) => !open && setAssignCoursesOpen(null)}
-        onSuccess={() => {
-          setAssignCoursesOpen(null)
-          fetchSubmissions(page)
-        }}
       />
     </div>
   )
@@ -356,12 +333,11 @@ function SendEmailSheet({
           </div>
           <div>
             <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Message</label>
-            <Textarea
+            <RichTextEditor
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={setBody}
               placeholder="Write your message..."
-              rows={6}
-              className="rounded-xl resize-y"
+              minHeight="160px"
             />
           </div>
         </div>
@@ -384,84 +360,3 @@ function SendEmailSheet({
   )
 }
 
-function AssignCoursesSheet({
-  submission,
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  submission: IContactFormSubmission | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-}) {
-  const [selectedCourses, setSelectedCourses] = useState<IContactFormCourse[]>([])
-  const [sending, setSending] = useState(false)
-
-  useEffect(() => {
-    if (submission) {
-      setSelectedCourses(submission.courses ?? [])
-    }
-  }, [submission?._id, submission?.courses])
-
-  const handleAssign = async () => {
-    if (!submission) return
-    setSending(true)
-    const toastId = toast.loading("Assigning courses...")
-    const response = await apiService.assignCoursesToContact(
-      submission._id,
-      selectedCourses.map((c) => c.slug)
-    )
-    toast.dismiss(toastId)
-    setSending(false)
-    if (response.success) {
-      toast.success(getApiDisplayMessage(response, "Courses assigned successfully."))
-      onSuccess()
-      onOpenChange(false)
-    } else {
-      toast.error(getApiDisplayMessage(response, "Failed to assign courses. Please try again."))
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Assign courses</SheetTitle>
-          <SheetDescription>
-            {submission ? (
-              <>
-                For: <span className="font-medium text-foreground">{submission.name}</span>
-                <span className="text-muted-foreground"> ({submission.email})</span>
-              </>
-            ) : null}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="px-4">
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Courses</label>
-            <CourseMultiSelect
-              value={selectedCourses}
-              onChange={setSelectedCourses}
-              placeholder="Search and select courses to assign..."
-            />
-          </div>
-        </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="brand-secondary"
-            onClick={handleAssign}
-            disabled={sending}
-          >
-            {sending ? <Loader2Icon className="size-4 animate-spin" /> : <BookOpenIcon className="size-4" />}
-            <span className="ml-2">{sending ? "Saving..." : "Assign courses"}</span>
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}

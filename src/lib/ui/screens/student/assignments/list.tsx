@@ -71,7 +71,7 @@ export const StudentAssignmentsListScreen = () => {
       ? Math.round(rows.reduce((sum, r) => sum + (r.submission?.marks || 0), 0) / graded)
       : 0
     const perfectScores = rows.filter(r => (r.submission?.marks || 0) >= 90).length
-    const streak = Math.min(submitted, 5) // Demo: max 5 streak
+    const streak = Math.min(submitted, 5) // Derived from submitted count; replace with API when learning-streak is available
 
     return { submitted, graded, avgMarks, perfectScores, streak, total: rows.length }
   }, [rows])

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useQuery } from "@apollo/client/react"
 import {
   Area,
   AreaChart,
@@ -18,7 +19,10 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/lib/ui/useable-components/chart"
 import { cn } from "@/lib/helpers"
+import { GET_ADMIN_DASHBOARD } from "@/lib/graphql"
 import { COURSE_SLUG_TO_TITLE } from "@/utils/constants"
+
+const CHART_FILLS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
 
 // Mock data generators (replace with API later)
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -90,18 +94,6 @@ function useActiveStudentsStacked() {
 }
 
 const COURSE_OPTIONS = Object.entries(COURSE_SLUG_TO_TITLE).map(([slug, title]) => ({ slug, title }))
-
-function useEnrolledPerCourse() {
-  return React.useMemo(
-    () => [
-      { name: "Software Engineering (1 Year)", slug: "software-engineering-1-year", enrolled: 312, fill: "var(--chart-1)" },
-      { name: "Web Development (3 Months)", slug: "web-development-3-months", enrolled: 487, fill: "var(--chart-2)" },
-      { name: "Full Stack (6 Months)", slug: "full-stack-web-6-months", enrolled: 256, fill: "var(--chart-3)" },
-      { name: "WordPress & Wix", slug: "wordpress-wix-shopify-3-months", enrolled: 192, fill: "var(--chart-4)" },
-    ],
-    []
-  )
-}
 
 // --- Revenue: Area Chart - Linear ---
 const revenueConfig = {
@@ -343,7 +335,20 @@ const enrolledConfig = {
 
 export function AdminEnrolledPerCourseChartCard() {
   const [view, setView] = React.useState<"bar" | "pie">("bar")
-  const data = useEnrolledPerCourse()
+  const { data: dashboardData } = useQuery<{
+    getAdminDashboard?: { enrolledPerCourse: Array<{ slug: string; name: string; enrolled: number }> }
+  }>(GET_ADMIN_DASHBOARD)
+  const enrolledFromApi = dashboardData?.getAdminDashboard?.enrolledPerCourse ?? []
+  const data = React.useMemo(
+    () =>
+      enrolledFromApi.map((item, i) => ({
+        name: item.name,
+        slug: item.slug,
+        enrolled: item.enrolled,
+        fill: CHART_FILLS[i % CHART_FILLS.length],
+      })),
+    [enrolledFromApi]
+  )
 
   return (
     <Card className="rounded-3xl bg-background/70 backdrop-blur">
