@@ -35,6 +35,8 @@ export const CONFIG = {
         },
         UPLOAD: {
             IMAGE: "/upload/image",
+            IMAGES: "/upload/images",
+            IMAGE_DELETE: "/upload/image",
         },
     },
     ROUTES: {
@@ -68,6 +70,7 @@ export const CONFIG = {
             EVENTS: "/admin/events",
             COURSES: "/admin/courses",
             ARTICLES: "/admin/articles",
+            IMAGES: "/admin/images",
         },
         STUDENT: {
             HOME: "/student",

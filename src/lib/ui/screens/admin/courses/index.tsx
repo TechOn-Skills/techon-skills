@@ -22,7 +22,9 @@ import toast from "react-hot-toast"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
+import { apiService } from "@/lib/services"
 import { GET_COURSES, DELETE_COURSE, CREATE_COURSE } from "@/lib/graphql"
+import { ImageUpload } from "@/lib/ui/useable-components/image-upload"
 import { cn } from "@/lib/helpers"
 
 type CourseRow = { id: string; title: string; slug: string; subtitle?: string; totalFee?: number; feePerMonth?: number; courseDurationInMonths?: number }
@@ -80,10 +82,14 @@ export const AdminCoursesScreen = () => {
   const [addOpen, setAddOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initialForm)
+  const [techLogoFiles, setTechLogoFiles] = useState<Record<number, File>>({})
+  const [articleImageFiles, setArticleImageFiles] = useState<Record<number, File>>({})
 
   const resetForm = useCallback(() => {
     setForm(initialForm)
     setStep(1)
+    setTechLogoFiles({})
+    setArticleImageFiles({})
   }, [])
 
   const handleDelete = (id: string) => {
@@ -117,13 +123,35 @@ export const AdminCoursesScreen = () => {
   const canNext = () => {
     if (step === 1) return form.title.trim() && form.slug.trim() && form.subtitle.trim() && form.subDescription.trim()
     if (step === 2) return form.heroDescription.trim() && form.courseDurationInMonths > 0 && form.feePerMonth >= 0 && form.totalFee >= 0 && form.totalNumberOfInstallments > 0
-    if (step === 3) return form.technologies.length > 0 && form.technologies.every((t) => t.label.trim() && t.description.trim() && t.logo.trim())
-    if (step === 4) return form.articleFeatures.length > 0 && form.articleFeatures.every((a) => a.name.trim() && a.description.trim() && a.image.trim())
+    if (step === 3) return form.technologies.length > 0 && form.technologies.every((t, i) => t.label.trim() && t.description.trim() && (t.logo.trim() || techLogoFiles[i]))
+    if (step === 4) return form.articleFeatures.length > 0 && form.articleFeatures.every((a, i) => a.name.trim() && a.description.trim() && (a.image.trim() || articleImageFiles[i]))
     return true
   }
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!canNext() && step < 5) return
+    const techPayload: { label: string; description: string; logo: string }[] = []
+    for (let i = 0; i < form.technologies.length; i++) {
+      const t = form.technologies[i]
+      let logo = t.logo.trim()
+      if (techLogoFiles[i]) {
+        const res = await apiService.uploadImage(techLogoFiles[i], "courses", form.slug.trim() || undefined)
+        if (!res.success || !res.data?.url) { toast.error("Failed to upload technology logo"); return }
+        logo = res.data.url
+      }
+      techPayload.push({ label: t.label.trim(), description: t.description.trim(), logo })
+    }
+    const articlePayload: { name: string; description: string; image: string }[] = []
+    for (let i = 0; i < form.articleFeatures.length; i++) {
+      const a = form.articleFeatures[i]
+      let image = a.image.trim()
+      if (articleImageFiles[i]) {
+        const res = await apiService.uploadImage(articleImageFiles[i], "courses", form.slug.trim() || undefined)
+        if (!res.success || !res.data?.url) { toast.error("Failed to upload feature image"); return }
+        image = res.data.url
+      }
+      articlePayload.push({ name: a.name.trim(), description: a.description.trim(), image })
+    }
     createCourse({
       variables: {
         input: {
@@ -137,8 +165,8 @@ export const AdminCoursesScreen = () => {
           totalFee: form.totalFee,
           totalNumberOfInstallments: form.totalNumberOfInstallments,
           currency: form.currency.trim() || "PKR",
-          technologies: form.technologies.map((t) => ({ label: t.label.trim(), description: t.description.trim(), logo: t.logo.trim() })),
-          articleFeatures: form.articleFeatures.map((a) => ({ name: a.name.trim(), description: a.description.trim(), image: a.image.trim() })),
+          technologies: techPayload,
+          articleFeatures: articlePayload,
         },
       },
     })
@@ -304,7 +332,7 @@ export const AdminCoursesScreen = () => {
               )}
               {step === 3 && (
                 <>
-                  <p className="text-muted-foreground text-sm">Technologies shown on the course detail page (label, description, logo URL).</p>
+                  <p className="text-muted-foreground text-sm">Technologies shown on the course detail page (label, description, logo).</p>
                   {form.technologies.map((t, i) => (
                     <div key={i} className="rounded-xl border p-4 space-y-2">
                       <div className="flex justify-between items-center">
@@ -313,7 +341,15 @@ export const AdminCoursesScreen = () => {
                       </div>
                       <Input placeholder="Label (e.g. React)" value={t.label} onChange={(e) => updateTechnology(i, "label", e.target.value)} />
                       <Input placeholder="Description" value={t.description} onChange={(e) => updateTechnology(i, "description", e.target.value)} />
-                      <Input placeholder="Logo URL" value={t.logo} onChange={(e) => updateTechnology(i, "logo", e.target.value)} />
+                      <ImageUpload
+                        label="Logo"
+                        category="courses"
+                        subPath={form.slug.trim() || undefined}
+                        value={t.logo || undefined}
+                        onChange={(url) => updateTechnology(i, "logo", url)}
+                        pendingFile={techLogoFiles[i] ?? null}
+                        onPendingFileChange={(file) => setTechLogoFiles((prev) => { const next = { ...prev }; if (file) next[i] = file; else delete next[i]; return next; })}
+                      />
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" className="gap-2" onClick={addTechnology}>
@@ -323,7 +359,7 @@ export const AdminCoursesScreen = () => {
               )}
               {step === 4 && (
                 <>
-                  <p className="text-muted-foreground text-sm">Article/feature highlights (name, description, image URL).</p>
+                  <p className="text-muted-foreground text-sm">Article/feature highlights (name, description, image).</p>
                   {form.articleFeatures.map((a, i) => (
                     <div key={i} className="rounded-xl border p-4 space-y-2">
                       <div className="flex justify-between items-center">
@@ -332,7 +368,15 @@ export const AdminCoursesScreen = () => {
                       </div>
                       <Input placeholder="Name" value={a.name} onChange={(e) => updateArticleFeature(i, "name", e.target.value)} />
                       <Input placeholder="Description" value={a.description} onChange={(e) => updateArticleFeature(i, "description", e.target.value)} />
-                      <Input placeholder="Image URL" value={a.image} onChange={(e) => updateArticleFeature(i, "image", e.target.value)} />
+                      <ImageUpload
+                        label="Image"
+                        category="courses"
+                        subPath={form.slug.trim() || undefined}
+                        value={a.image || undefined}
+                        onChange={(url) => updateArticleFeature(i, "image", url)}
+                        pendingFile={articleImageFiles[i] ?? null}
+                        onPendingFileChange={(file) => setArticleImageFiles((prev) => { const next = { ...prev }; if (file) next[i] = file; else delete next[i]; return next; })}
+                      />
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" className="gap-2" onClick={addArticleFeature}>
