@@ -103,19 +103,36 @@ class ApiService {
         return handleApiResponse<unknown>(response);
     }
 
-    uploadImage = async (file: File, dirName: string, slug: string): Promise<ApiResponse<{ url: string; filename: string }>> => {
+    /** Upload image. category: courses | articles | users | profiles. subPath optional (e.g. userId for users/123). */
+    uploadImage = async (file: File, category: string, subPath?: string): Promise<ApiResponse<{ url: string; filename: string; relativePath?: string }>> => {
         const { BACKEND_URL } = getConfig();
         const path = CONFIG.BACKEND_PATHS.UPLOAD.IMAGE;
         const formData = new FormData();
+        formData.append("category", category);
+        if (subPath) formData.append("subPath", subPath);
         formData.append("image", file);
-        formData.append("dirName", dirName);
-        formData.append("slug", slug);
         const response = await fetch(`${BACKEND_URL}${path}`, { method: FetchMethod.POST, body: formData, credentials: "include" });
         const json = await response.json();
         if (json?.data?.url) {
             json.data.url = json.data.url.startsWith("http") ? json.data.url : `${BACKEND_URL.replace(/\/$/, "")}${json.data.url}`;
         }
-        return json as ApiResponse<{ url: string; filename: string }>;
+        return json as ApiResponse<{ url: string; filename: string; relativePath?: string }>;
+    }
+
+    getUploadedImages = async (params?: { category?: string; subPath?: string }): Promise<ApiResponse<{ id: string; category: string; subPath: string; filename: string; url: string; relativePath: string; createdAt: string }[]>> => {
+        const { BACKEND_URL } = getConfig();
+        const q = new URLSearchParams();
+        if (params?.category) q.set("category", params.category);
+        if (params?.subPath) q.set("subPath", params.subPath);
+        const path = `${CONFIG.BACKEND_PATHS.UPLOAD.IMAGES}${q.toString() ? `?${q.toString()}` : ""}`;
+        const response = await fetch(`${BACKEND_URL}${path}`, { method: FetchMethod.GET, credentials: "include" });
+        return handleApiResponse(response);
+    }
+
+    deleteUploadedImage = async (id: string): Promise<ApiResponse<unknown>> => {
+        const { BACKEND_URL } = getConfig();
+        const response = await fetch(`${BACKEND_URL}${CONFIG.BACKEND_PATHS.UPLOAD.IMAGE_DELETE}/${id}`, { method: FetchMethod.DELETE, credentials: "include" });
+        return handleApiResponse(response);
     }
 }
 

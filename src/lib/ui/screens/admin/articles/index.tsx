@@ -13,11 +13,13 @@ import {
 import Link from "next/link"
 import toast from "react-hot-toast"
 
+import { apiService } from "@/lib/services"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { RichTextEditor } from "@/lib/ui/useable-components/rich-text-editor"
+import { ImageUpload } from "@/lib/ui/useable-components/image-upload"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { CREATE_ARTICLE, UPDATE_ARTICLE, DELETE_ARTICLE, GET_ARTICLES, GET_ARTICLE } from "@/lib/graphql"
 
@@ -42,6 +44,7 @@ function slugify(text: string): string {
 export const AdminArticlesScreen = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -107,6 +110,7 @@ export const AdminArticlesScreen = () => {
   }, [editId, editData])
 
   const resetForm = () => {
+    setCoverImageFile(null)
     setForm({
       title: "",
       slug: "",
@@ -122,6 +126,7 @@ export const AdminArticlesScreen = () => {
 
   const openEdit = (a: ArticleRow) => {
     setEditId(a.id)
+    setCoverImageFile(null)
     setForm({
       title: a.title,
       slug: a.slug,
@@ -139,10 +144,17 @@ export const AdminArticlesScreen = () => {
     setForm((f) => ({ ...f, title, slug: f.slug || slugify(title) }))
   }
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!form.title.trim() || !form.slug.trim()) {
       toast.error("Title and slug are required")
       return
+    }
+    let coverImage = form.coverImage.trim() || undefined
+    if (coverImageFile) {
+      const res = await apiService.uploadImage(coverImageFile, "articles", form.slug.trim() || undefined)
+      if (res.success && res.data?.url) coverImage = res.data.url
+      else { toast.error("Failed to upload cover image"); return }
+      setCoverImageFile(null)
     }
     createArticle({
       variables: {
@@ -151,7 +163,7 @@ export const AdminArticlesScreen = () => {
           slug: form.slug.trim(),
           excerpt: form.excerpt.trim() || undefined,
           content: form.content.trim() || "",
-          coverImage: form.coverImage.trim() || undefined,
+          coverImage,
           published: form.published,
           authorName: form.authorName.trim() || undefined,
           metaTitle: form.metaTitle.trim() || undefined,
@@ -161,8 +173,15 @@ export const AdminArticlesScreen = () => {
     })
   }
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editId || !form.title.trim() || !form.slug.trim()) return
+    let coverImage = form.coverImage.trim() || undefined
+    if (coverImageFile) {
+      const res = await apiService.uploadImage(coverImageFile, "articles", form.slug.trim() || undefined)
+      if (res.success && res.data?.url) coverImage = res.data.url
+      else { toast.error("Failed to upload cover image"); return }
+      setCoverImageFile(null)
+    }
     updateArticle({
       variables: {
         input: {
@@ -171,7 +190,7 @@ export const AdminArticlesScreen = () => {
           slug: form.slug.trim(),
           excerpt: form.excerpt.trim() || undefined,
           content: form.content.trim() || undefined,
-          coverImage: form.coverImage.trim() || undefined,
+          coverImage,
           published: form.published,
           authorName: form.authorName.trim() || undefined,
           metaTitle: form.metaTitle.trim() || undefined,
@@ -207,7 +226,7 @@ export const AdminArticlesScreen = () => {
             <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=closed]:animate-out" />
             <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(42rem,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-3xl border bg-background p-6 shadow-xl">
               <DialogPrimitive.Title className="text-lg font-semibold">Create Article</DialogPrimitive.Title>
-              <ArticleForm form={form} setForm={setForm} onTitleChange={handleTitleChange} />
+              <ArticleForm form={form} setForm={setForm} onTitleChange={handleTitleChange} coverImageFile={coverImageFile} onCoverImageFileChange={setCoverImageFile} />
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
                 <Button variant="brand-secondary" onClick={handleCreate} disabled={creating}>
@@ -290,7 +309,7 @@ export const AdminArticlesScreen = () => {
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=closed]:animate-out" />
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(42rem,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-3xl border bg-background p-6 shadow-xl">
             <DialogPrimitive.Title className="text-lg font-semibold">Edit Article</DialogPrimitive.Title>
-            <ArticleForm form={form} setForm={setForm} onTitleChange={handleTitleChange} />
+            <ArticleForm form={form} setForm={setForm} onTitleChange={handleTitleChange} coverImageFile={coverImageFile} onCoverImageFileChange={setCoverImageFile} />
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => setEditId(null)}>Cancel</Button>
               <Button variant="brand-secondary" onClick={handleUpdate} disabled={updating}>
@@ -308,10 +327,14 @@ function ArticleForm({
   form,
   setForm,
   onTitleChange,
+  coverImageFile,
+  onCoverImageFileChange,
 }: {
   form: { title: string; slug: string; excerpt: string; content: string; coverImage: string; published: boolean; authorName: string; metaTitle: string; metaDescription: string }
   setForm: React.Dispatch<React.SetStateAction<typeof form>>
   onTitleChange: (title: string) => void
+  coverImageFile?: File | null
+  onCoverImageFileChange?: (file: File | null) => void
 }) {
   return (
     <div className="grid gap-4 py-4">
@@ -332,8 +355,15 @@ function ArticleForm({
         <RichTextEditor value={form.content} onChange={(html) => setForm((f) => ({ ...f, content: html }))} minHeight="200px" placeholder="Write your article content..." />
       </div>
       <div>
-        <label className="text-sm font-medium mb-1 block">Cover image URL</label>
-        <Input value={form.coverImage} onChange={(e) => setForm((f) => ({ ...f, coverImage: e.target.value }))} placeholder="https://..." />
+        <ImageUpload
+          label="Cover image"
+          category="articles"
+          subPath={form.slug.trim() || undefined}
+          value={form.coverImage || undefined}
+          onChange={(url) => setForm((f) => ({ ...f, coverImage: url }))}
+          pendingFile={coverImageFile ?? null}
+          onPendingFileChange={onCoverImageFileChange}
+        />
       </div>
       <div>
         <label className="text-sm font-medium mb-1 block">Author name</label>
