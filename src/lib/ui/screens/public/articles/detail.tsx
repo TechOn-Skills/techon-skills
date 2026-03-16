@@ -8,6 +8,7 @@ import { ArrowLeftIcon, CalendarIcon, Loader2Icon, UserIcon } from "lucide-react
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { GET_ARTICLE_BY_SLUG } from "@/lib/graphql"
+import { formatDateLong, getImageSrc } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 
 type ArticleDetail = {
@@ -107,7 +108,7 @@ export const PublicArticleDetailScreen = ({ slug }: { slug: string }) => {
               {article.publishedAt && (
                 <span className="flex items-center gap-1">
                   <CalendarIcon className="size-4" />
-                  {new Date(article.publishedAt).toLocaleDateString(undefined, { dateStyle: "long" })}
+                  {formatDateLong(article.publishedAt ?? article.createdAt)}
                 </span>
               )}
             </div>
@@ -118,9 +119,9 @@ export const PublicArticleDetailScreen = ({ slug }: { slug: string }) => {
         </header>
 
         {article.coverImage && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-muted">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-muted-surface">
             <Image
-              src={article.coverImage}
+              src={getImageSrc(article.coverImage) || article.coverImage}
               alt=""
               fill
               className="object-cover"

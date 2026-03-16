@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-compo
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { useUser } from "@/lib/providers/user"
 import { GET_BANKS, GET_PAYMENTS_BY_USER } from "@/lib/graphql"
+import { cn, formatDate, formatDateISO, isDueMonthReached } from "@/lib/helpers"
 import type { IFeeEntry } from "@/utils/interfaces"
 import type { FeeStatus } from "@/utils/types"
 
@@ -29,7 +30,7 @@ export const StudentFeesScreen = () => {
     }
   })
 
-  const { data: paymentsData, loading: paymentsLoading } = useQuery<{ getPaymentsByUser: Array<{ id: string; amount: number; paymentDate: string; paymentStatus: string; isPaid: boolean; courseDetails?: { installmentNumber: number } }> }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
+  const { data: paymentsData, loading: paymentsLoading } = useQuery<{ getPaymentsByUser: Array<{ id: string; amount: number; paymentDate: string; paymentStatus: string; paymentAttachment: string; isPaid: boolean; courseDetails?: { installmentNumber: number } }> }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
   const { data: banksData } = useQuery<{ getBanks: Array<{ id: string; name: string; accountNumber?: string | null; accountTitle?: string | null }> }>(GET_BANKS)
 
   const bankDetails = useMemo(() => {
@@ -47,18 +48,28 @@ export const StudentFeesScreen = () => {
     const payments = paymentsData?.getPaymentsByUser ?? []
     if (payments.length === 0) return []
     return payments.map((p) => {
-      const status: FeeStatus = p.isPaid ? "paid" : (storedStatus[p.id] ?? (p.paymentStatus === "PAID" ? "paid" : "pending"))
+      const dueMonthReached = isDueMonthReached(p.paymentDate)
+      const status: FeeStatus = p.isPaid
+        ? "paid"
+        : p.paymentStatus === "REJECTED"
+          ? "rejected"
+          : p.paymentAttachment && p.paymentAttachment !== "pending"
+            ? "pending_approval"
+            : dueMonthReached
+              ? "due"
+              : "upcoming"
       const inst = p.courseDetails?.installmentNumber ?? 0
-      const month = inst > 0 ? `Installment ${inst}` : new Date(p.paymentDate).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+      const month = inst > 0 ? `Installment ${inst}` : formatDate(p.paymentDate, { month: "long", year: "numeric", locale: "en-GB" })
       return {
         id: p.id,
         month,
         amount: "PKR " + (p.amount?.toLocaleString() ?? "0"),
-        dueDate: p.paymentDate.split("T")[0] ?? p.paymentDate,
+        dueDate: formatDateISO(p.paymentDate),
         status,
+        dueMonthReached,
       }
     })
-  }, [paymentsData?.getPaymentsByUser, storedStatus])
+  }, [paymentsData?.getPaymentsByUser])
 
   const handlePayNow = (fee: IFeeEntry) => {
     setSelectedFee(fee)
@@ -119,27 +130,50 @@ export const StudentFeesScreen = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-border border-b transition-colors hover:bg-background/40">
-                  <td className="p-4">{r.month}</td>
-                  <td className="p-4 font-semibold">{r.amount}</td>
-                  <td className="p-4 text-muted-foreground">{r.dueDate}</td>
+              {rows.map((r) => {
+                const isPending = (r.status === "due" || r.status === "pending_approval") && r.dueMonthReached
+                return (
+                <tr
+                  key={r.id}
+                  className={cn(
+                    "border-border border-b transition-colors hover:bg-background/40",
+                    isPending && "bg-destructive/5"
+                  )}
+                >
+                  <td className={cn("p-4", isPending && "font-medium text-destructive")}>{r.month}</td>
+                  <td className={cn("p-4 font-semibold", isPending && "text-destructive")}>{r.amount}</td>
+                  <td className={cn("p-4", isPending ? "font-medium text-destructive" : "text-muted-foreground")}>{r.dueDate}</td>
                   <td className="p-4">
                     {r.status === "paid" ? (
                       <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
                         <CheckCircle2Icon className="size-3.5" />
                         Paid
                       </span>
-                    ) : r.status === "under-verification" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border bg-background/50 px-2 py-1 text-xs font-semibold text-secondary">
-                        Under verification
+                    ) : r.status === "rejected" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
+                        Rejected
+                      </span>
+                    ) : r.status === "pending_approval" ? (
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold",
+                        r.dueMonthReached
+                          ? "border-destructive/40 bg-destructive/15 text-destructive"
+                          : "border-border bg-muted-surface/50 text-muted-foreground"
+                      )}>
+                        Pending approval
+                      </span>
+                    ) : r.status === "upcoming" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted-surface/50 px-2 py-1 text-xs font-semibold text-muted-foreground">
+                        Upcoming
                       </span>
                     ) : (
-                      <span className="text-muted-foreground text-xs">Pending</span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-destructive/15 px-2 py-1 text-xs font-semibold text-destructive">
+                        Due
+                      </span>
                     )}
                   </td>
                   <td className="p-4">
-                    {r.status === "pending" ? (
+                    {(r.status === "rejected" || (r.status === "due" && r.dueMonthReached)) ? (
                       <Button
                         type="button"
                         variant="brand-secondary"
@@ -155,7 +189,8 @@ export const StudentFeesScreen = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </CardContent>

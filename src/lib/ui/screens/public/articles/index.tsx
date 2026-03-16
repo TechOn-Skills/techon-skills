@@ -6,6 +6,7 @@ import { ArrowRightIcon, FileTextIcon, Loader2Icon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { formatDateLong } from "@/lib/helpers"
 import { GET_ARTICLES } from "@/lib/graphql"
 
 export const PublicArticlesScreen = () => {
@@ -65,7 +66,7 @@ export const PublicArticlesScreen = () => {
                     <p className="text-muted-foreground text-xs">
                       {a.authorName}
                       {a.authorName && a.publishedAt && " · "}
-                      {a.publishedAt && new Date(a.publishedAt).toLocaleDateString(undefined, { dateStyle: "long" })}
+                      {a.publishedAt && formatDateLong(a.publishedAt)}
                     </p>
                   )}
                 </CardHeader>

@@ -1,12 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@apollo/client/react"
 import { CalendarIcon, ClockIcon, Loader2Icon, PlayIcon, SparklesIcon, TrophyIcon, TargetIcon, ZapIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
+import { CONFIG } from "@/utils/constants"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
-import { cn } from "@/lib/helpers"
+import { cn, parseDate, formatTime } from "@/lib/helpers"
 import { GET_UPCOMING_LECTURES } from "@/lib/graphql"
 
 type LectureApi = { id: string; courseName?: string | null; title: string; meetUrl?: string | null; durationMins: number; startAt: string }
@@ -42,8 +44,6 @@ export const StudentMyLecturesScreen = () => {
   }
 
 
-  const dailyStreak = 0 // TODO: replace with getStudentDashboard or activity API when available
-
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8">
@@ -58,34 +58,6 @@ export const StudentMyLecturesScreen = () => {
             </p>
           </div>
 
-        </div>
-
-        {/* Daily Streak Banner */}
-        <div className="mb-6 rounded-3xl bg-[linear-gradient(135deg,rgba(255,138,61,0.30),rgba(70,208,255,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-top-4 duration-700 mt-4">
-          <div className="bg-background/80 backdrop-blur rounded-3xl p-6 flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="text-5xl">🔥</div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{dailyStreak} Day Streak!</div>
-                <div className="text-sm text-muted-foreground">Keep the momentum going! You&apos;re on fire! 🚀</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "size-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all",
-                    i < dailyStreak % 7
-                      ? "bg-orange-500 text-white shadow-lg scale-110"
-                      : "bg-background/40 text-muted-foreground"
-                  )}
-                >
-                  {i < dailyStreak % 7 ? "✓" : (i + 1)}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Lectures: 3 timer cards */}
@@ -110,9 +82,9 @@ export const StudentMyLecturesScreen = () => {
           ) : (
           <div className="grid gap-6 lg:grid-cols-3">
             {upcoming.map((l, idx) => {
-              const startAtMs = new Date(l.startAt).getTime()
+              const startAtMs = parseDate(l.startAt)?.getTime() ?? 0
               const c = toCountdown(startAtMs)
-              const startsAt = new Date(startAtMs)
+              const startsAt = startAtMs ? new Date(startAtMs) : null
               return (
                 <div
                   key={l.id}
@@ -141,7 +113,7 @@ export const StudentMyLecturesScreen = () => {
                             Starts at
                           </div>
                           <div className="mt-1 font-semibold">
-                            {startsAt.toLocaleTimeString() ?? "—"}
+                            {formatTime(startsAt ?? l.startAt)}
                           </div>
                         </div>
                         <div className="rounded-2xl border bg-background/40 p-4">
@@ -176,30 +148,30 @@ export const StudentMyLecturesScreen = () => {
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <button className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700">
+            <Link href={CONFIG.ROUTES.PUBLIC.COURSES} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block">
               <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
                 <div className="text-3xl mb-2">📚</div>
                 <div className="font-semibold text-sm">Browse Courses</div>
               </div>
-            </button>
-            <button className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700" style={{ animationDelay: "100ms" }}>
+            </Link>
+            <Link href={CONFIG.ROUTES.STUDENT.ASSIGNMENTS} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "100ms" }}>
               <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
                 <div className="text-3xl mb-2">✍️</div>
                 <div className="font-semibold text-sm">Submit Assignment</div>
               </div>
-            </button>
-            <button className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700" style={{ animationDelay: "200ms" }}>
+            </Link>
+            <Link href={CONFIG.ROUTES.STUDENT.EVENTS} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "200ms" }}>
               <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
                 <div className="text-3xl mb-2">🎫</div>
                 <div className="font-semibold text-sm">Register Event</div>
               </div>
-            </button>
-            <button className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700" style={{ animationDelay: "300ms" }}>
+            </Link>
+            <Link href={CONFIG.ROUTES.STUDENT.SUPPORT} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "300ms" }}>
               <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
                 <div className="text-3xl mb-2">💬</div>
                 <div className="font-semibold text-sm">Get Support</div>
               </div>
-            </button>
+            </Link>
           </div>
         </div>
 

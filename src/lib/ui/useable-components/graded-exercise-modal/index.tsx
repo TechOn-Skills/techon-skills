@@ -3,19 +3,24 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
+import { useMutation, useQuery } from "@apollo/client/react"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { setChapterProgress } from "@/utils/constants"
 import type { ChapterExerciseJson } from "@/utils/interfaces"
-import { CheckCircle2Icon, Loader2Icon, XCircleIcon } from "lucide-react"
+import { useUser } from "@/lib/providers/user"
+import { CREATE_SUBMISSION, GET_SUBMISSION_BY_REFERENCE } from "@/lib/graphql"
+import { CheckCircle2Icon, Loader2Icon } from "lucide-react"
 import { cn } from "@/lib/helpers"
+import toast from "react-hot-toast"
 
-const MCQ_PASS_PERCENT = 75
+const MAX_MARKS = 100
 
 type Props = {
     open: boolean
     onOpenChange: (open: boolean) => void
     courseSlug: string
+    courseId: string | null
     moduleSlug: string
     chapterSlug: string
     fetchExerciseUrl: string
@@ -26,19 +31,49 @@ export const GradedExerciseModal = ({
     open,
     onOpenChange,
     courseSlug,
+    courseId,
     moduleSlug,
     chapterSlug,
     fetchExerciseUrl,
     nextChapter,
 }: Props) => {
+    const { userProfileInfo } = useUser()
+    const referenceId = `${moduleSlug}/${chapterSlug}`
     const [data, setData] = useState<ChapterExerciseJson | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [mcqAnswers, setMcqAnswers] = useState<Record<number, string>>({})
     const [shortAnswers, setShortAnswers] = useState<Record<number, string>>({})
     const [submitted, setSubmitted] = useState(false)
-    const [passed, setPassed] = useState<boolean | null>(null)
     const [submitError, setSubmitError] = useState<string | null>(null)
+
+    const { data: submissionData, refetch: refetchSubmission } = useQuery<{
+        getSubmissionByReference: { id: string; status: string; marks: number | null; maxMarks: number; markedAt: string | null } | null
+    }>(GET_SUBMISSION_BY_REFERENCE, {
+        variables: {
+            userId: userProfileInfo?.id ?? "",
+            courseId: courseId ?? "",
+            type: "graded_exercise",
+            referenceId,
+        },
+        skip: !open || !courseId || !userProfileInfo?.id,
+    })
+    const existingSubmission = submissionData?.getSubmissionByReference ?? null
+    const isMarked = existingSubmission?.status === "marked"
+    const isSubmittedPending = existingSubmission?.status === "submitted" || (submitted && !existingSubmission)
+
+    const [createSubmission, { loading: submitting }] = useMutation(CREATE_SUBMISSION, {
+        onCompleted: () => {
+            setSubmitted(true)
+            refetchSubmission()
+            setChapterProgress(courseSlug, moduleSlug, chapterSlug, 100)
+            toast.success("Submitted. You'll be notified when your marks are ready.")
+        },
+        onError: (e) => {
+            setSubmitError(e.message || "Failed to submit")
+            toast.error(e.message || "Failed to submit")
+        },
+    })
 
     const fetchData = useCallback(async () => {
         setLoading(true)
@@ -99,7 +134,7 @@ export const GradedExerciseModal = ({
     }, [data, shortAnswers])
 
     const handleSubmit = () => {
-        if (!data) return
+        if (!data || !courseId || !userProfileInfo?.id) return
         setSubmitError(null)
 
         if (!allMcqsAttempted()) {
@@ -114,14 +149,24 @@ export const GradedExerciseModal = ({
         }
 
         const mcqPercent = getMcqScorePercent()
-        const passedCheck = mcqPercent !== null && mcqPercent >= MCQ_PASS_PERCENT
-
-        setSubmitted(true)
-        setPassed(passedCheck)
-
-        if (passedCheck) {
-            setChapterProgress(courseSlug, moduleSlug, chapterSlug, 100)
-        }
+        createSubmission({
+            variables: {
+                input: {
+                    courseId,
+                    type: "graded_exercise",
+                    referenceId,
+                    title: data.chapterTitle,
+                    mcqScore: mcqPercent ?? 0,
+                    mcqMax: data.MCQs.length > 0 ? 100 : 0,
+                    shortAnswers: data.ShortQuestions.map((sq) => ({
+                        questionId: sq.id,
+                        questionText: sq.question,
+                        answer: shortAnswers[sq.id] ?? "",
+                    })),
+                    maxMarks: MAX_MARKS,
+                },
+            },
+        })
     }
 
     const setMcq = (id: number, key: string) => {
@@ -184,63 +229,50 @@ export const GradedExerciseModal = ({
                                             Multiple choice <span className="font-normal normal-case">(required)</span>
                                         </h3>
                                         <ul className="space-y-3">
-                                            {data.MCQs.map((mcq) => {
-                                                const correctKey = mcq.options.find((o) => o.isCorrect)?.key
-                                                const isCorrect = submitted && correctKey && mcqAnswers[mcq.id] === correctKey
-                                                const isWrong = submitted && mcqAnswers[mcq.id] && mcqAnswers[mcq.id] !== correctKey
-
-                                                return (
-                                                    <li
-                                                        key={mcq.id}
-                                                        className={cn(
-                                                            "rounded-xl border p-3.5 transition-all duration-200",
-                                                            isCorrect && "border-emerald-500/60 bg-emerald-500/10",
-                                                            isWrong && "border-red-400/50 bg-red-500/10",
-                                                            !submitted && "border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-(--background-secondary-light) dark:bg-(--background-secondary-dark)"
-                                                        )}
-                                                    >
-                                                        <p className="mb-2.5 text-sm font-medium leading-snug text-foreground">
-                                                            {mcq.question}
-                                                        </p>
-                                                        <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={`Question ${mcq.id}`}>
-                                                            {mcq.options.map((opt) => {
-                                                                const isSelected = mcqAnswers[mcq.id] === opt.key
-                                                                return (
-                                                                    <button
-                                                                        key={opt.key}
-                                                                        type="button"
-                                                                        role="radio"
-                                                                        aria-checked={isSelected}
-                                                                        disabled={submitted}
-                                                                        onClick={() => setMcq(mcq.id, opt.key)}
+                                            {data.MCQs.map((mcq) => (
+                                                <li
+                                                    key={mcq.id}
+                                                    className="rounded-xl border border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-(--background-secondary-light) dark:bg-(--background-secondary-dark) p-3.5"
+                                                >
+                                                    <p className="mb-2.5 text-sm font-medium leading-snug text-foreground">
+                                                        {mcq.question}
+                                                    </p>
+                                                    <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={`Question ${mcq.id}`}>
+                                                        {mcq.options.map((opt) => {
+                                                            const isSelected = mcqAnswers[mcq.id] === opt.key
+                                                            return (
+                                                                <button
+                                                                    key={opt.key}
+                                                                    type="button"
+                                                                    role="radio"
+                                                                    aria-checked={isSelected}
+                                                                    disabled={submitted || isSubmittedPending || isMarked}
+                                                                    onClick={() => setMcq(mcq.id, opt.key)}
+                                                                    className={cn(
+                                                                        "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150",
+                                                                        "border-transparent",
+                                                                        isSelected
+                                                                            ? "bg-(--brand-secondary)/15 text-(--brand-primary) dark:text-(--text-primary-dark) ring-2 ring-(--brand-secondary)/50"
+                                                                            : "hover:bg-(--background-hover-light) dark:hover:bg-(--background-hover-dark) hover:border-(--border-default-light) dark:hover:border-(--border-default-dark)"
+                                                                    )}
+                                                                >
+                                                                    <span
                                                                         className={cn(
-                                                                            "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150",
-                                                                            "border-transparent",
+                                                                            "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                                                                             isSelected
-                                                                                ? "bg-(--brand-secondary)/15 text-(--brand-primary) dark:text-(--text-primary-dark) ring-2 ring-(--brand-secondary)/50"
-                                                                                : "hover:bg-(--background-hover-light) dark:hover:bg-(--background-hover-dark) hover:border-(--border-default-light) dark:hover:border-(--border-default-dark)",
-                                                                            submitted && opt.isCorrect && "bg-emerald-500/15 ring-2 ring-emerald-500/40 border-emerald-500/30"
+                                                                                ? "bg-(--brand-secondary) text-(--text-on-dark)"
+                                                                                : "border-2 border-(--border-default-light) dark:border-(--border-default-dark) bg-transparent text-muted-foreground"
                                                                         )}
                                                                     >
-                                                                        <span
-                                                                            className={cn(
-                                                                                "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                                                                                isSelected
-                                                                                    ? "bg-(--brand-secondary) text-(--text-on-dark)"
-                                                                                    : "border-2 border-(--border-default-light) dark:border-(--border-default-dark) bg-transparent text-muted-foreground",
-                                                                                submitted && opt.isCorrect && "bg-emerald-600 text-white border-0"
-                                                                            )}
-                                                                        >
-                                                                            {opt.key}
-                                                                        </span>
-                                                                        <span className="flex-1">{opt.text}</span>
-                                                                    </button>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </li>
-                                                )
-                                            })}
+                                                                        {opt.key}
+                                                                    </span>
+                                                                    <span className="flex-1">{opt.text}</span>
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </li>
+                                            ))}
                                         </ul>
                                     </section>
                                 )}
@@ -264,7 +296,7 @@ export const GradedExerciseModal = ({
                                                             placeholder={`Type your answer (minimum ${SHORT_ANSWER_MIN_LENGTH} characters)…`}
                                                             value={shortAnswers[sq.id] ?? ""}
                                                             onChange={(e) => setShort(sq.id, e.target.value)}
-                                                            disabled={submitted && passed === true}
+                                                            disabled={submitted || isSubmittedPending || isMarked}
                                                             className={cn(
                                                                 "min-h-[72px] resize-y rounded-lg border-(--border-default-light) dark:border-(--border-default-dark) text-sm transition-colors focus-visible:ring-2 focus-visible:ring-(--brand-secondary)",
                                                                 !meetsMin && len > 0 && "border-amber-500/50 focus-visible:ring-amber-500/50"
@@ -286,11 +318,11 @@ export const GradedExerciseModal = ({
                     {/* Footer */}
                     {!loading && !error && data && (
                         <div className="shrink-0 border-t border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-(--background-secondary-light) dark:bg-(--background-secondary-dark) px-5 py-4">
-                            {submitted && passed === true ? (
+                            {isMarked ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
                                         <CheckCircle2Icon className="size-5 shrink-0" />
-                                        You passed! Chapter marked complete.
+                                        Marks: {existingSubmission?.marks ?? 0} / {existingSubmission?.maxMarks ?? MAX_MARKS}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {nextChapter ? (
@@ -303,10 +335,15 @@ export const GradedExerciseModal = ({
                                         </Button>
                                     </div>
                                 </div>
-                            ) : submitted && passed === false ? (
-                                <div className="flex items-center gap-2 rounded-lg bg-red-500/15 px-3 py-2 text-sm font-medium text-red-700 dark:text-red-300">
-                                    <XCircleIcon className="size-5 shrink-0" />
-                                    Need {MCQ_PASS_PERCENT}% on MCQs to pass. You got {getMcqScorePercent()}%. Adjust answers and submit again.
+                            ) : isSubmittedPending ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 rounded-lg bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+                                        <Loader2Icon className="size-5 shrink-0 animate-spin" />
+                                        Submitted. You&apos;ll be notified when your marks are ready.
+                                    </div>
+                                    <Button asChild variant="outline" shape="pill" size="default">
+                                        <Link href={`/student/course/${courseSlug}`}>Back to course</Link>
+                                    </Button>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -319,8 +356,16 @@ export const GradedExerciseModal = ({
                                         shape="pill"
                                         className="w-full font-semibold"
                                         onClick={handleSubmit}
+                                        disabled={!courseId || submitting}
                                     >
-                                        Submit exercise
+                                        {submitting ? (
+                                            <>
+                                                <Loader2Icon className="size-4 animate-spin" />
+                                                Submitting…
+                                            </>
+                                        ) : (
+                                            "Submit exercise"
+                                        )}
                                     </Button>
                                 </div>
                             )}

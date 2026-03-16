@@ -5,6 +5,8 @@ import { CONFIG } from "@/utils/constants";
 import { UserRole } from "@/utils/enums/user";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
+import { StudentLayout } from "@/lib/layouts";
+import { ContentAreaLoader } from "@/lib/ui/useable-components/content-area-loader";
 
 const ADMIN_ROLES = [UserRole.SUPER_ADMIN, UserRole.ADMIN];
 
@@ -34,9 +36,9 @@ export function StudentRouteGuard({ children }: { children: ReactNode }) {
 
   if (!profileLoaded) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
-      </div>
+      <StudentLayout>
+        <ContentAreaLoader />
+      </StudentLayout>
     );
   }
 
@@ -47,9 +49,9 @@ export function StudentRouteGuard({ children }: { children: ReactNode }) {
     (role && role !== UserRole.STUDENT)
   ) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
-      </div>
+      <StudentLayout>
+        <ContentAreaLoader />
+      </StudentLayout>
     );
   }
 

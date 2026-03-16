@@ -11,7 +11,10 @@ import { usePathname } from "next/navigation";
 const UserContext = createContext<IUserContextProvider | null>(null);
 
 interface UserProfileQueryResult {
-    userProfileInfo?: IUserProfileInfo & { enrolledCourses?: IEnrolledCourseFromApi[] };
+    userProfileInfo?: IUserProfileInfo & {
+        enrolledCourses?: IEnrolledCourseFromApi[];
+        requestedCourses?: IEnrolledCourseFromApi[];
+    };
 }
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
@@ -26,12 +29,23 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const userProfileInfo = useMemo(() => {
         const raw = data?.userProfileInfo;
         if (!raw) return null;
-        return { id: raw.id, email: raw.email, role: raw.role, status: raw.status };
+        return {
+            id: raw.id,
+            email: raw.email,
+            fullName: raw.fullName ?? null,
+            profilePicture: raw.profilePicture ?? null,
+            role: raw.role,
+            status: raw.status,
+        };
     }, [data?.userProfileInfo]);
 
     const enrolledCoursesFromApi = useMemo((): IEnrolledCourseFromApi[] => {
         return data?.userProfileInfo?.enrolledCourses ?? [];
     }, [data?.userProfileInfo?.enrolledCourses]);
+
+    const requestedCoursesFromApi = useMemo((): IEnrolledCourseFromApi[] => {
+        return data?.userProfileInfo?.requestedCourses ?? [];
+    }, [data?.userProfileInfo?.requestedCourses]);
 
     const profileLoaded = !loading;
 
@@ -51,8 +65,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, [pathname, refetchUserProfileInfo])
 
     const value = useMemo(
-        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, enrolledCoursesFromApi, profileLoaded }),
-        [userProfileInfo, userData, enrolledCoursesFromApi, profileLoaded, error]
+        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded }),
+        [userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded, error]
     );
 
     return (

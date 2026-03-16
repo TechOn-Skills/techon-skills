@@ -63,8 +63,8 @@ export function ImageUpload({
           onClick={() => inputRef.current?.click()}
           disabled={disabled}
           className={cn(
-            "flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-muted/30",
-            "hover:border-(--brand-primary)/50 hover:bg-muted/50",
+            "flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-muted-surface/30",
+            "hover:border-(--brand-primary)/50 hover:bg-muted-surface/50",
             disabled && "opacity-50 pointer-events-none"
           )}
         >

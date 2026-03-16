@@ -40,6 +40,16 @@ export const ENROLL_USER_IN_COURSE = gql`
     }
 `;
 
+export const REQUEST_COURSE_FOR_USER = gql`
+    mutation RequestCourseForUser($input: UserCourseInput!) {
+        requestCourseForUser(input: $input) {
+            id
+            email
+            fullName
+        }
+    }
+`;
+
 export const UPDATE_USER_INPUT = gql`
     mutation UpdateUserInput($input: UserUpdateInput!) {
         updateUser(input: $input) {

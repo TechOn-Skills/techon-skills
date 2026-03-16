@@ -9,7 +9,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
-import { cn } from "@/lib/helpers"
+import { cn, formatDateTime, formatDateLong } from "@/lib/helpers"
 import type { ISubmission } from "@/utils/interfaces"
 import { MOTIVATIONAL_QUOTES } from "@/utils/constants"
 
@@ -156,7 +156,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
               <CardHeader>
                 <CardTitle>{assignment.title}</CardTitle>
                 <CardDescription>
-                  {assignment.course} • Due {assignment.dueDate}
+                  {assignment.course} • Due {formatDateLong(assignment.dueDate)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -228,7 +228,7 @@ Example:
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">
                       {saved?.submittedAt
-                        ? `✅ Last submitted: ${new Date(saved.submittedAt).toLocaleString()}`
+                        ? `✅ Last submitted: ${formatDateTime(saved.submittedAt)}`
                         : "📝 Not submitted yet"}
                     </div>
                     {saved && !saved.marks && (

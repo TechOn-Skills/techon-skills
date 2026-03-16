@@ -7,7 +7,7 @@ import { ArrowRightIcon, FlameIcon, TrophyIcon, TargetIcon, StarIcon, ZapIcon } 
 import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
-import { cn } from "@/lib/helpers"
+import { cn, formatDateLong } from "@/lib/helpers"
 import type { ISubmission } from "@/utils/interfaces"
 
 function storageKey(id: string) {
@@ -185,7 +185,7 @@ export const StudentAssignmentsListScreen = () => {
                     )}
                   </CardTitle>
                   <CardDescription>
-                    {assignment.course} • Due {assignment.dueDate}
+                    {assignment.course} • Due {formatDateLong(assignment.dueDate)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

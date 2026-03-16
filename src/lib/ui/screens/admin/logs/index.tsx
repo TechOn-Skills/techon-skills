@@ -51,7 +51,7 @@ export const AdminLogsScreen = () => {
                 activity.map((a) => (
                   <div
                     key={a.id}
-                    className="flex items-start gap-4 p-4 transition-colors hover:bg-muted/20"
+                    className="flex items-start gap-4 p-4 transition-colors hover:bg-muted-surface/20"
                   >
                     <div className="bg-(--brand-primary)/10 text-(--brand-primary) size-10 rounded-xl flex items-center justify-center shrink-0">
                       <ActivityIcon className="size-5" />
@@ -62,7 +62,7 @@ export const AdminLogsScreen = () => {
                         {" "}{a.action}
                       </p>
                       <p className="text-muted-foreground text-xs mt-1 flex items-center gap-2">
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                        <span className="rounded-full bg-muted-surface px-2 py-0.5 text-xs text-muted-foreground">
                           {typeLabels[a.type] ?? a.type}
                         </span>
                         {a.time}

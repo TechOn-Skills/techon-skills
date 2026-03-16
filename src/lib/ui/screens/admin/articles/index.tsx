@@ -20,7 +20,9 @@ import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { RichTextEditor } from "@/lib/ui/useable-components/rich-text-editor"
 import { ImageUpload } from "@/lib/ui/useable-components/image-upload"
+import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { formatDate } from "@/lib/helpers"
 import { CREATE_ARTICLE, UPDATE_ARTICLE, DELETE_ARTICLE, GET_ARTICLES, GET_ARTICLE } from "@/lib/graphql"
 
 type ArticleRow = {
@@ -44,6 +46,7 @@ function slugify(text: string): string {
 export const AdminArticlesScreen = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
   const [form, setForm] = useState({
     title: "",
@@ -200,9 +203,12 @@ export const AdminArticlesScreen = () => {
     })
   }
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Delete this article?")) return
-    deleteArticle({ variables: { id } })
+  const handleDelete = (id: string) => setDeleteConfirmId(id)
+  const onConfirmDelete = () => {
+    if (deleteConfirmId) {
+      deleteArticle({ variables: { id: deleteConfirmId } })
+      setDeleteConfirmId(null)
+    }
   }
 
   return (
@@ -252,7 +258,7 @@ export const AdminArticlesScreen = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b bg-muted/40">
+                <thead className="border-b bg-muted-surface/40">
                   <tr>
                     <th className="p-4 font-semibold">Title</th>
                     <th className="p-4 font-semibold">Slug</th>
@@ -264,7 +270,7 @@ export const AdminArticlesScreen = () => {
                 </thead>
                 <tbody>
                   {articles.map((a) => (
-                    <tr key={a.id} className="border-b transition-colors hover:bg-muted/20">
+                    <tr key={a.id} className="border-b transition-colors hover:bg-muted-surface/20">
                       <td className="p-4 font-medium">{a.title}</td>
                       <td className="p-4 text-muted-foreground font-mono text-xs">{a.slug}</td>
                       <td className="p-4">
@@ -273,7 +279,7 @@ export const AdminArticlesScreen = () => {
                         </span>
                       </td>
                       <td className="p-4 text-muted-foreground text-xs">{a.authorName || "—"}</td>
-                      <td className="p-4 text-muted-foreground text-xs">{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"}</td>
+                      <td className="p-4 text-muted-foreground text-xs">{formatDate(a.createdAt)}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="icon" asChild>
@@ -303,6 +309,17 @@ export const AdminArticlesScreen = () => {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete article"
+        description="Delete this article? This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={onConfirmDelete}
+        loading={deleting}
+      />
 
       <DialogPrimitive.Root open={!!editId} onOpenChange={(open) => !open && setEditId(null)}>
         <DialogPrimitive.Portal>

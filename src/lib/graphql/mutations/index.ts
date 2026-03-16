@@ -2,5 +2,8 @@ export * from "./articles";
 export * from "./courses";
 export * from "./events";
 export * from "./news";
+export * from "./notifications";
+export * from "./payments";
+export * from "./submissions";
 export * from "./tickets";
 export * from "./users";

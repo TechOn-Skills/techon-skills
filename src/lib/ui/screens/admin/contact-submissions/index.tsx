@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 
-import { getApiDisplayMessage } from "@/lib/helpers"
+import { getApiDisplayMessage, formatDateTime } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
@@ -181,9 +181,7 @@ export const AdminContactSubmissionsScreen = () => {
                         <td className="p-4">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <CalendarIcon className="size-3" />
-                            {sub.createdAt
-                              ? new Date(sub.createdAt).toLocaleString()
-                              : "—"}
+                            {formatDateTime(sub.createdAt)}
                           </div>
                         </td>
                         <td className="p-4">

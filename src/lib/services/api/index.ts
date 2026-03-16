@@ -1,5 +1,5 @@
 import { getConfig } from "@/lib/services/config";
-import { fetchURL, handleApiResponse } from "@/lib/helpers";
+import { fetchURL, getClientTimezone, handleApiResponse } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
 import { FetchMethod } from "@/utils/enums";
 import { ApiResponse, IContactFormSubmission, IUser, IUserProfileInfo } from "@/utils/interfaces";
@@ -111,7 +111,13 @@ class ApiService {
         formData.append("category", category);
         if (subPath) formData.append("subPath", subPath);
         formData.append("image", file);
-        const response = await fetch(`${BACKEND_URL}${path}`, { method: FetchMethod.POST, body: formData, credentials: "include" });
+        const tz = getClientTimezone();
+        const response = await fetch(`${BACKEND_URL}${path}`, {
+            method: FetchMethod.POST,
+            body: formData,
+            credentials: "include",
+            headers: tz ? { "X-Timezone": tz } : undefined,
+        });
         const json = await response.json();
         if (json?.data?.url) {
             json.data.url = json.data.url.startsWith("http") ? json.data.url : `${BACKEND_URL.replace(/\/$/, "")}${json.data.url}`;
@@ -125,13 +131,23 @@ class ApiService {
         if (params?.category) q.set("category", params.category);
         if (params?.subPath) q.set("subPath", params.subPath);
         const path = `${CONFIG.BACKEND_PATHS.UPLOAD.IMAGES}${q.toString() ? `?${q.toString()}` : ""}`;
-        const response = await fetch(`${BACKEND_URL}${path}`, { method: FetchMethod.GET, credentials: "include" });
+        const tz = getClientTimezone();
+        const response = await fetch(`${BACKEND_URL}${path}`, {
+            method: FetchMethod.GET,
+            credentials: "include",
+            headers: tz ? { "X-Timezone": tz } : undefined,
+        });
         return handleApiResponse(response);
     }
 
     deleteUploadedImage = async (id: string): Promise<ApiResponse<unknown>> => {
         const { BACKEND_URL } = getConfig();
-        const response = await fetch(`${BACKEND_URL}${CONFIG.BACKEND_PATHS.UPLOAD.IMAGE_DELETE}/${id}`, { method: FetchMethod.DELETE, credentials: "include" });
+        const tz = getClientTimezone();
+        const response = await fetch(`${BACKEND_URL}${CONFIG.BACKEND_PATHS.UPLOAD.IMAGE_DELETE}/${id}`, {
+            method: FetchMethod.DELETE,
+            credentials: "include",
+            headers: tz ? { "X-Timezone": tz } : undefined,
+        });
         return handleApiResponse(response);
     }
 }

@@ -6,6 +6,8 @@ export * from "./dashboard";
 export * from "./events";
 export * from "./lectures";
 export * from "./news";
+export * from "./notifications";
 export * from "./payments";
+export * from "./submissions";
 export * from "./tickets";
 export * from "./users";
