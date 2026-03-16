@@ -15,7 +15,7 @@ import {
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { GET_USER_BY_ID } from "@/lib/graphql"
-import { cn } from "@/lib/helpers"
+import { cn, formatDateLong } from "@/lib/helpers"
 
 type UserRole = "STUDENT" | "INSTRUCTOR" | "ADMIN" | "SUPER_ADMIN"
 type UserStatus = "ACTIVE" | "INACTIVE"
@@ -118,7 +118,7 @@ export const AdminUserDetailScreen = ({ id }: { id: string }) => {
                     {user.email}
                   </CardDescription>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold">
+                    <span className="rounded-full bg-muted-surface px-3 py-1 text-xs font-semibold text-muted-foreground">
                       {roleConfig[user.role] ?? user.role}
                     </span>
                     <span
@@ -159,7 +159,7 @@ export const AdminUserDetailScreen = ({ id }: { id: string }) => {
                     <div>
                       <div className="text-xs text-muted-foreground">Joined</div>
                       <div className="font-medium">
-                        {new Date(user.createdAt).toLocaleDateString(undefined, { dateStyle: "long" })}
+                        {formatDateLong(user.createdAt)}
                       </div>
                     </div>
                   </div>

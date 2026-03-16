@@ -18,7 +18,7 @@ import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { GET_TICKETS, GET_TICKET, REPLY_TO_TICKET, UPDATE_TICKET_STATUS } from "@/lib/graphql"
-import { cn } from "@/lib/helpers"
+import { cn, formatDateTime } from "@/lib/helpers"
 
 type TicketRow = {
   id: string
@@ -114,15 +114,15 @@ export const AdminTicketsScreen = () => {
             <CardContent className="p-0">
               <div className="max-h-[60vh] overflow-y-auto">
                 {tickets.map((t) => {
-                  const sc = statusConfig[t.status] ?? { label: t.status, color: "bg-muted" }
+                  const sc = statusConfig[t.status] ?? { label: t.status, color: "bg-muted-surface" }
                   return (
                     <button
                       key={t.id}
                       type="button"
                       onClick={() => setViewId(t.id)}
                       className={cn(
-                        "w-full text-left p-4 border-b transition-colors hover:bg-muted/30",
-                        viewId === t.id && "bg-muted/50"
+                        "w-full text-left p-4 border-b transition-colors hover:bg-muted-surface/30",
+                        viewId === t.id && "bg-muted-surface/50"
                       )}
                     >
                       <div className="font-medium truncate">{t.subject}</div>
@@ -130,7 +130,7 @@ export const AdminTicketsScreen = () => {
                         <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", sc.color)}>{sc.label}</span>
                         {t.user?.email}
                       </div>
-                      <div className="text-muted-foreground text-xs mt-1">{new Date(t.createdAt).toLocaleString()}</div>
+                      <div className="text-muted-foreground text-xs mt-1">{formatDateTime(t.createdAt)}</div>
                     </button>
                   )
                 })}
@@ -160,10 +160,10 @@ export const AdminTicketsScreen = () => {
                           {selected.user.fullName || selected.user.email}
                         </span>
                       )}
-                      <span className="text-muted-foreground text-xs">{new Date(selected.createdAt).toLocaleString()}</span>
+                      <span className="text-muted-foreground text-xs">{formatDateTime(selected.createdAt)}</span>
                     </div>
                   </div>
-                  <div className="rounded-2xl border bg-muted/30 p-4">
+                  <div className="rounded-2xl border bg-muted-surface/30 p-4">
                     <div className="text-sm text-muted-foreground mb-1">Message</div>
                     <p className="text-sm whitespace-pre-wrap">{selected.message}</p>
                   </div>
@@ -171,7 +171,7 @@ export const AdminTicketsScreen = () => {
                     <div className="rounded-2xl border bg-(--brand-primary)/10 p-4">
                       <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
                         <CheckCircle2Icon className="size-4" />
-                        Admin reply {selected.repliedAt && `· ${new Date(selected.repliedAt).toLocaleString()}`}
+                        Admin reply {selected.repliedAt && `· ${formatDateTime(selected.repliedAt)}`}
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{selected.adminReply}</p>
                     </div>

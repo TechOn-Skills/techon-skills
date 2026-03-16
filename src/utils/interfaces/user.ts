@@ -3,6 +3,8 @@ import { UserRole, UserStatus, SelectedCourse } from "@/utils/enums";
 export interface IUserProfileInfo {
     id: string;
     email: string;
+    fullName?: string | null;
+    profilePicture?: string | null;
     role: UserRole;
     status: UserStatus;
 }
@@ -33,5 +35,6 @@ export interface IUserContextProvider {
     userProfileInfo: IUserProfileInfo | null;
     userData: IUser | null;
     enrolledCoursesFromApi: IEnrolledCourseFromApi[];
+    requestedCoursesFromApi: IEnrolledCourseFromApi[];
     profileLoaded: boolean;
 }

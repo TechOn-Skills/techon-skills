@@ -27,6 +27,7 @@ import { GET_USERS, GET_COURSES, ENROLL_USER_IN_COURSE, UPDATE_USER_INPUT, DELET
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
+import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
 import { RichTextEditor } from "@/lib/ui/useable-components/rich-text-editor"
 import {
   Sheet,
@@ -447,7 +448,7 @@ function EditUserSheet({
 }) {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneValue, setPhoneValue] = useState(parsePhoneFromString(""))
   const [role, setRole] = useState<UserRole>("STUDENT")
   const [status, setStatus] = useState<UserStatus>("ACTIVE")
   const [saving, setSaving] = useState(false)
@@ -456,7 +457,7 @@ function EditUserSheet({
     if (user) {
       setFullName(user.fullName ?? "")
       setEmail(user.email ?? "")
-      setPhoneNumber(user.phoneNumber ?? "")
+      setPhoneValue(parsePhoneFromString(user.phoneNumber ?? ""))
       setRole(user.role)
       setStatus(user.status)
     }
@@ -466,13 +467,14 @@ function EditUserSheet({
     if (!user) return
     setSaving(true)
     try {
+      const fullPhone = getFullPhone(phoneValue)
       await updateUserMutation({
         variables: {
           input: {
             id: user.id,
             fullName: fullName.trim() || undefined,
             email: email.trim() || undefined,
-            phoneNumber: phoneNumber.trim() || undefined,
+            phoneNumber: fullPhone.trim() || undefined,
             role,
             status,
           },
@@ -505,7 +507,7 @@ function EditUserSheet({
           </div>
           <div>
             <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Phone</label>
-            <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Phone number" className="rounded-xl" />
+            <PhoneInput value={phoneValue} onChange={setPhoneValue} placeholder="Phone number" />
           </div>
           <div>
             <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Role</label>
@@ -632,7 +634,7 @@ function AssignCoursesForUserSheet({
         </SheetHeader>
         <div className="px-4 space-y-2 max-h-[60vh] overflow-y-auto">
           {courses.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted/50 cursor-pointer">
+            <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted-surface/50 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectedIds.includes(c.id)}

@@ -16,9 +16,10 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 
-import { getApiDisplayMessage } from "@/lib/helpers"
+import { getApiDisplayMessage, formatDateTime } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { UPDATE_USER_INPUT } from "@/lib/graphql"
+import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -159,7 +160,7 @@ export const AdminRegistrationRequestsScreen = () => {
                         <td className="p-4">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <CalendarIcon className="size-3" />
-                            {req.createdAt ? new Date(req.createdAt).toLocaleString() : "—"}
+                            {formatDateTime(req.createdAt)}
                           </div>
                         </td>
                         <td className="p-4">
@@ -256,7 +257,7 @@ function ApproveRegistrationSheet({
   onSuccess: () => void
 }) {
   const [fullName, setFullName] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneValue, setPhoneValue] = useState(parsePhoneFromString(""))
   const [profileFile, setProfileFile] = useState<File | null>(null)
   const [profilePreview, setProfilePreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -265,7 +266,7 @@ function ApproveRegistrationSheet({
   useEffect(() => {
     if (user) {
       setFullName(user.fullName ?? "")
-      setPhoneNumber(user.phoneNumber ?? "")
+      setPhoneValue(parsePhoneFromString(user.phoneNumber ?? ""))
       setProfileFile(null)
       setProfilePreview(null)
     }
@@ -301,7 +302,7 @@ function ApproveRegistrationSheet({
           input: {
             id: user._id,
             fullName: fullName.trim(),
-            phoneNumber: phoneNumber.trim() || undefined,
+            phoneNumber: getFullPhone(phoneValue).trim() || undefined,
             profilePicture: profilePictureUrl,
           },
         },
@@ -348,17 +349,12 @@ function ApproveRegistrationSheet({
           </div>
           <div>
             <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Phone number</label>
-            <Input
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="e.g. +92 300 1234567"
-              className="rounded-xl"
-            />
+            <PhoneInput value={phoneValue} onChange={setPhoneValue} placeholder="Phone number" />
           </div>
           <div>
             <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Profile picture</label>
             <div className="flex items-center gap-4">
-              <label className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 border-dashed border-muted-foreground/30 hover:border-(--brand-primary)/50 cursor-pointer transition-colors overflow-hidden bg-muted/30">
+              <label className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 border-dashed border-muted-foreground/30 hover:border-(--brand-primary)/50 cursor-pointer transition-colors overflow-hidden bg-muted-surface/30">
                 {profilePreview ? (
                   <img src={profilePreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (

@@ -38,7 +38,7 @@ type RichTextEditorProps = {
 function Toolbar({ editor }: { editor: Editor | null }) {
   if (!editor) return null
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-1 rounded-t-xl">
+    <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted-surface/30 p-1 rounded-t-xl">
       <Button
         type="button"
         variant="ghost"

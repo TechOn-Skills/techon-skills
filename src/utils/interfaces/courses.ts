@@ -57,6 +57,7 @@ export interface ICourseArticleFeature {
 
 /** Full Course document shape matching backend CourseSchema. */
 export interface ICourse {
+  id?: string
   title: string
   heroDescription: string
   courseDurationInMonths: number

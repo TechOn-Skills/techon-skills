@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { ImageIcon, Loader2Icon, Trash2Icon } from "lucide-react"
 import toast from "react-hot-toast"
 
-import { getApiDisplayMessage } from "@/lib/helpers"
+import { getApiDisplayMessage, getImageSrc } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
@@ -80,7 +80,7 @@ export const AdminImagesScreen = () => {
               "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
               categoryFilter === cat
                 ? "bg-(--brand-primary) text-(--text-on-dark)"
-                : "bg-muted/60 hover:bg-muted"
+                : "bg-muted-surface/60 hover:bg-muted-surface"
             )}
           >
             {cat === "all" ? "All" : cat}
@@ -108,9 +108,9 @@ export const AdminImagesScreen = () => {
                   key={item.id}
                   className="rounded-2xl border bg-background/60 overflow-hidden group"
                 >
-                  <div className="aspect-video bg-muted/50 relative">
+                  <div className="aspect-video bg-muted-surface/50 relative">
                     <img
-                      src={item.url}
+                      src={getImageSrc(item.url) || item.url}
                       alt={item.filename}
                       className="w-full h-full object-contain"
                     />

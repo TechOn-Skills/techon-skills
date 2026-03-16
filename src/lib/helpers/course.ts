@@ -40,6 +40,7 @@ export function mapApiCourseToICourse(
   }
 ): ICourse {
   return {
+    id: api.id,
     title: api.title,
     heroDescription: api.heroDescription,
     courseDurationInMonths: api.courseDurationInMonths,

@@ -24,8 +24,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
-import { cn } from "@/lib/helpers"
+import { cn, formatDate } from "@/lib/helpers"
 import { GET_USER_PROFILE_INFO } from "@/lib/graphql"
+import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
 
 type ProfileApi = { id: string; email: string; fullName?: string | null; phoneNumber?: string | null; profilePicture?: string | null; createdAt?: string }
 
@@ -56,9 +57,11 @@ export const StudentProfileScreen = () => {
       name: apiProfile.fullName ?? prev.name,
       email: apiProfile.email ?? prev.email,
       phone: apiProfile.phoneNumber ?? prev.phone,
-      enrolledDate: apiProfile.createdAt ? new Date(apiProfile.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : prev.enrolledDate,
+      enrolledDate: apiProfile.createdAt ? formatDate(apiProfile.createdAt, { month: "long", year: "numeric", locale: "en-GB" }) : prev.enrolledDate,
     }))
   }, [apiProfile])
+
+  const profilePhoneValue = parsePhoneFromString(profile.phone)
 
   // Calculate profile completion
   const profileCompletion = (() => {
@@ -76,14 +79,6 @@ export const StudentProfileScreen = () => {
     return Math.round((filled / fields.length) * 100)
   })()
 
-  const achievements = [
-    { id: 1, title: "First Assignment Submitted", icon: TrophyIcon, date: "Jan 15, 2026", color: "text-yellow-500", locked: false },
-    { id: 2, title: "Perfect Attendance - Week 1", icon: CalendarIcon, date: "Jan 20, 2026", color: "text-blue-500", locked: false },
-    { id: 3, title: "High Performer", icon: SparklesIcon, date: "Jan 22, 2026", color: "text-purple-500", locked: false },
-    { id: 4, title: "5 Streak Master", icon: AwardIcon, date: "Locked", color: "text-gray-400", locked: true },
-    { id: 5, title: "10 Projects Milestone", icon: BriefcaseIcon, date: "Locked", color: "text-gray-400", locked: true },
-  ]
-
   if (loading) {
     return (
       <div className="w-full py-10 flex items-center justify-center gap-2 text-muted-foreground">
@@ -100,12 +95,8 @@ export const StudentProfileScreen = () => {
     )
   }
 
-  const stats = [
-    { label: "Assignments Completed", value: "12/15", icon: BriefcaseIcon, percentage: 80 },
-    { label: "Average Score", value: "85%", icon: AwardIcon, percentage: 85 },
-    { label: "Lectures Attended", value: "28/30", icon: CalendarIcon, percentage: 93 },
-    { label: "Projects Built", value: "5", icon: SparklesIcon, percentage: 50 },
-  ]
+  // Only show stats when we have real data from API (no such API yet – hide section)
+  const stats: { label: string; value: string; icon: typeof BriefcaseIcon; percentage: number }[] = []
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
@@ -250,14 +241,15 @@ export const StudentProfileScreen = () => {
                         Phone
                       </div>
                       {isEditing ? (
-                        <Input
-                          type="tel"
-                          value={profile.phone}
-                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                          className="mt-1"
-                        />
+                        <div className="mt-1">
+                          <PhoneInput
+                            value={profilePhoneValue}
+                            onChange={(v) => setProfile({ ...profile, phone: getFullPhone(v) })}
+                            placeholder="Phone number"
+                          />
+                        </div>
                       ) : (
-                        <div className="font-semibold text-sm">{profile.phone}</div>
+                        <div className="font-semibold text-sm">{profile.phone || "—"}</div>
                       )}
                     </div>
 
@@ -355,89 +347,42 @@ export const StudentProfileScreen = () => {
             </Card>
           </div>
 
-          {/* Stats Section with Progress */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {stats.map((stat, idx) => (
-              <div
-                key={idx}
-                className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.18),rgba(255,138,61,0.10),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
-                style={{ animationDelay: `${idx * 100}ms` }}
-              >
-                <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                  <CardContent className="p-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-muted-foreground text-xs mb-1">{stat.label}</div>
-                        <div className="text-3xl font-semibold tracking-tight">{stat.value}</div>
+          {/* Stats Section – only shown when we have data from API */}
+          {stats.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {stats.map((stat, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.18),rgba(255,138,61,0.10),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
+                    <CardContent className="p-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-muted-foreground text-xs mb-1">{stat.label}</div>
+                          <div className="text-3xl font-semibold tracking-tight">{stat.value}</div>
+                        </div>
+                        <div className="bg-(--brand-primary) text-(--text-on-dark) size-12 rounded-2xl flex items-center justify-center">
+                          <stat.icon className="size-6" />
+                        </div>
                       </div>
-                      <div className="bg-(--brand-primary) text-(--text-on-dark) size-12 rounded-2xl flex items-center justify-center">
-                        <stat.icon className="size-6" />
+                      <div className="h-2 bg-background/40 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-linear-to-r from-(--brand-primary) to-(--brand-accent) transition-all duration-500"
+                          style={{ width: `${stat.percentage}%` }}
+                        />
                       </div>
-                    </div>
-                    <div className="h-2 bg-background/40 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-linear-to-r from-(--brand-primary) to-(--brand-accent) transition-all duration-500"
-                        style={{ width: `${stat.percentage}%` }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Sidebar - Achievements */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
-            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrophyIcon className="size-5 text-(--brand-accent)" />
-                  Achievements
-                </CardTitle>
-                <CardDescription>Your milestones & rewards</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {achievements.map((achievement, idx) => (
-                  <div
-                    key={achievement.id}
-                    className={cn(
-                      "rounded-2xl border p-4 transition-all hover:-translate-y-0.5 animate-in fade-in slide-in-from-right-4 duration-700",
-                      achievement.locked
-                        ? "bg-background/20 opacity-60"
-                        : "bg-background/40 hover:bg-background/60"
-                    )}
-                    style={{ animationDelay: `${idx * 150}ms` }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn(
-                        "size-10 rounded-xl flex items-center justify-center relative",
-                        achievement.locked ? "bg-background/40" : "bg-background/80",
-                        achievement.color
-                      )}>
-                        <achievement.icon className="size-5" />
-                        {achievement.locked && (
-                          <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
-                            <span className="text-lg">🔒</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={cn("font-semibold text-sm", achievement.locked && "text-muted-foreground")}>
-                          {achievement.title}
-                        </div>
-                        <div className="text-muted-foreground text-xs mt-0.5">
-                          {achievement.locked ? "Keep going to unlock!" : achievement.date}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Motivational Card */}
           <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px">
             <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">

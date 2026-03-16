@@ -7,21 +7,28 @@ import { ReactNode, useEffect } from "react"
 import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import { useUser } from "@/lib/providers/user"
 import { CONFIG } from "@/utils/constants"
+import { StudentLayout } from "@/lib/layouts"
+import { ContentAreaLoader } from "@/lib/ui/useable-components/content-area-loader"
 
 const STUDENT_FEES_PATH = "/student/fees"
 
-/** Returns true if the user has at least one payment that is due (paymentDate <= today) and not paid. */
+/**
+ * Fee is due when the month of the due date (12th) is equal to or less than the current month.
+ * Example: due date March 12 → due from March 1 onwards; due date April 12 → due from April 1 onwards.
+ */
 function hasOverdueUnpaidPayment(
   payments: Array<{ paymentDate: string; isPaid: boolean }> | undefined
 ): boolean {
   if (!payments?.length) return false
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
   return payments.some((p) => {
     if (p.isPaid) return false
     const due = new Date(p.paymentDate)
-    due.setHours(0, 0, 0, 0)
-    return due.getTime() <= today.getTime()
+    const dueYear = due.getFullYear()
+    const dueMonth = due.getMonth()
+    return dueYear < currentYear || (dueYear === currentYear && dueMonth <= currentMonth)
   })
 }
 
@@ -55,17 +62,17 @@ export function StudentFeeGate({ children }: { children: ReactNode }) {
 
   if (!profileLoaded || (userId && loading)) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
-      </div>
+      <StudentLayout>
+        <ContentAreaLoader />
+      </StudentLayout>
     )
   }
 
   if (userId && hasOverdue && pathname !== STUDENT_FEES_PATH) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-surface">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-(--brand-primary) border-t-transparent" />
-      </div>
+      <StudentLayout>
+        <ContentAreaLoader />
+      </StudentLayout>
     )
   }
 

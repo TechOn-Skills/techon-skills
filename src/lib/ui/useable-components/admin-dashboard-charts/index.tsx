@@ -113,7 +113,7 @@ export function AdminRevenueChartCard() {
           <CardTitle>Revenue</CardTitle>
           <CardDescription>Total and monthly revenue (area chart)</CardDescription>
         </div>
-        <div className="flex rounded-lg border bg-muted/50 p-0.5">
+        <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
             <button
               key={m}
@@ -174,7 +174,7 @@ export function AdminContactSubmissionsChartCard() {
           <CardTitle>Contact Form Submissions</CardTitle>
           <CardDescription>Total and monthly submissions</CardDescription>
         </div>
-        <div className="flex rounded-lg border bg-muted/50 p-0.5">
+        <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
             <button
               key={m}
@@ -283,7 +283,7 @@ export function AdminRegisteredStudentsChartCard() {
           <CardTitle>Registered Students</CardTitle>
           <CardDescription>Total and monthly new registrations</CardDescription>
         </div>
-        <div className="flex rounded-lg border bg-muted/50 p-0.5">
+        <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
             <button
               key={m}
@@ -357,7 +357,7 @@ export function AdminEnrolledPerCourseChartCard() {
           <CardTitle>Enrolled Students per Course</CardTitle>
           <CardDescription>Toggle chart type to compare courses</CardDescription>
         </div>
-        <div className="flex rounded-lg border bg-muted/50 p-0.5">
+        <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["bar", "pie"] as const).map((v) => (
             <button
               key={v}

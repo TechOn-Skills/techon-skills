@@ -7,6 +7,7 @@ import { ArrowLeftIcon, CalendarIcon, Loader2Icon, NewspaperIcon } from "lucide-
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { GET_NEWS_POST } from "@/lib/graphql"
+import { formatDateLong } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants/config"
 
 export const PublicNewsDetailScreen = ({ id }: { id: string }) => {
@@ -72,9 +73,7 @@ export const PublicNewsDetailScreen = ({ id }: { id: string }) => {
               {post.createdAt && (
                 <span className="flex items-center gap-1">
                   <CalendarIcon className="size-3.5" />
-                  {new Date(post.createdAt).toLocaleDateString(undefined, {
-                    dateStyle: "long",
-                  })}
+                  {formatDateLong(post.createdAt)}
                 </span>
               )}
             </div>

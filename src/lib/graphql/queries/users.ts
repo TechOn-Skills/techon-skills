@@ -50,6 +50,11 @@ export const GET_USER_PROFILE_INFO = gql`
                 title
                 slug
             }
+            requestedCourses {
+                id
+                title
+                slug
+            }
         }
     }
 `;
@@ -107,6 +112,29 @@ export const GET_USERS_BY_STATUS = gql`
             fullName
             role
             status
+        }
+    }
+`;
+
+export const GET_COURSE_ENROLLMENT_REQUESTS = gql`
+    query GetCourseEnrollmentRequests {
+        getCourseEnrollmentRequests {
+            userId
+            courseId
+            user {
+                id
+                email
+                fullName
+            }
+            course {
+                id
+                title
+                slug
+                feePerMonth
+                totalNumberOfInstallments
+                totalFee
+                currency
+            }
         }
     }
 `;

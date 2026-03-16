@@ -25,6 +25,7 @@ import { Input } from "@/lib/ui/useable-components/input"
 import { apiService } from "@/lib/services"
 import { GET_COURSES, DELETE_COURSE, CREATE_COURSE } from "@/lib/graphql"
 import { ImageUpload } from "@/lib/ui/useable-components/image-upload"
+import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import { cn } from "@/lib/helpers"
 
 type CourseRow = { id: string; title: string; slug: string; subtitle?: string; totalFee?: number; feePerMonth?: number; courseDurationInMonths?: number }
@@ -80,6 +81,7 @@ export const AdminCoursesScreen = () => {
 
   const courses = data?.getCourses ?? []
   const [addOpen, setAddOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initialForm)
   const [techLogoFiles, setTechLogoFiles] = useState<Record<number, File>>({})
@@ -93,8 +95,13 @@ export const AdminCoursesScreen = () => {
   }, [])
 
   const handleDelete = (id: string) => {
-    if (!confirm("Delete this course? This cannot be undone.")) return
-    deleteCourse({ variables: { input: { id } } })
+    setDeleteConfirm({ id })
+  }
+  const onConfirmDelete = () => {
+    if (deleteConfirm) {
+      deleteCourse({ variables: { input: { id: deleteConfirm.id } } })
+      setDeleteConfirm(null)
+    }
   }
 
   const setTitle = (title: string) => {
@@ -202,7 +209,7 @@ export const AdminCoursesScreen = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b bg-muted/40">
+                <thead className="border-b bg-muted-surface/40">
                   <tr>
                     <th className="p-4 font-semibold">Course</th>
                     <th className="p-4 font-semibold">Slug</th>
@@ -213,7 +220,7 @@ export const AdminCoursesScreen = () => {
                 </thead>
                 <tbody>
                   {courses.map((c) => (
-                    <tr key={c.id} className="border-b transition-colors hover:bg-muted/20">
+                    <tr key={c.id} className="border-b transition-colors hover:bg-muted-surface/20">
                       <td className="p-4">
                         <div className="font-medium">{c.title}</div>
                         {c.subtitle && <div className="text-muted-foreground text-xs">{c.subtitle}</div>}
@@ -244,6 +251,17 @@ export const AdminCoursesScreen = () => {
         </Card>
       )}
 
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete course"
+        description="Delete this course? This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={onConfirmDelete}
+        loading={deleting}
+      />
+
       <DialogPrimitive.Root open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); resetForm(); } }}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0" />
@@ -259,7 +277,7 @@ export const AdminCoursesScreen = () => {
                     onClick={() => setStep(s.id)}
                     className={cn(
                       "flex-1 rounded-lg py-2 text-xs font-medium transition-colors",
-                      step === s.id ? "bg-(--brand-primary) text-(--text-on-dark)" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      step === s.id ? "bg-(--brand-primary) text-(--text-on-dark)" : "bg-muted-surface/60 text-muted-foreground hover:bg-muted-surface"
                     )}
                   >
                     {s.id}

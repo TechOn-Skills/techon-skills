@@ -9,7 +9,9 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
+import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { formatDate } from "@/lib/helpers"
 import { GET_NEWS_POSTS, CREATE_NEWS, UPDATE_NEWS, DELETE_NEWS } from "@/lib/graphql"
 
 type NewsRow = { id: string; title: string; description: string; createdAt: string }
@@ -17,6 +19,7 @@ type NewsRow = { id: string; title: string; description: string; createdAt: stri
 export const AdminNewsScreen = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
 
@@ -64,9 +67,12 @@ export const AdminNewsScreen = () => {
     updateNews({ variables: { input: { id: editId, title: title.trim(), description: description.trim() || undefined } } })
   }
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Delete this news post?")) return
-    deleteNews({ variables: { id } })
+  const handleDelete = (id: string) => setDeleteConfirmId(id)
+  const onConfirmDelete = () => {
+    if (deleteConfirmId) {
+      deleteNews({ variables: { id: deleteConfirmId } })
+      setDeleteConfirmId(null)
+    }
   }
 
   return (
@@ -79,6 +85,16 @@ export const AdminNewsScreen = () => {
             Create and publish news posts. They appear on the public news page.
           </p>
         </div>
+        <ConfirmDialog
+          open={!!deleteConfirmId}
+          onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+          title="Delete news post"
+          description="Delete this news post? This cannot be undone."
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={onConfirmDelete}
+          loading={deleting}
+        />
         <DialogPrimitive.Root open={createOpen} onOpenChange={setCreateOpen}>
           <DialogPrimitive.Trigger asChild>
             <Button variant="brand-secondary" shape="pill" className="gap-2">
@@ -125,7 +141,7 @@ export const AdminNewsScreen = () => {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b bg-muted/40">
+                <thead className="border-b bg-muted-surface/40">
                   <tr>
                     <th className="p-4 font-semibold">Title</th>
                     <th className="p-4 font-semibold">Description</th>
@@ -135,10 +151,10 @@ export const AdminNewsScreen = () => {
                 </thead>
                 <tbody>
                   {posts.map((p) => (
-                    <tr key={p.id} className="border-b transition-colors hover:bg-muted/20">
+                    <tr key={p.id} className="border-b transition-colors hover:bg-muted-surface/20">
                       <td className="p-4 font-medium">{p.title}</td>
                       <td className="p-4 text-muted-foreground line-clamp-2">{p.description}</td>
-                      <td className="p-4 text-muted-foreground text-xs">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}</td>
+                      <td className="p-4 text-muted-foreground text-xs">{formatDate(p.createdAt)}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>

@@ -4,10 +4,13 @@
 import { StudentCoursesHeader } from "@/lib/ui/screen-components"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
+import { useMutation } from "@apollo/client/react"
 import { CheckCircle2Icon, Loader2Icon, SearchIcon, SparklesIcon } from "lucide-react"
+import toast from "react-hot-toast"
 
 import { useCourses } from "@/lib/providers/courses"
+import { useUser } from "@/lib/providers/user"
 import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import {
@@ -17,25 +20,60 @@ import {
     CardHeader,
     CardTitle,
 } from "@/lib/ui/useable-components/card"
+import { REQUEST_COURSE_FOR_USER } from "@/lib/graphql"
+import type { ICourse } from "@/utils/interfaces"
 
 export const StudentCoursesScreen = () => {
     const router = useRouter()
     const { courses } = useCourses()
-    const [toast, setToast] = useState<null | { status: "loading" | "success"; text: string }>(null)
+    const { userProfileInfo, requestedCoursesFromApi, enrolledCoursesFromApi } = useUser()
     const [searchQuery, setSearchQuery] = useState("")
+    const [requestingSlug, setRequestingSlug] = useState<string | null>(null)
 
-    useEffect(() => {
-        if (!toast) return
-        if (toast.status !== "success") return
-        const t = window.setTimeout(() => setToast(null), 2200)
-        return () => window.clearTimeout(t)
-    }, [toast])
+    const enrolledCourseIds = useMemo(
+        () => new Set(enrolledCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+        [enrolledCoursesFromApi]
+    )
+    const enrolledCourseSlugs = useMemo(
+        () => new Set(enrolledCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+        [enrolledCoursesFromApi]
+    )
+    const requestedCourseIds = useMemo(
+        () => new Set(requestedCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+        [requestedCoursesFromApi]
+    )
+    const requestedCourseSlugs = useMemo(
+        () => new Set(requestedCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+        [requestedCoursesFromApi]
+    )
 
-    const handleEnroll = () => {
-        setToast({ status: "loading", text: "Sending request…" })
-        window.setTimeout(() => {
-            setToast({ status: "success", text: "Request sent successfully" })
-        }, 1200)
+    const [requestCourse] = useMutation(REQUEST_COURSE_FOR_USER, {
+        onCompleted: () => {
+            setRequestingSlug(null)
+            toast.success("Enrollment request sent. Admin will review and approve.")
+        },
+        onError: (e) => {
+            setRequestingSlug(null)
+            toast.error(e.message || "Failed to send request")
+        },
+    })
+
+    const handleEnroll = (course: ICourse) => {
+        if (!userProfileInfo?.id) {
+            toast.error("Please sign in to request a course.")
+            return
+        }
+        if (!course.id) {
+            toast.error("Course not found. Try again.")
+            return
+        }
+        if (requestingSlug) return
+        setRequestingSlug(course.slug)
+        requestCourse({
+            variables: {
+                input: { userId: userProfileInfo.id, courseId: course.id },
+            },
+        })
     }
 
     const filteredCourses = useMemo(() => {
@@ -145,18 +183,35 @@ export const StudentCoursesScreen = () => {
                                             View details
                                         </span>
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="brand-secondary"
-                                                shape="pill"
-                                                onClick={(e) => {
-                                                    e.preventDefault()
-                                                    e.stopPropagation()
-                                                    handleEnroll()
-                                                }}
-                                            >
-                                                Enroll now
-                                            </Button>
+                                            {(c.id && enrolledCourseIds.has(c.id)) || enrolledCourseSlugs.has(c.slug) ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                                                    <CheckCircle2Icon className="size-3.5 shrink-0" />
+                                                    Already enrolled
+                                                </span>
+                                            ) : (c.id && requestedCourseIds.has(c.id)) || requestedCourseSlugs.has(c.slug) ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                                                    <CheckCircle2Icon className="size-3.5 shrink-0" />
+                                                    You&apos;ve already requested
+                                                </span>
+                                            ) : (
+                                                <Button
+                                                    type="button"
+                                                    variant="brand-secondary"
+                                                    shape="pill"
+                                                    disabled={requestingSlug === c.slug}
+                                                    onClick={(e) => {
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        handleEnroll(c)
+                                                    }}
+                                                >
+                                                    {requestingSlug === c.slug ? (
+                                                        <Loader2Icon className="size-4 animate-spin" />
+                                                    ) : (
+                                                        "Enroll now"
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button
                                                 type="button"
                                                 variant="ghost"
@@ -178,20 +233,6 @@ export const StudentCoursesScreen = () => {
                 </div>
             )}
 
-            {!!toast && (
-                <div className="fixed right-4 top-20 z-50 w-[min(22rem,calc(100vw-2rem))]">
-                    <div className="rounded-2xl border bg-background/80 p-4 shadow-xl backdrop-blur supports-backdrop-filter:bg-background/60">
-                        <div className="flex items-center gap-3">
-                            {toast.status === "loading" ? (
-                                <Loader2Icon className="size-5 animate-spin text-(--brand-highlight)" />
-                            ) : (
-                                <CheckCircle2Icon className="size-5 text-(--brand-highlight)" />
-                            )}
-                            <div className="text-sm font-semibold">{toast.text}</div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
