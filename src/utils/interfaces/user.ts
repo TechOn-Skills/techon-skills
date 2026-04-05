@@ -1,10 +1,14 @@
-import { UserRole, UserStatus } from "@/utils/enums/user";
+import { UserRole, UserStatus, SelectedCourse } from "@/utils/enums";
 
 export interface IUserProfileInfo {
     id: string;
     email: string;
+    fullName?: string | null;
+    profilePicture?: string | null;
     role: UserRole;
     status: UserStatus;
+    /** Course IDs this user can award marks in (Instructor/Admin). Empty or undefined for Super Admin means all. */
+    allowedMarkGradesOn?: string[];
 }
 
 export interface IUser {
@@ -20,11 +24,19 @@ export interface IUser {
     isVerified: boolean;
     createdAt: Date;
     updatedAt: Date;
+    enrolledCourses: SelectedCourse[];
+}
+
+export interface IEnrolledCourseFromApi {
+    id: string;
+    title: string;
+    slug: string;
 }
 
 export interface IUserContextProvider {
     userProfileInfo: IUserProfileInfo | null;
     userData: IUser | null;
-    /** True after the first attempt to load user profile (success or failure). */
+    enrolledCoursesFromApi: IEnrolledCourseFromApi[];
+    requestedCoursesFromApi: IEnrolledCourseFromApi[];
     profileLoaded: boolean;
 }

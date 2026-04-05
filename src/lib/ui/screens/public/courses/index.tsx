@@ -6,13 +6,16 @@ import { useMemo, useState } from "react"
 import {
   ArrowRightIcon,
   BriefcaseIcon,
+  CheckCircle2Icon,
   FileCheck2Icon,
+  Loader2Icon,
   SearchIcon,
   SparklesIcon,
   TrophyIcon,
 } from "lucide-react"
 
 import { useCourses } from "@/lib/providers/courses"
+import { useUser } from "@/lib/providers/user"
 import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import {
@@ -28,14 +31,34 @@ import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 export const PublicCoursesScreen = () => {
   const router = useRouter()
-  const { courses } = useCourses()
+  const { courses, loading: coursesLoading } = useCourses()
+  const { enrolledCoursesFromApi, requestedCoursesFromApi } = useUser()
   const [searchQuery, setSearchQuery] = useState("")
+
+  const enrolledCourseIds = useMemo(
+    () => new Set(enrolledCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+    [enrolledCoursesFromApi]
+  )
+  const enrolledCourseSlugs = useMemo(
+    () => new Set(enrolledCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+    [enrolledCoursesFromApi]
+  )
+  const requestedCourseIds = useMemo(
+    () => new Set(requestedCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+    [requestedCoursesFromApi]
+  )
+  const requestedCourseSlugs = useMemo(
+    () => new Set(requestedCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+    [requestedCoursesFromApi]
+  )
+
   const catalog = useMemo(
     () =>
       courses.map((course) => {
-        const display = COURSE_DISPLAY_BY_SLUG[course.slug]
-        const projects = course.modules[0]?.projects ?? []
+        const display = COURSE_DISPLAY_BY_SLUG[course.slug] ?? { icon: "code", benefits: [] }
+        const projects = course.modules?.[0]?.projects ?? []
         return {
+          id: course.id,
           slug: course.slug,
           title: course.title,
           description: course.subtitle,
@@ -43,7 +66,7 @@ export const PublicCoursesScreen = () => {
           duration: formatCourseDuration(course),
           icon: Icons[display?.icon ?? "code"] ?? Icons.code,
           highlight: display?.highlight,
-          benefits: display?.benefits?.length ? display.benefits : projects.map((p) => p.title).slice(0, 3),
+          benefits: (display?.benefits?.length ? display.benefits : projects.map((p) => p.title).slice(0, 3)) ?? [],
         }
       }),
     [courses]
@@ -101,7 +124,14 @@ export const PublicCoursesScreen = () => {
           />
         </div>
 
-        {filteredCatalog.length === 0 ? (
+        {coursesLoading && catalog.length === 0 ? (
+          <div className="flex min-h-[400px] items-center justify-center rounded-3xl border bg-background/70 backdrop-blur">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2Icon className="size-6 animate-spin" />
+              <span>Loading courses...</span>
+            </div>
+          </div>
+        ) : filteredCatalog.length === 0 ? (
           <div className="flex min-h-[400px] items-center justify-center rounded-3xl border bg-background/70 backdrop-blur">
             <div className="text-center">
               <SearchIcon className="mx-auto size-12 text-muted-foreground/50" />
@@ -182,20 +212,32 @@ export const PublicCoursesScreen = () => {
                       <span className="text-foreground shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-full border border-border bg-transparent px-4 py-2 text-sm font-medium">
                         View details
                       </span>
-                      <Button
-                        type="button"
-                        variant="brand-secondary"
-                        shape="pill"
-                        className="shrink-0"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
-                        }}
-                      >
-                        Enroll now
-                        <ArrowRightIcon className="size-4" />
-                      </Button>
+                      {(c.id && enrolledCourseIds.has(c.id)) || enrolledCourseSlugs.has(c.slug) ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                          <CheckCircle2Icon className="size-3.5 shrink-0" />
+                          Already enrolled
+                        </span>
+                      ) : (c.id && requestedCourseIds.has(c.id)) || requestedCourseSlugs.has(c.slug) ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                          <CheckCircle2Icon className="size-3.5 shrink-0" />
+                          You&apos;ve already requested
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="brand-secondary"
+                          shape="pill"
+                          className="shrink-0"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
+                          }}
+                        >
+                          Enroll now
+                          <ArrowRightIcon className="size-4" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -3,10 +3,8 @@ import { AdminRouteGuard } from "@/lib/route-guards";
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <AdminRouteGuard>
-            <AdminLayout>
-                {children}
-            </AdminLayout>
-        </AdminRouteGuard>
+        <AdminLayout>
+            <AdminRouteGuard>{children}</AdminRouteGuard>
+        </AdminLayout>
     )
 }

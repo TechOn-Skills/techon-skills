@@ -18,14 +18,28 @@ const MIN_DIGITS = 7
 const MAX_DIGITS = 15
 
 export function getFullPhone(value: PhoneValue): string {
-  const digits = value.number.replace(/\D/g, "")
+  const digits = value.number.replace(/\D/g, "").replace(/0/g, "")
   return `${value.countryCode}${digits}`
 }
 
+/** Parse a stored phone string (e.g. "+923001234567" or "3001234567") into PhoneValue for the input. Does not strip 0s so existing data displays correctly; 0 is only blocked when typing. */
+export function parsePhoneFromString(full: string | null | undefined): PhoneValue {
+  if (!full || typeof full !== "string") return { countryCode: DEFAULT_COUNTRY.code, number: "" }
+  const digitsOnly = full.replace(/\D/g, "")
+  for (const entry of COUNTRY_CODES_LIST) {
+    const codeDigits = entry.code.replace(/\D/g, "")
+    if (digitsOnly.startsWith(codeDigits)) {
+      const number = digitsOnly.slice(codeDigits.length).slice(0, MAX_DIGITS)
+      return { countryCode: entry.code, number }
+    }
+  }
+  return { countryCode: DEFAULT_COUNTRY.code, number: digitsOnly.slice(0, MAX_DIGITS) }
+}
+
 export function validatePhone(value: PhoneValue): boolean {
-  const digits = value.number.replace(/\D/g, "")
+  const digits = value.number.replace(/\D/g, "").replace(/0/g, "")
   if (digits.length < MIN_DIGITS || digits.length > MAX_DIGITS) return false
-  return /^\d+$/.test(digits)
+  return /^\d+$/.test(digits) && !digits.includes("0")
 }
 
 export interface PhoneInputProps {
@@ -67,7 +81,7 @@ export function PhoneInput({
   const handleNumberChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value
-      const digits = raw.replace(/\D/g, "").slice(0, MAX_DIGITS)
+      const digits = raw.replace(/\D/g, "").replace(/0/g, "").slice(0, MAX_DIGITS)
       onChange({ ...value, number: digits })
     },
     [value, onChange]

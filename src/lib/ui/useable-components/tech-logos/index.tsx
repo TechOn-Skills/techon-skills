@@ -1,4 +1,5 @@
-import { cn } from "@/lib/helpers"
+import Image from "next/image"
+import { cn, isBackendImageUrl } from "@/lib/helpers"
 import type { TechId } from "@/utils/types"
 
 const Badge = ({ label }: { label: string }) => (
@@ -121,14 +122,17 @@ const TechMark = ({ id }: { id: TechId }) => {
 export const TechLogoCard = ({
   id,
   label,
+  logoUrl,
   className,
   delayMs = 0,
 }: {
   id: TechId
   label: string
+  logoUrl?: string
   className?: string
   delayMs?: number
 }) => {
+  const showUploadedLogo = logoUrl?.trim()
   return (
     <div
       className={cn(
@@ -142,8 +146,19 @@ export const TechLogoCard = ({
       <div className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 flex items-center gap-3 rounded-3xl border p-4 transition-all group-hover:-translate-y-0.5 group-hover:shadow-xl">
         <div className="relative">
           <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-[radial-gradient(circle_at_center,rgba(70,208,255,0.28),transparent_60%)] opacity-0 blur-md transition-opacity group-hover:opacity-100" />
-          <div className="size-12 animate-[tech-float_6s_ease-in-out_infinite]">
-            <TechMark id={id} />
+          <div className="size-12 animate-[tech-float_6s_ease-in-out_infinite] overflow-hidden rounded-2xl flex items-center justify-center bg-muted-surface/50">
+            {showUploadedLogo ? (
+              <Image
+                src={showUploadedLogo}
+                alt={label}
+                width={48}
+                height={48}
+                className="size-12 object-contain"
+                unoptimized={isBackendImageUrl(showUploadedLogo)}
+              />
+            ) : (
+              <TechMark id={id} />
+            )}
           </div>
         </div>
         <div className="min-w-0">

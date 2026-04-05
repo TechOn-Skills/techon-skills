@@ -7,7 +7,9 @@ import {
   useMemo,
   type ReactNode,
 } from "react"
-import { COURSES } from "@/lib/data/public-courses"
+import { useQuery } from "@apollo/client/react"
+import { GET_COURSES } from "@/lib/graphql"
+import { mapApiCourseToICourse, type IApiCourse } from "@/lib/helpers/course"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 import type { ICourse, IStudentAssignment } from "@/utils/interfaces"
 
@@ -19,8 +21,14 @@ export interface IFeaturedCourse {
   bullets: string[]
 }
 
-function deriveFeaturedCourses(): IFeaturedCourse[] {
-  return COURSES.map((c) => {
+function mapApiCoursesToICourses(apiCourses: IApiCourse[]): ICourse[] {
+  return apiCourses.map((api) =>
+    mapApiCourseToICourse(api)
+  )
+}
+
+function deriveFeaturedCourses(courses: ICourse[]): IFeaturedCourse[] {
+  return courses.map((c) => {
     const display = COURSE_DISPLAY_BY_SLUG[c.slug]
     return {
       slug: c.slug,
@@ -32,49 +40,37 @@ function deriveFeaturedCourses(): IFeaturedCourse[] {
   })
 }
 
-function deriveAssignments(courses: ICourse[]): IStudentAssignment[] {
-  const list: IStudentAssignment[] = []
-  for (const course of courses) {
-    course.modules.forEach((mod, mi) => {
-      mod.projects.forEach((proj, pi) => {
-        const id = `${course.slug}-${mi}-${pi}`
-        const dueDate =
-          proj.dueDate != null && proj.dueDate !== ""
-            ? typeof proj.dueDate === "string"
-              ? proj.dueDate
-              : (proj.dueDate as Date).toISOString().slice(0, 10)
-            : ""
-        list.push({
-          id,
-          title: proj.title,
-          dueDate,
-          course: course.title,
-          brief: proj.description,
-          requirements: [],
-        })
-      })
-    })
-  }
-  return list
-}
-
 export interface ICoursesContextValue {
   courses: ICourse[]
   featuredCourses: IFeaturedCourse[]
   assignments: IStudentAssignment[]
   getCourseBySlug: (slug: string) => ICourse | undefined
   getAssignmentById: (id: string) => IStudentAssignment | undefined
+  loading: boolean
+  error: Error | undefined
 }
 
 const CoursesContext = createContext<ICoursesContextValue | null>(null)
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
-  const assignments = useMemo(() => deriveAssignments(COURSES), [])
-  const featuredCourses = useMemo(() => deriveFeaturedCourses(), [])
+  const { data, loading, error } = useQuery<{ getCourses: IApiCourse[] }>(GET_COURSES)
 
-  const getCourseBySlug = useCallback((slug: string) => {
-    return COURSES.find((c) => c.slug === slug)
-  }, [])
+  const courses = useMemo(
+    () => (data?.getCourses ? mapApiCoursesToICourses(data.getCourses) : []),
+    [data?.getCourses]
+  )
+
+  const assignments = useMemo<IStudentAssignment[]>(() => [], [])
+
+  const featuredCourses = useMemo(
+    () => deriveFeaturedCourses(courses),
+    [courses]
+  )
+
+  const getCourseBySlug = useCallback(
+    (slug: string) => courses.find((c) => c.slug === slug),
+    [courses]
+  )
 
   const getAssignmentById = useCallback(
     (id: string) => assignments.find((a) => a.id === id),
@@ -83,13 +79,15 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ICoursesContextValue>(
     () => ({
-      courses: COURSES,
+      courses,
       featuredCourses,
       assignments,
       getCourseBySlug,
       getAssignmentById,
+      loading,
+      error: error ?? undefined,
     }),
-    [assignments, featuredCourses, getCourseBySlug, getAssignmentById]
+    [courses, featuredCourses, assignments, getCourseBySlug, getAssignmentById, loading, error]
   )
 
   return (

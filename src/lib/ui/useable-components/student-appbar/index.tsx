@@ -6,6 +6,7 @@ import {
     ChevronDownIcon,
     LogOutIcon,
     SettingsIcon,
+    UserIcon,
 } from "lucide-react"
 
 import { cn, logger } from "@/lib/helpers"
@@ -15,20 +16,26 @@ import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
 import { COMPANY_NAME, CONFIG } from "@/utils/constants"
 import { SidebarTrigger } from "@/lib/ui/useable-components/sidebar"
 import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
+import { NotificationsDropdown } from "@/lib/ui/useable-components/notifications-dropdown"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { apiService } from "@/lib/services"
 import { toast } from "react-hot-toast"
 import { LoggerLevel } from "@/utils/enums"
+import { useUser } from "@/lib/providers/user"
 
 export const StudentAppbar = ({ className }: { className?: string }) => {
     const router = useRouter()
+    const { userProfileInfo } = useUser()
+    const displayName = userProfileInfo?.fullName?.trim() || userProfileInfo?.email || "Student"
+    const displaySub = userProfileInfo?.email ? (userProfileInfo.fullName ? userProfileInfo.email : COMPANY_NAME) : COMPANY_NAME
 
     const handleLogout = useCallback(async () => {
         try {
             const response = await apiService.logout()
             if (response.success) {
+                Object.values(CONFIG.STORAGE_KEYS.AUTH).forEach((key) => localStorage.removeItem(key))
                 localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
                 router.replace(CONFIG.ROUTES.PUBLIC.HOME)
             }
@@ -74,8 +81,9 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                     </Link>
                 </div>
 
-                {/* Profile dropdown */}
+                {/* Notifications & Profile */}
                 <div className="ml-auto flex items-center gap-2">
+                    <NotificationsDropdown />
                     <ThemeSwitcher className="hidden sm:inline-flex" />
                     <DialogPrimitive.Root>
                         <DialogPrimitive.Trigger asChild>
@@ -95,7 +103,7 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                                     />
                                 </span>
                                 <span className="hidden max-w-40 truncate text-sm font-medium sm:block">
-                                    Student
+                                    {displayName}
                                 </span>
                                 <ChevronDownIcon className="text-muted-foreground hidden size-4 sm:block" />
                             </Button>
@@ -111,18 +119,28 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                                 <div className="p-3">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-(--brand-primary) text-(--text-on-dark) flex size-10 items-center justify-center overflow-hidden rounded-full">
-                                            <Image
-                                                src={TechOnLogo}
-                                                alt="Profile"
-                                                width={24}
-                                                height={24}
-                                                className="size-6"
-                                            />
+                                            {userProfileInfo?.profilePicture ? (
+                                                <Image
+                                                    src={userProfileInfo.profilePicture}
+                                                    alt="Profile"
+                                                    width={40}
+                                                    height={40}
+                                                    className="size-10 object-cover"
+                                                />
+                                            ) : (
+                                                <Image
+                                                    src={TechOnLogo}
+                                                    alt="Profile"
+                                                    width={24}
+                                                    height={24}
+                                                    className="size-6"
+                                                />
+                                            )}
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="truncate text-sm font-semibold">Student</div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-sm font-semibold">{displayName}</div>
                                             <div className="text-muted-foreground truncate text-xs">
-                                                {COMPANY_NAME}
+                                                {displaySub}
                                             </div>
                                         </div>
                                     </div>
@@ -131,6 +149,14 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                                 <Separator />
 
                                 <div className="p-2">
+                                    <DialogPrimitive.Close asChild>
+                                        <Button asChild variant="ghost" shape="lg" className="w-full justify-start">
+                                            <Link href={CONFIG.ROUTES.STUDENT.PROFILE}>
+                                                <UserIcon className="size-4 text-muted-foreground" />
+                                                <span>Profile</span>
+                                            </Link>
+                                        </Button>
+                                    </DialogPrimitive.Close>
                                     <DialogPrimitive.Close asChild>
                                         <Button asChild variant="ghost" shape="lg" className="w-full justify-start">
                                             <Link href={CONFIG.ROUTES.STUDENT.SETTINGS}>
