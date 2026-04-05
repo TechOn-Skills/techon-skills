@@ -9,7 +9,7 @@ export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: 
     highlight: "Career track",
     benefits: ["System design & architecture", "PostgreSQL + advanced tooling", "Career growth support"],
   },
-  "web-development": {
+  "full-stack-web-6-months": {
     icon: "code",
     highlight: "Most popular",
     benefits: ["Portfolio projects", "Job-ready React + APIs", "Deployments + Git workflow"],
