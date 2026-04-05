@@ -149,12 +149,12 @@ export const TechLogoCard = ({
           <div className="size-12 animate-[tech-float_6s_ease-in-out_infinite] overflow-hidden rounded-2xl flex items-center justify-center bg-muted-surface/50">
             {showUploadedLogo ? (
               <Image
-                src={logoUrl}
+                src={showUploadedLogo}
                 alt={label}
                 width={48}
                 height={48}
                 className="size-12 object-contain"
-                unoptimized={isBackendImageUrl(logoUrl)}
+                unoptimized={isBackendImageUrl(showUploadedLogo)}
               />
             ) : (
               <TechMark id={id} />

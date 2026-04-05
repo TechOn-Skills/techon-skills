@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { useQuery, useMutation } from "@apollo/client/react"
+import { useState, useCallback, useEffect } from "react"
+import { useQuery, useMutation, useLazyQuery } from "@apollo/client/react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import {
   BookOpenIcon,
   Loader2Icon,
   Trash2Icon,
+  PencilIcon,
   PlusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -23,7 +24,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { apiService } from "@/lib/services"
-import { GET_COURSES, DELETE_COURSE, CREATE_COURSE } from "@/lib/graphql"
+import { GET_COURSES, GET_COURSE, DELETE_COURSE, CREATE_COURSE, UPDATE_COURSE } from "@/lib/graphql"
 import { ImageUpload } from "@/lib/ui/useable-components/image-upload"
 import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import { cn } from "@/lib/helpers"
@@ -78,9 +79,31 @@ export const AdminCoursesScreen = () => {
     onCompleted: () => { toast.success("Course created"); setAddOpen(false); resetForm(); refetch() },
     onError: (e) => toast.error(e.message),
   })
+  const [updateCourse, { loading: updating }] = useMutation(UPDATE_COURSE, {
+    onCompleted: () => { toast.success("Course updated"); setAddOpen(false); resetForm(); setEditingId(null); refetch() },
+    onError: (e) => toast.error(e.message),
+  })
+  const [loadCourseForEdit, { data: editCourseData }] = useLazyQuery<{
+    getCourse: {
+      id: string
+      title: string
+      slug: string
+      heroDescription: string
+      subtitle: string
+      subDescription: string
+      totalFee: number
+      feePerMonth: number
+      courseDurationInMonths: number
+      totalNumberOfInstallments: number
+      currency: string
+      technologies: TechnologyItem[]
+      articleFeatures: ArticleFeatureItem[]
+    } | null
+  }>(GET_COURSE)
 
   const courses = data?.getCourses ?? []
   const [addOpen, setAddOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initialForm)
@@ -93,6 +116,32 @@ export const AdminCoursesScreen = () => {
     setTechLogoFiles({})
     setArticleImageFiles({})
   }, [])
+
+  useEffect(() => {
+    const c = editCourseData?.getCourse
+    if (!c || !editingId) return
+    setForm({
+      title: c.title,
+      slug: c.slug,
+      subtitle: c.subtitle,
+      subDescription: c.subDescription,
+      heroDescription: c.heroDescription,
+      courseDurationInMonths: c.courseDurationInMonths,
+      feePerMonth: c.feePerMonth,
+      totalFee: c.totalFee,
+      totalNumberOfInstallments: c.totalNumberOfInstallments,
+      currency: c.currency,
+      technologies: c.technologies?.length ? c.technologies.map((t) => ({ ...t })) : [{ ...defaultTech }],
+      articleFeatures: c.articleFeatures?.length ? c.articleFeatures.map((a) => ({ ...a })) : [{ ...defaultArticle }],
+    })
+    setStep(1)
+  }, [editCourseData, editingId])
+
+  const openEdit = (id: string) => {
+    setEditingId(id)
+    setAddOpen(true)
+    void loadCourseForEdit({ variables: { id } })
+  }
 
   const handleDelete = (id: string) => {
     setDeleteConfirm({ id })
@@ -159,24 +208,25 @@ export const AdminCoursesScreen = () => {
       }
       articlePayload.push({ name: a.name.trim(), description: a.description.trim(), image })
     }
-    createCourse({
-      variables: {
-        input: {
-          title: form.title.trim(),
-          slug: form.slug.trim(),
-          subtitle: form.subtitle.trim(),
-          subDescription: form.subDescription.trim(),
-          heroDescription: form.heroDescription.trim(),
-          courseDurationInMonths: form.courseDurationInMonths,
-          feePerMonth: form.feePerMonth,
-          totalFee: form.totalFee,
-          totalNumberOfInstallments: form.totalNumberOfInstallments,
-          currency: form.currency.trim() || "PKR",
-          technologies: techPayload,
-          articleFeatures: articlePayload,
-        },
-      },
-    })
+    const input = {
+      title: form.title.trim(),
+      slug: form.slug.trim(),
+      subtitle: form.subtitle.trim(),
+      subDescription: form.subDescription.trim(),
+      heroDescription: form.heroDescription.trim(),
+      courseDurationInMonths: form.courseDurationInMonths,
+      feePerMonth: form.feePerMonth,
+      totalFee: form.totalFee,
+      totalNumberOfInstallments: form.totalNumberOfInstallments,
+      currency: form.currency.trim() || "PKR",
+      technologies: techPayload,
+      articleFeatures: articlePayload,
+    }
+    if (editingId) {
+      updateCourse({ variables: { input: { id: editingId, ...input } } })
+    } else {
+      createCourse({ variables: { input } })
+    }
   }
 
   return (
@@ -189,7 +239,7 @@ export const AdminCoursesScreen = () => {
             Manage the course catalog. Add new courses with a step-by-step form or delete existing ones.
           </p>
         </div>
-        <Button variant="brand-secondary" shape="pill" className="gap-2 shrink-0" onClick={() => setAddOpen(true)}>
+        <Button variant="brand-secondary" shape="pill" className="gap-2 shrink-0" onClick={() => { setEditingId(null); resetForm(); setAddOpen(true) }}>
           <PlusIcon className="size-4" />
           Add course
         </Button>
@@ -231,7 +281,10 @@ export const AdminCoursesScreen = () => {
                         {c.totalFee != null ? `PKR ${c.totalFee.toLocaleString()}` : "—"}
                         {c.feePerMonth != null && <span className="text-muted-foreground text-xs block">PKR {c.feePerMonth}/mo</span>}
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(c.id)} title="Edit course">
+                          <PencilIcon className="size-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(c.id)} disabled={deleting}>
                           <Trash2Icon className="size-4" />
                         </Button>
@@ -262,12 +315,12 @@ export const AdminCoursesScreen = () => {
         loading={deleting}
       />
 
-      <DialogPrimitive.Root open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); resetForm(); } }}>
+      <DialogPrimitive.Root open={addOpen} onOpenChange={(open) => { if (!open) { setAddOpen(false); setEditingId(null); resetForm(); } }}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0" />
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] max-h-[90vh] -translate-x-1/2 -translate-y-1/2 flex flex-col rounded-3xl border bg-background shadow-xl overflow-hidden">
             <div className="shrink-0 border-b px-6 py-4">
-              <DialogPrimitive.Title className="text-lg font-semibold">Add new course</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="text-lg font-semibold">{editingId ? "Edit course" : "Add new course"}</DialogPrimitive.Title>
               <p className="text-muted-foreground text-sm mt-0.5">Step {step} of {TOTAL_STEPS}: {STEPS[step - 1].label}</p>
               <div className="flex gap-1 mt-4">
                 {STEPS.map((s) => (
@@ -429,9 +482,9 @@ export const AdminCoursesScreen = () => {
                   Next <ChevronRightIcon className="size-4" />
                 </Button>
               ) : (
-                <Button type="button" variant="brand-secondary" onClick={handleCreate} disabled={creating || !canNext()} className="gap-1">
-                  {creating ? <Loader2Icon className="size-4 animate-spin" /> : <CheckIcon className="size-4" />}
-                  Create course
+                <Button type="button" variant="brand-secondary" onClick={handleCreate} disabled={creating || updating || !canNext()} className="gap-1">
+                  {(creating || updating) ? <Loader2Icon className="size-4 animate-spin" /> : <CheckIcon className="size-4" />}
+                  {editingId ? "Save changes" : "Create course"}
                 </Button>
               )}
             </div>

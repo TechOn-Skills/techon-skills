@@ -42,6 +42,16 @@ export const GET_COURSE = gql`
             courseDurationInMonths
             totalNumberOfInstallments
             currency
+            technologies {
+                label
+                description
+                logo
+            }
+            articleFeatures {
+                name
+                description
+                image
+            }
         }
     }
 `;

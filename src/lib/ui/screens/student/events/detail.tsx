@@ -59,7 +59,6 @@ export const StudentEventDetailScreen = ({ id }: { id: string }) => {
   })
 
   const event = data?.getEvent
-  const typeConfig = event ? EVENT_TYPE_CONFIG[event.type] ?? { label: event.type, color: "bg-muted-surface" } : null
   const spotsPercentage = event && event.totalSpots > 0 ? (event.spotsLeft / event.totalSpots) * 100 : 0
 
   if (loading) {
@@ -97,6 +96,8 @@ export const StudentEventDetailScreen = ({ id }: { id: string }) => {
       </div>
     )
   }
+
+  const typeConfig = EVENT_TYPE_CONFIG[event.type] ?? { label: event.type, color: "bg-muted-surface" }
 
   const handleRegister = () => {
     if (event.isRegistered) unregisterFromEvent({ variables: { eventId: event.id } })

@@ -23,6 +23,29 @@ export const GET_PAYMENTS = gql`
     }
 `;
 
+export const GET_PAYMENTS_PENDING_APPROVAL = gql`
+    query GetPaymentsPendingApproval {
+        getPaymentsPendingApproval {
+            id
+            amount
+            paymentDate
+            paymentStatus
+            paymentAttachment
+            isPaid
+            payerId
+            payer {
+                id
+                fullName
+                email
+            }
+            courseDetails {
+                courseId
+                installmentNumber
+            }
+        }
+    }
+`;
+
 export const GET_PAYMENTS_BY_USER = gql`
     query GetPaymentsByUser($userId: ID!) {
         getPaymentsByUser(userId: $userId) {
@@ -37,6 +60,11 @@ export const GET_PAYMENTS_BY_USER = gql`
                 courseId
                 enrollmentDate
                 installmentNumber
+                course {
+                    id
+                    feePerMonth
+                    currency
+                }
             }
         }
     }

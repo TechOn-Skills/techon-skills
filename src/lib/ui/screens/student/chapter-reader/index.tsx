@@ -13,8 +13,9 @@ import { getNextChapter, API_COURSE_SLUG_TO_CONTENT_SLUG } from "@/utils/constan
 import { CONFIG } from "@/utils/constants"
 import { ChevronLeftIcon, CreditCardIcon, FileQuestionIcon, Loader2Icon } from "lucide-react"
 import { useUser } from "@/lib/providers/user"
-import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
+import { GET_PAYMENTS_BY_USER, GET_SUBMISSION_BY_REFERENCE } from "@/lib/graphql"
 import { isDueMonthReached } from "@/lib/helpers"
+import toast from "react-hot-toast"
 
 type Props = {
     courseSlug: string
@@ -25,6 +26,8 @@ type Props = {
 
 const contentUrl = (courseSlug: string, moduleSlug: string, chapterSlug: string, type: "md" | "json") =>
     `/api/course-content?courseSlug=${encodeURIComponent(courseSlug)}&moduleSlug=${encodeURIComponent(moduleSlug)}&chapterSlug=${encodeURIComponent(chapterSlug)}&type=${type}`
+
+const PASSING_PERCENT = 40
 
 export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapterTitle }: Props) => {
     const [markdown, setMarkdown] = useState<string | null>(null)
@@ -39,6 +42,44 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
             )?.id ?? null,
         [enrolledCoursesFromApi, courseSlug]
     )
+    const referenceId = `${moduleSlug}/${chapterSlug}`
+    const { data: submissionData } = useQuery<{
+        getSubmissionByReference: { status: string; marks: number | null; maxMarks: number } | null
+    }>(GET_SUBMISSION_BY_REFERENCE, {
+        variables: {
+            userId: userProfileInfo?.id ?? "",
+            courseId: courseIdForSlug ?? "",
+            type: "graded_exercise",
+            referenceId,
+        },
+        skip: !courseIdForSlug || !userProfileInfo?.id,
+    })
+    const existingSubmission = submissionData?.getSubmissionByReference ?? null
+    const submissionStatus = existingSubmission?.status
+    const marksPercent =
+        existingSubmission?.maxMarks != null &&
+        existingSubmission.maxMarks > 0 &&
+        existingSubmission.marks != null
+            ? Math.round((existingSubmission.marks / existingSubmission.maxMarks) * 100)
+            : null
+    const passed = submissionStatus === "marked" && marksPercent != null && marksPercent >= PASSING_PERCENT
+    const canOpenExerciseModal =
+        !existingSubmission ||
+        (submissionStatus === "marked" && !passed)
+
+    const handleAttemptClick = useCallback(() => {
+        if (canOpenExerciseModal) {
+            setExerciseOpen(true)
+            return
+        }
+        if (submissionStatus === "submitted") {
+            toast.error("Please wait for your marks to be updated before attempting again.")
+            return
+        }
+        if (passed) {
+            toast.success("You have already passed this exercise.")
+        }
+    }, [canOpenExerciseModal, submissionStatus, passed])
     const { data: paymentsData } = useQuery<{
         getPaymentsByUser: Array<{ courseDetails?: { courseId: string } | null; isPaid: boolean; paymentDate: string }>;
     }>(GET_PAYMENTS_BY_USER, {
@@ -148,7 +189,7 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
                     type="button"
                     variant="brand-secondary"
                     shape="pill"
-                    onClick={() => setExerciseOpen(true)}
+                    onClick={handleAttemptClick}
                     className="inline-flex items-center gap-2"
                 >
                     <FileQuestionIcon className="size-4" />

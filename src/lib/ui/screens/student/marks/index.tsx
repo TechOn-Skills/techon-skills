@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { useQuery } from "@apollo/client/react"
 import { AwardIcon, Loader2Icon, TrendingUpIcon } from "lucide-react"
 import { Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts"
@@ -28,6 +29,9 @@ type SubmissionItem = {
 }
 
 export const StudentMarksScreen = () => {
+  const searchParams = useSearchParams()
+  const pendingOnly = searchParams.get("filter") === "pending"
+
   const { data, loading } = useQuery<{
     getMyMarksSummary: {
       totalSubmissions: number
@@ -40,9 +44,20 @@ export const StudentMarksScreen = () => {
   const { courses } = useCourses()
   const courseTitle = (id: string) => courses.find((c) => c.id === id)?.title ?? id
 
+  const PASSING_PERCENT = 40
   const summary = data?.getMyMarksSummary
   const submissions = summary?.submissions ?? []
-  const marked = submissions.filter((s) => s.status === "marked" && s.marks != null)
+  const tableSubmissions = useMemo(
+    () => (pendingOnly ? submissions.filter((s) => s.status === "submitted") : submissions),
+    [submissions, pendingOnly]
+  )
+  const marked = submissions.filter(
+    (s) => s.status === "marked" && s.marks != null && s.maxMarks > 0 && Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT
+  )
+  const isPassed = (s: SubmissionItem) =>
+    s.status === "marked" && s.maxMarks > 0 && s.marks != null && Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT
+  const isNotPassed = (s: SubmissionItem) =>
+    s.status === "marked" && s.maxMarks > 0 && (s.marks == null || Math.round((s.marks / s.maxMarks) * 100) < PASSING_PERCENT)
 
   const chartData = useMemo(
     () =>
@@ -79,6 +94,11 @@ export const StudentMarksScreen = () => {
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
           View your marks for graded exercises and assignments. You&apos;ll be notified when an instructor has marked your submission.
         </p>
+        {pendingOnly && (
+          <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-900 dark:text-amber-100">
+            Showing items still awaiting marks. Clear <span className="font-mono">?filter=pending</span> from the URL to see everything.
+          </p>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -126,8 +146,12 @@ export const StudentMarksScreen = () => {
                   content={({ active, payload, label }) => (
                     <ChartTooltipContent
                       active={active}
-                      payload={payload}
-                      label={(payload?.[0]?.payload as { fullTitle?: string })?.fullTitle ?? label}
+                      payload={payload ? [...payload] : []}
+                      label={
+                        ((payload?.[0]?.payload as { fullTitle?: string })?.fullTitle ?? label) != null
+                          ? String((payload?.[0]?.payload as { fullTitle?: string })?.fullTitle ?? label)
+                          : undefined
+                      }
                       formatter={(v) => `${Number(v)}%`}
                     />
                   )}
@@ -156,14 +180,16 @@ export const StudentMarksScreen = () => {
                 </tr>
               </thead>
               <tbody>
-                {submissions.length === 0 ? (
+                {tableSubmissions.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      No submissions yet. Complete graded exercises or assignments to see marks here.
+                      {pendingOnly
+                        ? "No submissions waiting for marks."
+                        : "No submissions yet. Complete graded exercises or assignments to see marks here."}
                     </td>
                   </tr>
                 ) : (
-                  submissions.map((s) => (
+                  tableSubmissions.map((s) => (
                     <tr key={s.id} className="border-b transition-colors hover:bg-muted-surface/20">
                       <td className="p-4">
                         <div>
@@ -176,12 +202,14 @@ export const StudentMarksScreen = () => {
                         <span
                           className={cn(
                             "rounded-full px-2 py-1 text-xs font-medium",
-                            s.status === "marked"
+                            isPassed(s)
                               ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                              : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                              : isNotPassed(s)
+                                ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                                : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                           )}
                         >
-                          {s.status === "marked" ? "Marked" : "Pending"}
+                          {isPassed(s) ? "Passed" : isNotPassed(s) ? "Not passed – re-attempt required" : "Pending"}
                         </span>
                       </td>
                       <td className="p-4">

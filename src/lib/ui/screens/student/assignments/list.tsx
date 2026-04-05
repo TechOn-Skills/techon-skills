@@ -2,233 +2,171 @@
 
 import Link from "next/link"
 import { useMemo } from "react"
-import { ArrowRightIcon, FlameIcon, TrophyIcon, TargetIcon, StarIcon, ZapIcon } from "lucide-react"
+import { useQuery } from "@apollo/client/react"
+import { Loader2Icon, ListTodoIcon } from "lucide-react"
 
-import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
-import { cn, formatDateLong } from "@/lib/helpers"
-import type { ISubmission } from "@/utils/interfaces"
+import { Card, CardContent } from "@/lib/ui/useable-components/card"
+import { formatDateLong } from "@/lib/helpers"
+import { cn } from "@/lib/helpers"
+import { GET_MY_COURSE_ASSIGNMENTS, GET_MY_SUBMISSIONS } from "@/lib/graphql"
+import { useUser } from "@/lib/providers/user"
 
-function storageKey(id: string) {
-  return `student_assignment_submission:${id}`
+type AssignmentRow = {
+  id: string
+  courseId: string
+  title: string
+  description: string | null
+  maxMarks: number
+  referenceId: string
+  dueDate: string | null
+  course?: { id: string; title: string } | null
 }
 
-function getGradeEmoji(marks: number) {
-  if (marks >= 90) return "🌟"
-  if (marks >= 80) return "🎯"
-  if (marks >= 70) return "✨"
-  if (marks >= 60) return "👍"
-  return "📝"
+type SubRow = {
+  id: string
+  courseId: string
+  type: string
+  referenceId: string
+  title: string
+  marks: number | null
+  maxMarks: number
+  status: string
+  markedAt: string | null
+  canStudentSubmit: boolean
 }
 
-function getGradeBadge(marks: number) {
-  if (marks >= 90) return { label: "Excellent!", color: "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" }
-  if (marks >= 80) return { label: "Great Job!", color: "bg-green-500/20 text-green-600 dark:text-green-400" }
-  if (marks >= 70) return { label: "Good Work", color: "bg-blue-500/20 text-blue-600 dark:text-blue-400" }
-  if (marks >= 60) return { label: "Keep Going", color: "bg-purple-500/20 text-purple-600 dark:text-purple-400" }
-  return { label: "Try Again", color: "bg-orange-500/20 text-orange-600 dark:text-orange-400" }
+function statusLabel(sub: SubRow | undefined): "Pending" | "Submitted" | "Graded" | "Resubmit allowed" {
+  if (!sub) return "Pending"
+  if (sub.status === "marked") {
+    if (sub.canStudentSubmit) return "Resubmit allowed"
+    return "Graded"
+  }
+  return "Submitted"
 }
 
 export const StudentAssignmentsListScreen = () => {
-  const { assignments } = useCourses()
-  const keys = useMemo(
-    () => assignments.map((a) => storageKey(a.id)),
-    [assignments]
-  )
-  const rawByKey = useMemo(() => {
-    if (typeof window === "undefined") return []
+  const { userProfileInfo } = useUser()
+  const { data: assignData, loading: loadingA, error: errA } = useQuery<{
+    getMyCourseAssignments: AssignmentRow[]
+  }>(GET_MY_COURSE_ASSIGNMENTS, { skip: !userProfileInfo?.id, fetchPolicy: "network-only" })
+  const { data: subData, loading: loadingS } = useQuery<{ getMySubmissions: SubRow[] }>(GET_MY_SUBMISSIONS, {
+    skip: !userProfileInfo?.id,
+    fetchPolicy: "network-only",
+  })
 
-    return keys.map((key) => {
-      const raw = localStorage.getItem(key)
-      if (!raw) return { key, value: null }
-
-      try {
-        return {
-          key,
-          value: JSON.parse(raw) as ISubmission,
-        }
-      } catch {
-        return { key, value: null }
-      }
-    })
-  }, [keys])
+  const loading = loadingA || loadingS
+  const assignments = assignData?.getMyCourseAssignments ?? []
+  const subs = useMemo(() => {
+    const list = subData?.getMySubmissions ?? []
+    const map = new Map<string, SubRow>()
+    for (const s of list) {
+      if (s.type === "assignment") map.set(`${s.courseId}:${s.referenceId}`, s)
+    }
+    return map
+  }, [subData?.getMySubmissions])
 
   const rows = useMemo(() => {
-    return assignments.map((a) => ({
-      assignment: a,
-      submission:
-        rawByKey.find((r) => r.key === storageKey(a.id))?.value ?? null,
-    }))
-  }, [rawByKey, assignments])
-
-
-  // Fun stats calculations
-  const stats = useMemo(() => {
-    const submitted = rows.filter(r => r.submission).length
-    const graded = rows.filter(r => typeof r.submission?.marks === "number").length
-    const avgMarks = graded > 0
-      ? Math.round(rows.reduce((sum, r) => sum + (r.submission?.marks || 0), 0) / graded)
-      : 0
-    const perfectScores = rows.filter(r => (r.submission?.marks || 0) >= 90).length
-    const streak = Math.min(submitted, 5) // Derived from submitted count; replace with API when learning-streak is available
-
-    return { submitted, graded, avgMarks, perfectScores, streak, total: rows.length }
-  }, [rows])
+    return assignments.map((a) => {
+      const sub = subs.get(`${a.courseId}:${a.referenceId}`)
+      return { assignment: a, submission: sub }
+    })
+  }, [assignments, subs])
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8">
         <div className="text-sm font-semibold text-secondary">My Assignments</div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Track your progress & grades
-        </h1>
+        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Course assignments</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-          Every assignment completed is a step closer to mastery. Keep the momentum going! 🚀
+          Assignments are managed by your instructors here—separate from chapter exercises. Submit files and notes from the
+          detail page.
         </p>
       </div>
 
-      {/* Fun Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-        <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(255,138,61,0.25),rgba(70,208,255,0.12),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700">
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <FlameIcon className="size-8 text-orange-500" />
-                <span className="text-3xl font-bold">{stats.streak}</span>
-              </div>
-              <div className="text-muted-foreground text-xs">Day Streak 🔥</div>
-            </CardContent>
-          </Card>
+      {errA && (
+        <p className="text-destructive mb-4 text-sm">
+          {errA.message || "Could not load assignments. Ensure you are enrolled in a course."}
+        </p>
+      )}
+
+      {loading ? (
+        <div className="flex items-center gap-2 py-16 text-muted-foreground">
+          <Loader2Icon className="size-6 animate-spin" />
+          Loading assignments…
         </div>
-
-        <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: "100ms" }}>
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <TargetIcon className="size-8 text-blue-500" />
-                <span className="text-3xl font-bold">{stats.submitted}/{stats.total}</span>
-              </div>
-              <div className="text-muted-foreground text-xs">Completed</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: "200ms" }}>
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <TrophyIcon className="size-8 text-yellow-500" />
-                <span className="text-3xl font-bold">{stats.avgMarks}%</span>
-              </div>
-              <div className="text-muted-foreground text-xs">Average Score</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: "300ms" }}>
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <StarIcon className="size-8 text-purple-500" />
-                <span className="text-3xl font-bold">{stats.perfectScores}</span>
-              </div>
-              <div className="text-muted-foreground text-xs">90+ Scores 🌟</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: "400ms" }}>
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <ZapIcon className="size-8 text-green-500" />
-                <span className="text-3xl font-bold">{Math.round((stats.submitted / stats.total) * 100)}%</span>
-              </div>
-              <div className="text-muted-foreground text-xs">Completion</div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Assignment Cards */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {rows.map(({ assignment, submission }, idx) => {
-          const gradeInfo = typeof submission?.marks === "number" ? getGradeBadge(submission.marks) : null
-          const emoji = typeof submission?.marks === "number" ? getGradeEmoji(submission.marks) : null
-
-          return (
-            <div
-              key={assignment.id}
-              className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700"
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden h-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between gap-3">
-                    <span className="truncate">{assignment.title}</span>
-                    {typeof submission?.marks === "number" ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-2xl">{emoji}</span>
-                        <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex shrink-0 items-center rounded-full px-2 py-1 text-xs font-semibold">
-                          {submission.marks}/100
-                        </span>
-                      </div>
-                    ) : submission ? (
-                      <span className="bg-blue-500/20 text-blue-600 dark:text-blue-400 inline-flex shrink-0 items-center rounded-full px-2 py-1 text-xs font-semibold">
-                        ⏳ Grading...
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground shrink-0 text-xs">
-                        📝 Pending
-                      </span>
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    {assignment.course} • Due {formatDateLong(assignment.dueDate)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {gradeInfo && (
-                    <div className={cn("rounded-2xl px-3 py-2 text-center text-xs font-semibold", gradeInfo.color)}>
-                      {gradeInfo.label}
-                    </div>
-                  )}
-                  <div className="text-muted-foreground text-sm">
-                    {assignment.brief}
-                  </div>
-                  <Button asChild variant="ghost" shape="pill" className="justify-between w-full">
-                    <Link href={`/student/assignments/${assignment.id}`}>
-                      {submission ? "View Submission" : "Start Assignment"}
-                      <ArrowRightIcon className="size-4 text-muted-foreground" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+      ) : rows.length === 0 ? (
+        <Card className="bg-background/70 rounded-3xl backdrop-blur">
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <ListTodoIcon className="text-muted-foreground/50 size-12" />
+            <p className="text-muted-foreground max-w-md">
+              No assignments yet. When your instructor publishes one for a course you&apos;re enrolled in, it will appear
+              here.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-background/70 overflow-hidden rounded-3xl backdrop-blur">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted-surface/40 border-b">
+                  <tr>
+                    <th className="p-4 font-semibold">ID</th>
+                    <th className="p-4 font-semibold">Title</th>
+                    <th className="p-4 font-semibold">Course</th>
+                    <th className="p-4 font-semibold">Due</th>
+                    <th className="p-4 font-semibold">Status</th>
+                    <th className="p-4 font-semibold">Marks</th>
+                    <th className="p-4 font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({ assignment: a, submission: s }) => {
+                    const st = statusLabel(s)
+                    return (
+                      <tr key={a.id} className="hover:bg-muted-surface/20 border-b transition-colors">
+                        <td className="text-muted-foreground p-4 font-mono text-xs">{a.id.slice(-8)}</td>
+                        <td className="p-4 font-medium">{a.title}</td>
+                        <td className="text-muted-foreground p-4">{a.course?.title ?? "—"}</td>
+                        <td className="text-muted-foreground p-4">
+                          {a.dueDate ? formatDateLong(a.dueDate) : "—"}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-1 text-xs font-medium",
+                              st === "Graded"
+                                ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                                : st === "Resubmit allowed"
+                                  ? "bg-sky-500/20 text-sky-700 dark:text-sky-400"
+                                  : st === "Submitted"
+                                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                                    : "bg-muted-surface text-muted-foreground"
+                            )}
+                          >
+                            {st}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {(st === "Graded" || st === "Resubmit allowed") && s
+                            ? `${s.marks ?? 0} / ${s.maxMarks}`
+                            : "—"}
+                        </td>
+                        <td className="p-4">
+                          <Button asChild variant="brand-secondary" size="sm" shape="pill">
+                            <Link href={`/student/assignments/${a.id}`}>Open</Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-          )
-        })}
-      </div>
-
-      {/* Motivational Footer */}
-      {stats.submitted > 0 && (
-        <div className="mt-10 rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-            <CardContent className="p-8 text-center">
-              <div className="text-4xl mb-4">🎉</div>
-              <h3 className="text-2xl font-semibold mb-2">You&apos;re doing amazing!</h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto leading-7">
-                {stats.avgMarks >= 80
-                  ? "Outstanding work! Your dedication is paying off. Keep pushing forward and you'll achieve incredible things!"
-                  : stats.submitted >= stats.total / 2
-                    ? "You're over halfway there! Every assignment makes you stronger. Don't stop now—you've got this!"
-                    : "Great start! Consistency is key. Keep submitting and watch your skills soar to new heights!"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
 }
-

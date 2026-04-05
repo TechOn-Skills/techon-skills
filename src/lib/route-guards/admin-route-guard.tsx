@@ -6,7 +6,7 @@ import { UserRole } from "@/utils/enums/user";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
 
-const ADMIN_ROLES = [UserRole.SUPER_ADMIN, UserRole.ADMIN];
+const ADMIN_ROLES = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.INSTRUCTOR];
 
 export function AdminRouteGuard({ children }: { children: ReactNode }) {
   const { userProfileInfo, profileLoaded } = useUser();

@@ -11,11 +11,57 @@ export const GET_SUBMISSIONS_FOR_COURSE = gql`
       title
       mcqScore
       mcqMax
+      mcqCount
       shortAnswers {
         questionId
         questionText
         answer
+        maxMarks
+        marksAwarded
       }
+      attachmentUrl
+      attachmentUrls
+      resubmitAllowed
+      passingGrade
+      canStudentSubmit
+      marks
+      maxMarks
+      status
+      markedAt
+      createdAt
+      user {
+        id
+        email
+        fullName
+      }
+    }
+  }
+`;
+
+export const GET_SUBMISSIONS_FOR_ASSIGNMENT = gql`
+  query GetSubmissionsForAssignment($assignmentId: ID!) {
+    getSubmissionsForAssignment(assignmentId: $assignmentId) {
+      id
+      userId
+      courseId
+      type
+      referenceId
+      title
+      mcqScore
+      mcqMax
+      mcqCount
+      shortAnswers {
+        questionId
+        questionText
+        answer
+        maxMarks
+        marksAwarded
+      }
+      attachmentUrl
+      attachmentUrls
+      resubmitAllowed
+      passingGrade
+      canStudentSubmit
       marks
       maxMarks
       status
@@ -45,6 +91,11 @@ export const GET_MY_SUBMISSIONS = gql`
       status
       markedAt
       createdAt
+      attachmentUrl
+      attachmentUrls
+      resubmitAllowed
+      passingGrade
+      canStudentSubmit
     }
   }
 `;
@@ -81,6 +132,15 @@ export const GET_SUBMISSION_BY_REFERENCE = gql`
       marks
       maxMarks
       markedAt
+      attachmentUrl
+      attachmentUrls
+      resubmitAllowed
+      passingGrade
+      canStudentSubmit
+      shortAnswers {
+        questionId
+        answer
+      }
     }
   }
 `;
