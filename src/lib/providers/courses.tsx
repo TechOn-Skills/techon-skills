@@ -33,7 +33,7 @@ function deriveFeaturedCourses(courses: ICourse[]): IFeaturedCourse[] {
     return {
       slug: c.slug,
       title: c.title,
-      description: c.heroDescription ?? c.subtitle,
+      description: c.subDescription ?? c.subtitle,
       icon: display?.icon ?? "code",
       bullets: display?.benefits ?? [],
     }
