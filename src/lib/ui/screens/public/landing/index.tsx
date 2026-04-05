@@ -39,6 +39,7 @@ import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import type { IContactForm, IContactFormCourse } from "@/utils/interfaces"
 import { LoggerLevel } from "@/utils/enums"
+import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 const CONTACT_MODAL_SHOWN_KEY = "techon_contact_modal_shown"
 
@@ -47,6 +48,46 @@ const FEATURED_COURSE_ICONS: Record<string, typeof CodeIcon> = {
   smartphone: SmartphoneIcon,
   wrench: WrenchIcon,
   store: StoreIcon,
+}
+
+/** Per-course visual identity: gradient meshes + icon wells (landing featured grid). */
+const FEATURED_CARD_PALETTES = [
+  {
+    iconBg: "bg-gradient-to-br from-[#4fc3e8] via-[#2a9fd4] to-[#135a8c]",
+    iconShadow: "shadow-[0_12px_40px_-8px_rgba(79,195,232,0.55)]",
+    mesh: "bg-[radial-gradient(ellipse_120%_80%_at_0%_-20%,rgba(79,195,232,0.35),transparent_50%),radial-gradient(ellipse_100%_60%_at_100%_100%,rgba(255,138,61,0.18),transparent_55%)]",
+    hoverRing: "group-hover:shadow-[0_0_0_1px_rgba(79,195,232,0.35),0_24px_48px_-12px_rgba(27,119,182,0.35)]",
+  },
+  {
+    iconBg: "bg-gradient-to-br from-violet-500 via-fuchsia-500 to-purple-700",
+    iconShadow: "shadow-[0_12px_40px_-8px_rgba(139,92,246,0.5)]",
+    mesh: "bg-[radial-gradient(ellipse_120%_80%_at_100%_0%,rgba(167,139,250,0.3),transparent_50%),radial-gradient(ellipse_90%_50%_at_0%_100%,rgba(236,72,153,0.12),transparent_50%)]",
+    hoverRing: "group-hover:shadow-[0_0_0_1px_rgba(167,139,250,0.4),0_24px_48px_-12px_rgba(109,40,217,0.28)]",
+  },
+  {
+    iconBg: "bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900",
+    iconShadow: "shadow-[0_12px_40px_-8px_rgba(71,85,105,0.55)]",
+    mesh: "bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(148,163,184,0.22),transparent_55%),radial-gradient(ellipse_80%_50%_at_100%_100%,rgba(14,165,233,0.12),transparent_50%)]",
+    hoverRing: "group-hover:shadow-[0_0_0_1px_rgba(148,163,184,0.35),0_24px_48px_-12px_rgba(15,23,42,0.4)]",
+  },
+  {
+    iconBg: "bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-800",
+    iconShadow: "shadow-[0_12px_40px_-8px_rgba(16,185,129,0.45)]",
+    mesh: "bg-[radial-gradient(ellipse_110%_70%_at_0%_0%,rgba(52,211,153,0.28),transparent_52%),radial-gradient(ellipse_90%_60%_at_100%_80%,rgba(20,184,166,0.15),transparent_50%)]",
+    hoverRing: "group-hover:shadow-[0_0_0_1px_rgba(52,211,153,0.35),0_24px_48px_-12px_rgba(5,150,105,0.28)]",
+  },
+] as const
+
+const PALETTE_INDEX_BY_SLUG: Record<string, number> = {
+  "web-development": 0,
+  "mobile-app-development": 1,
+  "software-engineering": 2,
+  ecommerce: 3,
+}
+
+function getFeaturedPalette(slug: string) {
+  const i = PALETTE_INDEX_BY_SLUG[slug]
+  return FEATURED_CARD_PALETTES[i ?? 0]!
 }
 
 export const LandingPageScreen = () => {
@@ -424,40 +465,110 @@ export const LandingPageScreen = () => {
                 </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {featuredCourses.map((c) => (
-                  <Link key={c.title} href={`/courses/${c.slug}`} className="block transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                    <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50 h-full cursor-pointer">
-                      <CardHeader>
-                        <div className="flex items-center gap-3">
-                          <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
-                            <c.icon className="size-5" />
-                          </span>
-                          <div>
-                            <CardTitle className="text-base">{c.title}</CardTitle>
-                            <CardDescription className="text-xs leading-5">
-                              {c.description}
-                            </CardDescription>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {featuredCourses.map((c, idx) => {
+                  const palette = getFeaturedPalette(c.slug)
+                  const highlight = COURSE_DISPLAY_BY_SLUG[c.slug]?.highlight
+                  logger({ type: LoggerLevel.DEBUG, message: JSON.stringify(c.bullets), })
+                  return (
+                    <Link
+                      key={c.slug}
+                      href={`/courses/${c.slug}`}
+                      className={cn(
+                        "group relative block min-w-96 max-w-96 h-full min-h-76 rounded-[1.35rem] outline-none focus-visible:ring-2 focus-visible:ring-(--brand-highlight) focus-visible:ring-offset-2",
+                        "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-5 motion-safe:duration-700",
+                      )}
+                      style={{ animationDelay: `${120 + idx * 90}ms` }}
+                    >
+                      {/* Ambient glow on hover */}
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "pointer-events-none absolute -inset-0.5 rounded-[1.4rem] opacity-0 blur-md transition-all duration-500 ease-out",
+                          "bg-linear-to-br from-sky-400/30 via-transparent to-orange-400/25",
+                          "group-hover:opacity-100 group-hover:blur-xl",
+                        )}
+                      />
+                      <article
+                        className={cn(
+                          "relative flex h-full min-h-[inherit] flex-col overflow-hidden rounded-[1.35rem] border border-border/70",
+                          "bg-background/85 backdrop-blur-xl supports-backdrop-filter:bg-background/75",
+                          "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.06),0_12px_24px_-8px_rgba(7,26,43,0.12)]",
+                          "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          "group-hover:-translate-y-2 group-hover:border-(--brand-highlight)/25",
+                          palette.hoverRing,
+                        )}
+                      >
+                        {/* Mesh + shine sweep */}
+                        <div
+                          className={cn(
+                            "pointer-events-none absolute inset-0 opacity-90 transition-opacity duration-500 group-hover:opacity-100",
+                            palette.mesh,
+                          )}
+                        />
+                        <div
+                          className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-linear-to-r from-transparent via-white/25 to-transparent opacity-0 transition-all duration-700 ease-out group-hover:translate-x-[120%] group-hover:opacity-100 dark:via-white/10"
+                          aria-hidden
+                        />
+
+                        <div className="relative flex flex-1 flex-col p-6 sm:p-7">
+                          <div className="mb-5 flex gap-5">
+                            <div className="relative shrink-0">
+                              <div
+                                className={cn(
+                                  "flex size-19 items-center justify-center rounded-2xl text-white",
+                                  "ring-4 ring-white/60 dark:ring-white/10",
+                                  "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.06] group-hover:-rotate-2",
+                                  palette.iconBg,
+                                  palette.iconShadow,
+                                )}
+                              >
+                                <c.icon className="size-[2.1rem] drop-shadow-md" strokeWidth={1.65} aria-hidden />
+                              </div>
+                            </div>
+                            <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
+                              {highlight ? (
+                                <span className="w-fit rounded-full border border-(--brand-highlight)/25 bg-(--brand-highlight)/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-(--brand-secondary)">
+                                  {highlight}
+                                </span>
+                              ) : null}
+                              <h3 className="text-[1.05rem] font-bold leading-snug tracking-tight text-foreground sm:text-lg">
+                                {c.title}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <p className="text-muted-foreground mb-5 line-clamp-3 text-sm leading-relaxed">
+                            {c.description}
+                          </p>
+
+                          <ul className="mb-6 flex flex-1 flex-col gap-3">
+                            {c.bullets.map((b) => (
+                              <li key={b} className="flex gap-3 text-sm leading-snug">
+                                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-(--brand-highlight)/12 text-(--brand-highlight) ring-1 ring-(--brand-highlight)/20">
+                                  <CheckCircle2Icon className="size-3.5" strokeWidth={2.25} aria-hidden />
+                                </span>
+                                <span className="min-w-0 text-foreground/90">{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-5">
+                            <span className="text-sm font-semibold tracking-tight text-foreground">
+                              View details
+                            </span>
+                            <span className="flex size-9 items-center justify-center rounded-full bg-(--brand-primary)/5 text-(--brand-secondary) transition-all duration-300 group-hover:bg-(--brand-secondary) group-hover:text-white group-hover:shadow-md">
+                              <ArrowRightIcon
+                                className="size-4 transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+                                aria-hidden
+                              />
+                            </span>
                           </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2 text-sm">
-                          {c.bullets.slice(0, 2).map((b) => (
-                            <div key={b} className="flex items-start gap-2">
-                              <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
-                              <div className="text-sm">{b}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <span className="text-foreground shrink-0 whitespace-nowrap inline-flex w-fit items-center gap-2 text-sm font-medium">
-                          View details
-                          <ArrowRightIcon className="size-4" />
-                        </span>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                      </article>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           </div>
