@@ -2,19 +2,24 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useQuery } from "@apollo/client/react"
+import { useMemo } from "react"
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
   ClipboardListIcon,
   GraduationCapIcon,
   ListChecksIcon,
+  Loader2Icon,
   RocketIcon,
   SparklesIcon,
   TrophyIcon,
 } from "lucide-react"
 
 import { useCourses } from "@/lib/providers/courses"
-import { formatCourseDuration, formatCoursePrice } from "@/lib/helpers"
+import { useUser } from "@/lib/providers/user"
+import { formatCourseDuration, formatCoursePrice, getImageSrc, isBackendImageUrl, mapApiCourseToICourse, type IApiCourse } from "@/lib/helpers"
+import { GET_COURSE_BY_SLUG } from "@/lib/graphql"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
@@ -32,8 +37,48 @@ const STEP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 }
 
 export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
-  const { getCourseBySlug } = useCourses()
-  const course = getCourseBySlug(slug)
+  const { getCourseBySlug, loading: coursesLoading } = useCourses()
+  const { enrolledCoursesFromApi, requestedCoursesFromApi } = useUser()
+  const courseFromList = getCourseBySlug(slug)
+
+  const enrolledCourseIds = useMemo(
+    () => new Set(enrolledCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+    [enrolledCoursesFromApi]
+  )
+  const enrolledCourseSlugs = useMemo(
+    () => new Set(enrolledCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+    [enrolledCoursesFromApi]
+  )
+  const requestedCourseIds = useMemo(
+    () => new Set(requestedCoursesFromApi?.map((c) => c.id).filter(Boolean) ?? []),
+    [requestedCoursesFromApi]
+  )
+  const requestedCourseSlugs = useMemo(
+    () => new Set(requestedCoursesFromApi?.map((c) => c.slug).filter(Boolean) ?? []),
+    [requestedCoursesFromApi]
+  )
+
+  const { data: slugData, loading: slugLoading } = useQuery<{ getCourseBySlug: IApiCourse | null }>(GET_COURSE_BY_SLUG, {
+    variables: { slug },
+    skip: !slug || !!courseFromList,
+  })
+
+  const courseBySlug = slugData?.getCourseBySlug
+    ? mapApiCourseToICourse(slugData.getCourseBySlug)
+    : null
+  const course = courseFromList ?? courseBySlug ?? null
+  const loading = coursesLoading || (!!slug && !courseFromList && slugLoading)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-4 py-12">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2Icon className="size-6 animate-spin" />
+          <span>Loading course...</span>
+        </div>
+      </div>
+    )
+  }
 
   if (!course) {
     const { notFound } = COURSE_DETAIL
@@ -77,13 +122,25 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
                   {course.subtitle}
                 </p>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button asChild size="xl" shape="pill" variant="brand-secondary">
-                    <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
-                      {hero.enrollLabel}
-                      <ArrowRightIcon className="size-4" />
-                    </Link>
-                  </Button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+                  {(course.id && enrolledCourseIds.has(course.id)) || enrolledCourseSlugs.has(course.slug) ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-4 py-2 text-sm font-semibold text-muted-foreground">
+                      <CheckCircle2Icon className="size-4 shrink-0" />
+                      Already enrolled
+                    </span>
+                  ) : (course.id && requestedCourseIds.has(course.id)) || requestedCourseSlugs.has(course.slug) ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-4 py-2 text-sm font-semibold text-muted-foreground">
+                      <CheckCircle2Icon className="size-4 shrink-0" />
+                      You&apos;ve already requested
+                    </span>
+                  ) : (
+                    <Button asChild size="xl" shape="pill" variant="brand-secondary">
+                      <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                        {hero.enrollLabel}
+                        <ArrowRightIcon className="size-4" />
+                      </Link>
+                    </Button>
+                  )}
                   <Button asChild variant="outline" size="xl" shape="pill">
                     <Link href={CONFIG.ROUTES.PUBLIC.COURSES}>{hero.backToCoursesLabel}</Link>
                   </Button>
@@ -138,14 +195,15 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
                   >
                     <div className={idx % 2 === 1 ? "lg:order-2" : ""}>
                       <div className="relative overflow-hidden rounded-2xl">
-                        <div className="aspect-4/3 w-full overflow-hidden rounded-2xl border bg-muted/50 shadow-lg">
+                        <div className="aspect-4/3 w-full overflow-hidden rounded-2xl border bg-muted-surface/50 shadow-lg">
                           <Image
-                            src={feature.image}
+                            src={getImageSrc(feature.image) || feature.image}
                             alt=""
                             width={800}
                             height={600}
                             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                             sizes="(max-width: 1024px) 100vw, 50vw"
+                            unoptimized={isBackendImageUrl(feature.image)}
                           />
                         </div>
                         <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-border/40" />
@@ -183,6 +241,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
                 key={t.label}
                 id={techIdFromLabel(t.label)}
                 label={t.label}
+                logoUrl={t.logo ? getImageSrc(t.logo) || t.logo : undefined}
                 delayMs={idx * 80}
               />
             ))}
@@ -241,12 +300,24 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
               <div className="text-lg font-semibold">{cta.heading}</div>
               <div className="text-muted-foreground text-sm">{cta.subtext}</div>
             </div>
-            <Button asChild size="xl" shape="pill" variant="brand-secondary">
-              <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
-                {cta.buttonLabel}
-                <ArrowRightIcon className="size-4" />
-              </Link>
-            </Button>
+            {(course.id && enrolledCourseIds.has(course.id)) || enrolledCourseSlugs.has(course.slug) ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-4 py-2 text-sm font-semibold text-muted-foreground">
+                <CheckCircle2Icon className="size-4 shrink-0" />
+                Already enrolled
+              </span>
+            ) : (course.id && requestedCourseIds.has(course.id)) || requestedCourseSlugs.has(course.slug) ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted-surface px-4 py-2 text-sm font-semibold text-muted-foreground">
+                <CheckCircle2Icon className="size-4 shrink-0" />
+                You&apos;ve already requested
+              </span>
+            ) : (
+              <Button asChild size="xl" shape="pill" variant="brand-secondary">
+                <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                  {cta.buttonLabel}
+                  <ArrowRightIcon className="size-4" />
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>

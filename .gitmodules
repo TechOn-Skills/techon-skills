@@ -1,3 +1,3 @@
-[submodule "courses/software-engineering"]
-	path = courses/software-engineering
-	url = https://github.com/AhmadRazaKhokhar1/software-engineering-1-year.git
+[submodule "src/lib/courses"]
+	path = src/lib/courses
+	url = https://github.com/AhmadRazaKhokhar1/Web-and-mobile-app-development-courses.git

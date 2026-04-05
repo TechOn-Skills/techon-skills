@@ -25,9 +25,41 @@ export const UPDATE_USER = gql`
 `;
 
 export const DELETE_USER = gql`
-    mutation DeleteUser($id: String!) {
-        deleteUser(id: $id) {
+    mutation DeleteUser($input: UserDeleteInput!) {
+        deleteUser(input: $input)
+    }
+`;
+
+export const ENROLL_USER_IN_COURSE = gql`
+    mutation EnrollUserInCourse($input: UserCourseInput!) {
+        enrollUserInCourse(input: $input) {
             id
+            email
+            fullName
+        }
+    }
+`;
+
+export const REQUEST_COURSE_FOR_USER = gql`
+    mutation RequestCourseForUser($input: UserCourseInput!) {
+        requestCourseForUser(input: $input) {
+            id
+            email
+            fullName
+        }
+    }
+`;
+
+export const UPDATE_USER_INPUT = gql`
+    mutation UpdateUserInput($input: UserUpdateInput!) {
+        updateUser(input: $input) {
+            id
+            email
+            fullName
+            phoneNumber
+            profilePicture
+            role
+            status
         }
     }
 `;

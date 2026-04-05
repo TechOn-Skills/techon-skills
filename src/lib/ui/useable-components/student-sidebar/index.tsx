@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useQuery } from "@apollo/client/react"
 import { GraduationCap } from "lucide-react"
 
 import { cn } from "@/lib/helpers"
@@ -19,7 +20,10 @@ import {
   useSidebar,
 } from "@/lib/ui/useable-components/sidebar"
 import type { IStudentSidebarProps } from "@/utils/interfaces"
-import { COMPANY_NAME, STUDENT_SIDEBAR_ITEMS } from "@/utils/constants"
+import { COMPANY_NAME, STUDENT_SIDEBAR_ITEMS, CONFIG } from "@/utils/constants"
+import { useUser } from "@/lib/providers/user"
+import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
+import { isDueMonthReached } from "@/lib/helpers"
 
 export const StudentSidebar = ({
   className,
@@ -27,6 +31,14 @@ export const StudentSidebar = ({
 }: IStudentSidebarProps) => {
   const pathname = usePathname()
   const { isMobile, setOpen } = useSidebar()
+  const { userProfileInfo } = useUser()
+  const { data: paymentsData } = useQuery<{ getPaymentsByUser: Array<{ isPaid: boolean; paymentDate: string }> }>(GET_PAYMENTS_BY_USER, {
+    variables: { userId: userProfileInfo?.id ?? "" },
+    skip: !userProfileInfo?.id,
+  })
+  const pendingDuesCount = (paymentsData?.getPaymentsByUser ?? []).filter(
+    (p) => !p.isPaid && isDueMonthReached(p.paymentDate)
+  ).length
 
   return (
     <Sidebar
@@ -75,12 +87,20 @@ export const StudentSidebar = ({
                       <Link
                         href={item.href}
                         className={cn(
+                          "flex items-center gap-2 w-full",
                           item.disabled && "pointer-events-none opacity-60"
                         )}
                         aria-disabled={item.disabled}
                       >
-                        <item.icon className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">
+                        <span className="relative inline-flex">
+                          <item.icon className="size-4" />
+                          {item.href === CONFIG.ROUTES.STUDENT.FEES && pendingDuesCount > 0 && (
+                            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                              {pendingDuesCount > 99 ? "99+" : pendingDuesCount}
+                            </span>
+                          )}
+                        </span>
+                        <span className="group-data-[collapsible=icon]:hidden flex-1">
                           {item.label}
                         </span>
                       </Link>

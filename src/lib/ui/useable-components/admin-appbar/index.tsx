@@ -15,6 +15,7 @@ import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
 import { COMPANY_NAME, CONFIG } from "@/utils/constants"
 import { SidebarTrigger } from "@/lib/ui/useable-components/sidebar"
 import { ThemeSwitcher } from "@/lib/ui/useable-components/theme-switcher"
+import { NotificationsDropdown } from "@/lib/ui/useable-components/notifications-dropdown"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
@@ -29,6 +30,7 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
         try {
             const response = await apiService.logout()
             if (response.success) {
+                Object.values(CONFIG.STORAGE_KEYS.AUTH).forEach((key) => localStorage.removeItem(key))
                 localStorage.removeItem(CONFIG.STORAGE_KEYS.USER.PROFILE)
                 router.replace(CONFIG.ROUTES.PUBLIC.HOME)
             }
@@ -73,6 +75,7 @@ export const AdminAppbar = ({ className }: { className?: string }) => {
                 </div>
 
                 <div className="ml-auto flex items-center gap-2">
+                    <NotificationsDropdown />
                     <ThemeSwitcher className="hidden sm:inline-flex" />
                     <DialogPrimitive.Root>
                         <DialogPrimitive.Trigger asChild>
