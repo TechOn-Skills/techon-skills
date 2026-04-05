@@ -7,6 +7,8 @@ export interface IUserProfileInfo {
     profilePicture?: string | null;
     role: UserRole;
     status: UserStatus;
+    /** Course IDs this user can award marks in (Instructor/Admin). Empty or undefined for Super Admin means all. */
+    allowedMarkGradesOn?: string[];
 }
 
 export interface IUser {

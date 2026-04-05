@@ -1,72 +1,228 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowLeftIcon, CheckCircle2Icon, SaveIcon, SparklesIcon, TrophyIcon, ZapIcon } from "lucide-react"
+import { useId, useRef, useState } from "react"
+import { useMutation, useQuery } from "@apollo/client/react"
+import { ArrowLeftIcon, FileTextIcon, Loader2Icon, Trash2Icon, UploadIcon } from "lucide-react"
+import toast from "react-hot-toast"
 
-import { useCourses } from "@/lib/providers/courses"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
-import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
-import { cn, formatDateTime, formatDateLong } from "@/lib/helpers"
-import type { ISubmission } from "@/utils/interfaces"
-import { MOTIVATIONAL_QUOTES } from "@/utils/constants"
+import {
+  CREATE_SUBMISSION,
+  GET_COURSE_ASSIGNMENT_FOR_STUDENT,
+  GET_MY_SUBMISSIONS,
+  GET_SUBMISSION_BY_REFERENCE,
+} from "@/lib/graphql"
+import { apiService } from "@/lib/services"
+import { formatDateLong } from "@/lib/helpers"
+import { cn } from "@/lib/helpers"
+import { useUser } from "@/lib/providers/user"
 
-function storageKey(id: string) {
-  return `student_assignment_submission:${id}`
+const MAX_TOTAL_BYTES = 5 * 1024 * 1024
+const ACCEPT = "image/*,.pdf,application/pdf"
+
+type PendingItem = { id: string; file: File; objectUrl: string }
+
+function isImageFile(f: File) {
+  return f.type.startsWith("image/")
+}
+
+function isPdfFile(f: File) {
+  return f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+}
+
+function urlLooksLikeImage(url: string) {
+  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url) || url.includes("/image")
 }
 
 export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: string }) => {
-  const { getAssignmentById } = useCourses()
-  const assignment = useMemo(
-    () => getAssignmentById(assignmentId),
-    [assignmentId, getAssignmentById]
-  )
+  const { userProfileInfo } = useUser()
+  const userId = userProfileInfo?.id ?? ""
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const pendingId = useId()
+  const [notes, setNotes] = useState("")
+  const [uploading, setUploading] = useState(false)
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([])
 
-  const key = storageKey(assignmentId)
-  const raw = localStorage.getItem(key)
-  const saved = useMemo(() => (raw ? (JSON.parse(raw) as ISubmission) : null), [raw])
-  const [text, setText] = useState(() => saved?.text ?? "")
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [autoSaveStatus, setAutoSaveStatus] = useState<"saved" | "saving" | null>(null)
-  const [randomQuote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)])
+  const { data: assignData, loading: loadingA } = useQuery<{
+    getCourseAssignmentForStudent: {
+      id: string
+      courseId: string
+      title: string
+      description: string | null
+      maxMarks: number
+      referenceId: string
+      dueDate: string | null
+      course?: { title: string } | null
+    } | null
+  }>(GET_COURSE_ASSIGNMENT_FOR_STUDENT, {
+    variables: { id: assignmentId },
+    skip: !assignmentId || !userId,
+    fetchPolicy: "network-only",
+  })
 
-  // Auto-save draft
-  useEffect(() => {
-    if (!text.trim() || text === saved?.text) return
+  const a = assignData?.getCourseAssignmentForStudent
+  const { data: subData } = useQuery<{
+    getSubmissionByReference: {
+      id: string
+      status: string
+      marks: number | null
+      maxMarks: number
+      passingGrade: boolean
+      canStudentSubmit: boolean
+      attachmentUrl: string | null
+      attachmentUrls: string[]
+      shortAnswers: { answer: string }[]
+    } | null
+  }>(GET_SUBMISSION_BY_REFERENCE, {
+    variables: {
+      userId,
+      courseId: a?.courseId ?? "",
+      type: "assignment",
+      referenceId: a?.referenceId ?? "",
+    },
+    skip: !userId || !a?.courseId || !a?.referenceId,
+    fetchPolicy: "network-only",
+  })
 
-    setAutoSaveStatus("saving")
-    const timer = setTimeout(() => {
-      setAutoSaveStatus("saved")
-      setTimeout(() => setAutoSaveStatus(null), 2000)
-    }, 1000)
+  const [createSubmission, { loading: submitting }] = useMutation(CREATE_SUBMISSION, {
+    onCompleted: () => {
+      toast.success("Submitted successfully.")
+      setPendingItems((prev) => {
+        prev.forEach((i) => URL.revokeObjectURL(i.objectUrl))
+        return []
+      })
+    },
+    onError: (e) => toast.error(e.message ?? "Submission failed"),
+  })
 
-    return () => clearTimeout(timer)
-  }, [text, saved?.text])
+  const sub = subData?.getSubmissionByReference ?? null
+  const canUpload = !sub || sub.canStudentSubmit
+  const pendingReview = sub?.status === "submitted"
+  const graded = sub?.status === "marked"
+  const hasSubmissionRecord = Boolean(sub)
 
-  // Confetti effect
-  useEffect(() => {
-    if (showConfetti) {
-      const timer = setTimeout(() => setShowConfetti(false), 3000)
-      return () => clearTimeout(timer)
+  const submittedUrls = (() => {
+    const urls = sub?.attachmentUrls?.length ? sub.attachmentUrls : sub?.attachmentUrl ? [sub.attachmentUrl] : []
+    return urls.filter(Boolean)
+  })()
+
+  const totalPendingBytes = pendingItems.reduce((s, i) => s + i.file.size, 0)
+
+  const addFilesFromInput = (list: FileList | null) => {
+    if (!list?.length) return
+    const incoming = Array.from(list)
+    const combined = [...pendingItems.map((p) => p.file), ...incoming]
+    const total = combined.reduce((s, f) => s + f.size, 0)
+    if (total > MAX_TOTAL_BYTES) {
+      toast.error("Total size of all files must be 5MB or less.")
+      return
     }
-  }, [showConfetti])
+    const next: PendingItem[] = [...pendingItems]
+    for (const file of incoming) {
+      if (!isImageFile(file) && !isPdfFile(file)) {
+        toast.error(`${file.name}: only images and PDFs are allowed.`)
+        continue
+      }
+      next.push({
+        id: `${pendingId}-${file.name}-${file.size}-${next.length}-${Date.now()}`,
+        file,
+        objectUrl: URL.createObjectURL(file),
+      })
+    }
+    setPendingItems(next)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
 
-  if (!assignment) {
+  const removePending = (id: string) => {
+    setPendingItems((prev) => {
+      const found = prev.find((p) => p.id === id)
+      if (found) URL.revokeObjectURL(found.objectUrl)
+      return prev.filter((p) => p.id !== id)
+    })
+  }
+
+  const handleSubmit = async () => {
+    if (!a || !userId) return
+    if (!notes.trim() && pendingItems.length === 0) {
+      toast.error("Add notes or attach at least one file.")
+      return
+    }
+    if (totalPendingBytes > MAX_TOTAL_BYTES) {
+      toast.error("Total file size must be 5MB or less.")
+      return
+    }
+    setUploading(true)
+    try {
+      const uploadedUrls: string[] = []
+      for (const item of pendingItems) {
+        const res = await apiService.uploadImage(item.file, "courses", `assignment-${a.id}`)
+        if (!res.success || !res.data?.url) {
+          toast.error(`Upload failed for ${item.file.name}`)
+          return
+        }
+        uploadedUrls.push(res.data.url)
+      }
+      await createSubmission({
+        variables: {
+          input: {
+            courseId: a.courseId,
+            type: "assignment",
+            referenceId: a.referenceId,
+            title: a.title,
+            maxMarks: a.maxMarks,
+            shortAnswers: [
+              {
+                questionId: 1,
+                questionText: "Submission notes",
+                answer: notes.trim() || "(files only)",
+              },
+            ],
+            attachmentUrls: uploadedUrls.length ? uploadedUrls : undefined,
+            attachmentUrl: uploadedUrls[0] ?? undefined,
+          },
+        },
+        refetchQueries: [
+          {
+            query: GET_SUBMISSION_BY_REFERENCE,
+            variables: {
+              userId,
+              courseId: a.courseId,
+              type: "assignment",
+              referenceId: a.referenceId,
+            },
+          },
+          { query: GET_MY_SUBMISSIONS },
+        ],
+        awaitRefetchQueries: true,
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  if (loadingA) {
+    return (
+      <div className="flex items-center gap-2 py-16 text-muted-foreground">
+        <Loader2Icon className="size-6 animate-spin" />
+        Loading…
+      </div>
+    )
+  }
+
+  if (!a) {
     return (
       <div className="w-full py-10">
-        <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
+        <Card>
           <CardHeader>
             <CardTitle>Assignment not found</CardTitle>
-            <CardDescription>Go back to your assignments list.</CardDescription>
+            <CardDescription>You may not be enrolled in this course or the assignment was removed.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="ghost" shape="pill">
-              <Link href="/student/assignments">
-                <ArrowLeftIcon className="size-4" />
-                Back
-              </Link>
+            <Button asChild variant="outline" shape="pill">
+              <Link href="/student/assignments">Back to assignments</Link>
             </Button>
           </CardContent>
         </Card>
@@ -74,256 +230,179 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
     )
   }
 
-  const handleSubmit = () => {
-    const next: ISubmission = {
-      text,
-      submittedAt: new Date().toISOString(),
-      marks: saved?.marks ?? Math.floor(60 + Math.random() * 40),
-    }
-    localStorage.setItem(key, JSON.stringify(next))
-    setShowConfetti(true)
-    setText("")
-  }
-
-  const wordCount = text.trim().split(/\s+/).filter(Boolean).length
-  const charCount = text.length
-  const progressPercentage = Math.min(100, (wordCount / 100) * 100) // Assume 100 words is good progress
-
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
-      {/* Confetti Effect */}
-      {showConfetti && (
-        <div className="fixed inset-0 z-50 pointer-events-none">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute text-2xl animate-in fade-in zoom-in duration-1000"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${i * 30}ms`,
-              }}
-            >
-              {["🎉", "🌟", "✨", "🎊", "🏆", "🚀"][Math.floor(Math.random() * 6)]}
-            </div>
-          ))}
-        </div>
-      )}
+      <Button asChild variant="ghost" shape="pill" className="mb-6">
+        <Link href="/student/assignments">
+          <ArrowLeftIcon className="size-4" />
+          Back
+        </Link>
+      </Button>
 
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <Button asChild variant="ghost" shape="pill">
-          <Link href="/student/assignments">
-            <ArrowLeftIcon className="size-4" />
-            Back to Assignments
-          </Link>
-        </Button>
-        <div className="flex items-center gap-2">
-          {autoSaveStatus && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground animate-in fade-in duration-300">
-              {autoSaveStatus === "saving" ? (
-                <>
-                  <SaveIcon className="size-3 animate-pulse" />
-                  Saving draft...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2Icon className="size-3 text-green-500" />
-                  Draft saved
-                </>
+      <Card className="bg-background/70 mb-6 rounded-3xl backdrop-blur">
+        <CardHeader>
+          <CardTitle>{a.title}</CardTitle>
+          <CardDescription>
+            {a.course?.title ?? "Course"} · Max marks {a.maxMarks}
+            {a.dueDate ? ` · Due ${formatDateLong(a.dueDate)}` : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm leading-7">
+          {a.description ? <div className="text-muted-foreground whitespace-pre-wrap">{a.description}</div> : null}
+          {graded && sub?.marks != null && (
+            <p className="font-semibold text-(--brand-secondary)">
+              Your marks: {sub.marks} / {sub.maxMarks}
+              {sub.passingGrade ? " (pass)" : " (below pass threshold)"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-background/70 rounded-3xl backdrop-blur">
+        <CardHeader>
+          <CardTitle className="text-base">Submit work</CardTitle>
+          <CardDescription>
+            {!hasSubmissionRecord &&
+              "Add up to multiple files (images or PDF). Total size must not exceed 5MB."}
+            {hasSubmissionRecord && canUpload &&
+              "Your instructor allowed a resubmit. Add files and notes below; total size must not exceed 5MB."}
+            {pendingReview &&
+              "Your submission is being reviewed. You cannot upload again until it is graded or your instructor allows a resubmit."}
+            {graded && !canUpload && sub?.passingGrade &&
+              "This assignment is graded and passed. No further uploads are allowed."}
+            {graded && !canUpload && sub && !sub.passingGrade &&
+              "This assignment is graded below the pass threshold. You cannot upload again until your instructor allows a resubmit from the admin grade screen."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={!canUpload}
+            placeholder="Notes or comments for your instructor…"
+            className="min-h-32"
+          />
+
+          {canUpload && (
+            <div className="space-y-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept={ACCEPT}
+                multiple
+                disabled={!canUpload}
+                onChange={(e) => addFilesFromInput(e.target.files)}
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  shape="pill"
+                  className="gap-2"
+                  disabled={!canUpload}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <UploadIcon className="size-4" />
+                  Choose files
+                </Button>
+                <span className="text-muted-foreground text-xs">
+                  {(totalPendingBytes / 1024).toFixed(1)} KB / 5120 KB
+                </span>
+              </div>
+
+              {pendingItems.length > 0 && (
+                <div>
+                  <p className="text-muted-foreground mb-2 text-xs font-medium">Ready to upload (preview)</p>
+                  <div className="flex flex-wrap gap-3">
+                    {pendingItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="relative flex w-[7.5rem] flex-col overflow-hidden rounded-xl border bg-muted-surface/40"
+                      >
+                        <button
+                          type="button"
+                          className="bg-background/80 absolute right-1 top-1 rounded-full p-1 shadow hover:bg-destructive/20"
+                          onClick={() => removePending(item.id)}
+                          aria-label="Remove file"
+                        >
+                          <Trash2Icon className="size-3.5" />
+                        </button>
+                        <div className="flex h-24 items-center justify-center bg-black/5">
+                          {isImageFile(item.file) ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- blob preview
+                            <img src={item.objectUrl} alt="" className="max-h-full max-w-full object-contain" />
+                          ) : (
+                            <FileTextIcon className="text-(--brand-secondary) size-10" />
+                          )}
+                        </div>
+                        <p className="truncate px-1.5 py-1 text-center text-[10px] text-muted-foreground" title={item.file.name}>
+                          {item.file.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
-          {typeof saved?.marks === "number" && (
-            <div className={cn(
-              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold",
-              saved.marks >= 90 ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" :
-                saved.marks >= 80 ? "bg-green-500/20 text-green-600 dark:text-green-400" :
-                  saved.marks >= 70 ? "bg-blue-500/20 text-blue-600 dark:text-blue-400" :
-                    "bg-purple-500/20 text-purple-600 dark:text-purple-400"
-            )}>
-              <TrophyIcon className="size-4" />
-              {saved.marks}/100
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
-            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-              <CardHeader>
-                <CardTitle>{assignment.title}</CardTitle>
-                <CardDescription>
-                  {assignment.course} • Due {formatDateLong(assignment.dueDate)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold">📋 Brief</div>
-                  <div className="text-muted-foreground text-sm leading-7 bg-background/40 rounded-2xl p-4">
-                    {assignment.brief}
-                  </div>
-                </div>
-
-                {assignment.requirements.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold">✅ Requirements</div>
-                  <ul className="space-y-2">
-                    {assignment.requirements.map((r, idx) => (
-                      <li key={r} className="flex items-start gap-3 bg-background/40 rounded-2xl p-3 animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: `${idx * 100}ms` }}>
-                        <CheckCircle2Icon className="size-5 text-(--brand-primary) shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground text-sm">{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                )}
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">💻 Your Submission</div>
-                    <div className="text-xs text-muted-foreground">
-                      {wordCount} words • {charCount} characters
-                    </div>
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    Write detailed explanations, share your approach, and showcase your understanding.
-                  </div>
-
-                  {/* Progress Bar */}
-                  {wordCount > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Writing Progress</span>
-                        <span className="font-semibold">{progressPercentage.toFixed(0)}%</span>
-                      </div>
-                      <div className="h-2 bg-background/40 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-linear-to-r from-(--brand-primary) to-(--brand-accent) transition-all duration-500"
-                          style={{ width: `${progressPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <Textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    className="min-h-64 font-mono transition-all focus:ring-2 focus:ring-(--brand-primary)"
-                    placeholder="Start typing your solution here...
-
-Example:
-- What approach did you take?
-- What challenges did you face?
-- How did you solve them?
-- What did you learn?"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-background/40 rounded-2xl p-4">
-                  <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">
-                      {saved?.submittedAt
-                        ? `✅ Last submitted: ${formatDateTime(saved.submittedAt)}`
-                        : "📝 Not submitted yet"}
-                    </div>
-                    {saved && !saved.marks && (
-                      <div className="text-xs text-blue-600 dark:text-blue-400">
-                        ⏳ Your submission is being reviewed...
-                      </div>
+          {hasSubmissionRecord && submittedUrls.length > 0 && (
+            <div>
+              <p className="text-muted-foreground mb-2 text-xs font-medium">Submitted files</p>
+              <div className="flex flex-wrap gap-3">
+                {submittedUrls.map((url) => (
+                  <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      "flex w-[7.5rem] flex-col overflow-hidden rounded-xl border bg-muted-surface/40 transition-opacity hover:opacity-90"
                     )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="brand-secondary"
-                    shape="pill"
-                    className="w-full sm:w-fit"
-                    onClick={handleSubmit}
-                    disabled={!text.trim()}
                   >
-                    <SparklesIcon className="size-4" />
-                    {saved ? "Resubmit" : "Submit Assignment"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Celebration Card (shown after grading) */}
-          {typeof saved?.marks === "number" && (
-            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                <CardContent className="p-8 text-center">
-                  <div className="text-5xl mb-4">
-                    {saved.marks >= 90 ? "🌟" : saved.marks >= 80 ? "🎯" : saved.marks >= 70 ? "✨" : "👍"}
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-2">
-                    {saved.marks >= 90 ? "Outstanding Work!" :
-                      saved.marks >= 80 ? "Great Job!" :
-                        saved.marks >= 70 ? "Well Done!" :
-                          "Good Effort!"}
-                  </h3>
-                  <p className="text-muted-foreground max-w-md mx-auto leading-7">
-                    {saved.marks >= 90
-                      ? "You're crushing it! This is exceptional work. Keep this momentum going!"
-                      : saved.marks >= 70
-                        ? "Solid work! You're on the right track. Every assignment makes you better!"
-                        : "Keep pushing! Learning is a journey. Your next submission will be even better!"}
-                  </p>
-                </CardContent>
-              </Card>
+                    <div className="flex h-24 items-center justify-center bg-black/5">
+                      {urlLooksLikeImage(url) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="" className="max-h-full max-w-full object-contain" />
+                      ) : (
+                        <FileTextIcon className="text-(--brand-secondary) size-10" />
+                      )}
+                    </div>
+                    <span className="truncate px-1.5 py-1 text-center text-[10px] text-(--brand-secondary) underline">
+                      Open
+                    </span>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Tips Card */}
-          <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
-            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ZapIcon className="size-5 text-(--brand-accent)" />
-                  Pro Tips
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="bg-background/40 rounded-2xl p-3">
-                  <div className="font-semibold mb-1">💡 Be Specific</div>
-                  <div className="text-muted-foreground text-xs">Explain your thought process and decisions.</div>
-                </div>
-                <div className="bg-background/40 rounded-2xl p-3">
-                  <div className="font-semibold mb-1">🔍 Show Details</div>
-                  <div className="text-muted-foreground text-xs">Include code snippets and examples.</div>
-                </div>
-                <div className="bg-background/40 rounded-2xl p-3">
-                  <div className="font-semibold mb-1">🎯 Answer Fully</div>
-                  <div className="text-muted-foreground text-xs">Address all requirements completely.</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Motivational Quote */}
-          <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px">
-            <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-              <CardContent className="p-6">
-                <div className="text-center space-y-3">
-                  <SparklesIcon className="size-8 mx-auto text-(--brand-accent)" />
-                  <p className="text-sm leading-7 text-muted-foreground italic">
-                    &quot;{randomQuote}&quot;
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+          <Button
+            type="button"
+            variant="brand-secondary"
+            shape="pill"
+            disabled={!canUpload || uploading || submitting}
+            onClick={() => void handleSubmit()}
+          >
+            {uploading || submitting ? (
+              <Loader2Icon className="size-4 animate-spin" />
+            ) : !canUpload ? (
+              pendingReview ? (
+                "Under review"
+              ) : graded && sub?.passingGrade ? (
+                "Closed"
+              ) : (
+                "Locked"
+              )
+            ) : hasSubmissionRecord ? (
+              "Submit again"
+            ) : (
+              "Submit"
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-

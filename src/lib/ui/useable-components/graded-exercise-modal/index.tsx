@@ -10,7 +10,7 @@ import { setChapterProgress } from "@/utils/constants"
 import type { ChapterExerciseJson } from "@/utils/interfaces"
 import { useUser } from "@/lib/providers/user"
 import { CREATE_SUBMISSION, GET_SUBMISSION_BY_REFERENCE } from "@/lib/graphql"
-import { CheckCircle2Icon, Loader2Icon } from "lucide-react"
+import { CheckCircle2Icon, ClockIcon, Loader2Icon } from "lucide-react"
 import { cn } from "@/lib/helpers"
 import toast from "react-hot-toast"
 
@@ -44,11 +44,18 @@ export const GradedExerciseModal = ({
     const [error, setError] = useState<string | null>(null)
     const [mcqAnswers, setMcqAnswers] = useState<Record<number, string>>({})
     const [shortAnswers, setShortAnswers] = useState<Record<number, string>>({})
-    const [submitted, setSubmitted] = useState(false)
     const [submitError, setSubmitError] = useState<string | null>(null)
 
     const { data: submissionData, refetch: refetchSubmission } = useQuery<{
-        getSubmissionByReference: { id: string; status: string; marks: number | null; maxMarks: number; markedAt: string | null } | null
+        getSubmissionByReference: {
+            id: string
+            status: string
+            marks: number | null
+            maxMarks: number
+            markedAt: string | null
+            passingGrade: boolean
+            canStudentSubmit: boolean
+        } | null
     }>(GET_SUBMISSION_BY_REFERENCE, {
         variables: {
             userId: userProfileInfo?.id ?? "",
@@ -57,15 +64,22 @@ export const GradedExerciseModal = ({
             referenceId,
         },
         skip: !open || !courseId || !userProfileInfo?.id,
+        fetchPolicy: "network-only",
     })
     const existingSubmission = submissionData?.getSubmissionByReference ?? null
     const isMarked = existingSubmission?.status === "marked"
-    const isSubmittedPending = existingSubmission?.status === "submitted" || (submitted && !existingSubmission)
+    /** Pending review — from DB only (not local optimistic state). */
+    const isSubmittedPending = existingSubmission?.status === "submitted"
+    const marks = existingSubmission?.marks ?? 0
+    const maxMarks = existingSubmission?.maxMarks ?? MAX_MARKS
+    const marksPercent = maxMarks > 0 ? Math.round((marks / maxMarks) * 100) : 0
+    const passed = Boolean(isMarked && existingSubmission?.passingGrade)
+    const canSubmitExercise = !existingSubmission || Boolean(existingSubmission.canStudentSubmit)
+    const readOnly = !canSubmitExercise
 
     const [createSubmission, { loading: submitting }] = useMutation(CREATE_SUBMISSION, {
         onCompleted: () => {
-            setSubmitted(true)
-            refetchSubmission()
+            void refetchSubmission()
             setChapterProgress(courseSlug, moduleSlug, chapterSlug, 100)
             toast.success("Submitted. You'll be notified when your marks are ready.")
         },
@@ -78,8 +92,6 @@ export const GradedExerciseModal = ({
     const fetchData = useCallback(async () => {
         setLoading(true)
         setError(null)
-        setSubmitted(false)
-        setPassed(null)
         setSubmitError(null)
         try {
             const res = await fetch(fetchExerciseUrl)
@@ -158,6 +170,7 @@ export const GradedExerciseModal = ({
                     title: data.chapterTitle,
                     mcqScore: mcqPercent ?? 0,
                     mcqMax: data.MCQs.length > 0 ? 100 : 0,
+                    mcqCount: data.MCQs.length,
                     shortAnswers: data.ShortQuestions.map((sq) => ({
                         questionId: sq.id,
                         questionText: sq.question,
@@ -166,6 +179,18 @@ export const GradedExerciseModal = ({
                     maxMarks: MAX_MARKS,
                 },
             },
+            refetchQueries: [
+                {
+                    query: GET_SUBMISSION_BY_REFERENCE,
+                    variables: {
+                        userId: userProfileInfo.id,
+                        courseId,
+                        type: "graded_exercise",
+                        referenceId,
+                    },
+                },
+            ],
+            awaitRefetchQueries: true,
         })
     }
 
@@ -221,7 +246,22 @@ export const GradedExerciseModal = ({
                                 {error}
                             </div>
                         )}
-                        {!loading && !error && data && (
+                        {!loading && !error && data && (isMarked && passed ? (
+                            <div className="flex flex-col items-center justify-center gap-4 py-10">
+                                <div className="flex size-16 items-center justify-center rounded-full bg-emerald-500/20">
+                                    <CheckCircle2Icon className="size-9 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <p className="text-center text-lg font-semibold text-foreground">
+                                    You have successfully passed
+                                </p>
+                                <p className="text-center text-2xl font-bold text-(--brand-secondary)">
+                                    {marksPercent}%
+                                </p>
+                                <p className="text-muted-foreground text-center text-sm">
+                                    Your marks: {marks} / {maxMarks}
+                                </p>
+                            </div>
+                        ) : (
                             <div className="space-y-6">
                                 {data.MCQs.length > 0 && (
                                     <section>
@@ -246,7 +286,7 @@ export const GradedExerciseModal = ({
                                                                     type="button"
                                                                     role="radio"
                                                                     aria-checked={isSelected}
-                                                                    disabled={submitted || isSubmittedPending || isMarked}
+                                                                    disabled={readOnly}
                                                                     onClick={() => setMcq(mcq.id, opt.key)}
                                                                     className={cn(
                                                                         "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150",
@@ -296,7 +336,7 @@ export const GradedExerciseModal = ({
                                                             placeholder={`Type your answer (minimum ${SHORT_ANSWER_MIN_LENGTH} characters)…`}
                                                             value={shortAnswers[sq.id] ?? ""}
                                                             onChange={(e) => setShort(sq.id, e.target.value)}
-                                                            disabled={submitted || isSubmittedPending || isMarked}
+                                                            disabled={readOnly}
                                                             className={cn(
                                                                 "min-h-[72px] resize-y rounded-lg border-(--border-default-light) dark:border-(--border-default-dark) text-sm transition-colors focus-visible:ring-2 focus-visible:ring-(--brand-secondary)",
                                                                 !meetsMin && len > 0 && "border-amber-500/50 focus-visible:ring-amber-500/50"
@@ -312,17 +352,17 @@ export const GradedExerciseModal = ({
                                     </section>
                                 )}
                             </div>
-                        )}
+                        ))}
                     </div>
 
                     {/* Footer */}
                     {!loading && !error && data && (
                         <div className="shrink-0 border-t border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-(--background-secondary-light) dark:bg-(--background-secondary-dark) px-5 py-4">
-                            {isMarked ? (
+                            {isMarked && passed ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
                                         <CheckCircle2Icon className="size-5 shrink-0" />
-                                        Marks: {existingSubmission?.marks ?? 0} / {existingSubmission?.maxMarks ?? MAX_MARKS}
+                                        You have successfully passed with {marksPercent}%. Your marks: {marks} / {maxMarks}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {nextChapter ? (
@@ -338,15 +378,30 @@ export const GradedExerciseModal = ({
                             ) : isSubmittedPending ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 rounded-lg bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300">
-                                        <Loader2Icon className="size-5 shrink-0 animate-spin" />
+                                        <ClockIcon className="size-5 shrink-0" />
                                         Submitted. You&apos;ll be notified when your marks are ready.
                                     </div>
                                     <Button asChild variant="outline" shape="pill" size="default">
                                         <Link href={`/student/course/${courseSlug}`}>Back to course</Link>
                                     </Button>
                                 </div>
+                            ) : isMarked && !passed && !existingSubmission?.canStudentSubmit ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-muted-foreground">
+                                        You did not reach a passing grade. Your instructor must allow a resubmit before you can try
+                                        again.
+                                    </p>
+                                    <Button asChild variant="outline" shape="pill" size="default">
+                                        <Link href={`/student/course/${courseSlug}`}>Back to course</Link>
+                                    </Button>
+                                </div>
                             ) : (
                                 <div className="space-y-2">
+                                    {existingSubmission?.status === "marked" && existingSubmission.canStudentSubmit && (
+                                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                                            Your instructor allowed a resubmit. You can update your answers below.
+                                        </p>
+                                    )}
                                     {submitError && (
                                         <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
                                     )}
@@ -356,13 +411,15 @@ export const GradedExerciseModal = ({
                                         shape="pill"
                                         className="w-full font-semibold"
                                         onClick={handleSubmit}
-                                        disabled={!courseId || submitting}
+                                        disabled={!courseId || submitting || readOnly}
                                     >
                                         {submitting ? (
                                             <>
                                                 <Loader2Icon className="size-4 animate-spin" />
                                                 Submitting…
                                             </>
+                                        ) : existingSubmission?.status === "marked" ? (
+                                            "Re-attempt exercise"
                                         ) : (
                                             "Submit exercise"
                                         )}

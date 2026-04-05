@@ -1,4 +1,4 @@
-import { CalendarIcon, FileTextIcon, LogsIcon, NewspaperIcon, SettingsIcon, TicketIcon, UsersIcon, LayoutDashboardIcon, UserPlusIcon, InboxIcon, ImageIcon, BookOpenIcon, BanknoteIcon, ClipboardCheckIcon } from "lucide-react"
+import { CalendarIcon, FileTextIcon, LogsIcon, NewspaperIcon, SettingsIcon, TicketIcon, UsersIcon, LayoutDashboardIcon, UserPlusIcon, InboxIcon, ImageIcon, BookOpenIcon, BanknoteIcon, ClipboardCheckIcon, NotebookPenIcon, VideoIcon } from "lucide-react"
 import { CONFIG } from "./config"
 
 export const ADMIN_SIDEBAR_ITEMS = [
@@ -15,6 +15,8 @@ export const ADMIN_SIDEBAR_ITEMS = [
     { label: "Events", href: CONFIG.ROUTES.ADMIN.EVENTS, icon: CalendarIcon, disabled: false },
     { label: "Courses", href: CONFIG.ROUTES.ADMIN.COURSES, icon: TicketIcon, disabled: false },
     { label: "Payments", href: CONFIG.ROUTES.ADMIN.PAYMENTS, icon: BanknoteIcon, disabled: false },
-    { label: "Submissions", href: CONFIG.ROUTES.ADMIN.SUBMISSIONS, icon: ClipboardCheckIcon, disabled: false },
+    { label: "Grade Submissions", href: CONFIG.ROUTES.ADMIN.SUBMISSIONS, icon: ClipboardCheckIcon, disabled: false },
+    { label: "Course assignments", href: CONFIG.ROUTES.ADMIN.ASSIGNMENTS, icon: NotebookPenIcon, disabled: false },
+    { label: "Schedule lectures", href: CONFIG.ROUTES.ADMIN.SCHEDULE_LECTURES, icon: VideoIcon, disabled: false },
     { label: "Uploaded images", href: CONFIG.ROUTES.ADMIN.IMAGES, icon: ImageIcon, disabled: false },
 ]

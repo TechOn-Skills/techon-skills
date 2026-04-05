@@ -36,6 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             profilePicture: raw.profilePicture ?? null,
             role: raw.role,
             status: raw.status,
+            allowedMarkGradesOn: raw.allowedMarkGradesOn ?? [],
         };
     }, [data?.userProfileInfo]);
 

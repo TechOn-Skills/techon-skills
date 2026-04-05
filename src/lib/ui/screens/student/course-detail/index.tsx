@@ -12,14 +12,13 @@ import {
     getCourseSlugFromLectureRoutes,
     COURSE_SLUG_TO_TITLE,
     getCourseProgressPercent,
-    getChapterProgress,
     API_COURSE_SLUG_TO_CONTENT_SLUG,
 } from "@/utils/constants"
 import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import { isDueMonthReached } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 import { LectureRoutesType } from "@/utils/types"
-import { CheckIcon, ChevronRightIcon, CreditCardIcon, File, FolderOpenIcon } from "lucide-react"
+import { CheckIcon, ChevronRightIcon, ClockIcon, CreditCardIcon, File, FolderOpenIcon, XCircleIcon } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import {
     Card,
@@ -85,16 +84,25 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
 
     const title = COURSE_SLUG_TO_TITLE[courseSlug] ?? courseSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 
+    const PASSING_PERCENT = 40
     const { data: submissionsData } = useQuery<{
-        getMySubmissions: Array<{ referenceId: string; status: string }>
+        getMySubmissions: Array<{ referenceId: string; status: string; type: string; marks: number | null; maxMarks: number }>
     }>(GET_MY_SUBMISSIONS, {
         variables: { courseId: courseIdForSlug ?? undefined },
         skip: !courseIdForSlug,
     })
     const submissionsByRef = useMemo(() => {
-        const list = submissionsData?.getMySubmissions ?? []
+        const list = (submissionsData?.getMySubmissions ?? []).filter((s) => s.type === "graded_exercise")
         return new Map(list.map((s) => [s.referenceId, s]))
     }, [submissionsData?.getMySubmissions])
+    const submissionPassed = useCallback(
+        (s: { status: string; marks: number | null; maxMarks: number }) =>
+            s.status === "marked" &&
+            s.maxMarks > 0 &&
+            s.marks != null &&
+            Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT,
+        []
+    )
     const chaptersInOrder = useMemo(
         () =>
             modulesWithChapters.flatMap((m) =>
@@ -106,13 +114,45 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
         (refId: string) => {
             const idx = chaptersInOrder.findIndex((c) => c.refId === refId)
             if (idx <= 0) return true
-            for (let j = 0; j < idx; j++) {
-                const s = submissionsByRef.get(chaptersInOrder[j].refId)
-                if (s && s.status === "submitted") return false
-            }
-            return true
+            const prevRefId = chaptersInOrder[idx - 1].refId
+            const prevSubmission = submissionsByRef.get(prevRefId)
+            return prevSubmission != null && submissionPassed(prevSubmission)
         },
-        [chaptersInOrder, submissionsByRef]
+        [chaptersInOrder, submissionsByRef, submissionPassed]
+    )
+    const getBlockedChapterMessage = useCallback(
+        (refId: string) => {
+            const idx = chaptersInOrder.findIndex((c) => c.refId === refId)
+            if (idx <= 0) return ""
+            const prevSubmission = submissionsByRef.get(chaptersInOrder[idx - 1].refId)
+            if (prevSubmission == null) return "Please submit your graded exercise first before moving to the next chapter."
+            if (prevSubmission.status === "submitted") return "Please wait for your graded exercise marks to be updated before moving to the next chapter."
+            if (prevSubmission.status === "marked" && !submissionPassed(prevSubmission))
+                return "You have not passed the previous graded exercise. Re-attempt it to unlock the next chapter."
+            return "Please complete the previous chapter's graded exercise first."
+        },
+        [chaptersInOrder, submissionsByRef, submissionPassed]
+    )
+    const moduleUnlocked = useMemo(() => {
+        const unlocked: boolean[] = []
+        for (let i = 0; i < modulesWithChapters.length; i++) {
+            if (i === 0) {
+                unlocked.push(true)
+                continue
+            }
+            const prevModule = modulesWithChapters[i - 1]
+            const allPrevPassed = prevModule.chapters.every((ch) => {
+                const refId = `${prevModule.moduleSlug}/${ch.chapterSlug}`
+                const s = submissionsByRef.get(refId)
+                return s != null && submissionPassed(s)
+            })
+            unlocked.push(allPrevPassed)
+        }
+        return unlocked
+    }, [modulesWithChapters, submissionsByRef, submissionPassed])
+    const visibleModules = useMemo(
+        () => modulesWithChapters.filter((_, i) => moduleUnlocked[i]),
+        [modulesWithChapters, moduleUnlocked]
     )
 
     if (!courseRoutes || !isAllowed) {
@@ -145,7 +185,8 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
         )
     }
 
-    const activeModule = modulesWithChapters[activeTab]
+    const safeActiveTab = Math.min(activeTab, Math.max(0, visibleModules.length - 1))
+    const activeModule = visibleModules[safeActiveTab] ?? null
 
     return (
         <div className="w-full max-w-full py-6">
@@ -170,19 +211,19 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
                 </div>
             </div>
 
-            {/* Module tabs */}
+            {/* Module tabs — only show modules that are unlocked (module 0 always; next when previous module's all exercises are marked) */}
             <div className="border-b border-(--border-default-light) dark:border-(--border-default-dark) mb-6">
                 <div className="flex gap-1 overflow-x-auto pb-px" role="tablist">
-                    {modulesWithChapters.map(({ moduleSlug, moduleTitle }, idx) => (
+                    {visibleModules.map(({ moduleSlug, moduleTitle }, idx) => (
                         <button
                             key={moduleSlug}
                             type="button"
                             role="tab"
-                            aria-selected={activeTab === idx}
+                            aria-selected={safeActiveTab === idx}
                             onClick={() => setActiveTab(idx)}
                             className={cn(
                                 "flex shrink-0 items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
-                                activeTab === idx
+                                safeActiveTab === idx
                                     ? "bg-(--background-secondary-light) dark:bg-(--background-secondary-dark) text-(--brand-secondary) dark:text-(--brand-highlight) border border-(--border-default-light) dark:border-(--border-default-dark) border-b-transparent -mb-px"
                                     : "text-muted-foreground hover:text-foreground hover:bg-(--background-hover-light) dark:hover:bg-(--background-hover-dark)"
                             )}
@@ -198,10 +239,15 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
             {activeModule && (
                 <div className="space-y-2" role="tabpanel">
                     {activeModule.chapters.map(({ chapterSlug, title: chapterTitle }) => {
-                        const completed = getChapterProgress(courseSlug, activeModule.moduleSlug, chapterSlug) >= 100
                         const refId = `${activeModule.moduleSlug}/${chapterSlug}`
+                        const submission = submissionsByRef.get(refId)
+                        const passed = submission != null && submissionPassed(submission)
+                        const notPassed = submission?.status === "marked" && submission != null && !submissionPassed(submission)
+                        const pendingMarks = submission?.status === "submitted"
                         const blocked = !canNavigateToChapter(refId)
                         const href = `/student/course/${courseSlug}/${activeModule.moduleSlug}/${chapterSlug}`
+
+                        const statusLabel = passed ? "Completed" : notPassed ? "Not passed – re-attempt required" : pendingMarks ? "Pending marks" : "Not started"
 
                         const cardContent = (
                             <Card className={cn("transition-all", blocked ? "cursor-not-allowed opacity-75" : "hover:shadow-md")}>
@@ -212,13 +258,21 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
                                     <div className="min-w-0 flex-1">
                                         <CardTitle className="text-base">{chapterTitle}</CardTitle>
                                         <CardDescription className="mt-0.5 text-sm">
-                                            {completed ? "Completed" : "Not started"}
+                                            {statusLabel}
                                             {blocked && " • Complete previous graded exercise first"}
                                         </CardDescription>
                                     </div>
-                                    {completed ? (
-                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600 dark:text-green-400">
+                                    {passed ? (
+                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600 dark:text-green-400" title="Completed">
                                             <CheckIcon className="size-4" />
+                                        </div>
+                                    ) : notPassed ? (
+                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:text-red-400" title="Not passed – re-attempt required">
+                                            <XCircleIcon className="size-4" />
+                                        </div>
+                                    ) : pendingMarks ? (
+                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400" title="Pending marks">
+                                            <ClockIcon className="size-4" />
                                         </div>
                                     ) : (
                                         <ChevronRightIcon className="text-muted-foreground size-5 shrink-0" />
@@ -228,13 +282,14 @@ export const CourseDetailScreen = ({ courseSlug }: Props) => {
                         )
 
                         if (blocked) {
+                            const blockedMessage = getBlockedChapterMessage(refId)
                             return (
                                 <div
                                     key={chapterSlug}
                                     role="button"
                                     tabIndex={0}
-                                    onClick={() => toast.error("Please wait for your graded exercise marks to be updated before moving to the next chapter.")}
-                                    onKeyDown={(e) => e.key === "Enter" && toast.error("Please wait for your graded exercise marks to be updated before moving to the next chapter.")}
+                                    onClick={() => toast.error(blockedMessage)}
+                                    onKeyDown={(e) => e.key === "Enter" && toast.error(blockedMessage)}
                                 >
                                     {cardContent}
                                 </div>

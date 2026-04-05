@@ -45,6 +45,7 @@ export const GET_USER_PROFILE_INFO = gql`
             status
             createdAt
             updatedAt
+            allowedMarkGradesOn
             enrolledCourses {
                 id
                 title
@@ -82,6 +83,7 @@ export const GET_USER_BY_ID = gql`
                 title
                 slug
             }
+            allowedMarkGradesOn
             payments {
                 id
                 amount

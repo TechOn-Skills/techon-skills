@@ -11,11 +11,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { cn, parseDate, formatTime } from "@/lib/helpers"
 import { GET_UPCOMING_LECTURES } from "@/lib/graphql"
 
-type LectureApi = { id: string; courseName?: string | null; title: string; meetUrl?: string | null; durationMins: number; startAt: string }
+type LectureApi = {
+  id: string
+  courseId?: string | null
+  courseName?: string | null
+  title: string
+  meetUrl?: string | null
+  durationMins: number
+  startAt: string
+}
 
 export const StudentMyLecturesScreen = () => {
   const [now, setNow] = useState<number>(() => Date.now())
-  const { data, loading, error } = useQuery<{ getUpcomingLectures: LectureApi[] }>(GET_UPCOMING_LECTURES, { variables: { limit: 3 } })
+  const { data, loading, error } = useQuery<{ getUpcomingLectures: LectureApi[] }>(GET_UPCOMING_LECTURES)
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000)
@@ -62,9 +70,11 @@ export const StudentMyLecturesScreen = () => {
 
         {/* Lectures: 3 timer cards */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">Upcoming Lectures</h2>
-            <span className="text-sm text-muted-foreground">Next 3 classes</span>
+            <span className="text-sm text-muted-foreground max-w-md text-right">
+              Next scheduled class per course. When a session starts, the following one appears automatically.
+            </span>
           </div>
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
@@ -80,7 +90,7 @@ export const StudentMyLecturesScreen = () => {
               <p>No upcoming lectures scheduled.</p>
             </div>
           ) : (
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {upcoming.map((l, idx) => {
               const startAtMs = parseDate(l.startAt)?.getTime() ?? 0
               const c = toCountdown(startAtMs)
@@ -101,7 +111,7 @@ export const StudentMyLecturesScreen = () => {
                         </div>
                         <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
                           <SparklesIcon className="size-3.5" />
-                          #{idx + 1}
+                          Next
                         </span>
                       </div>
                     </CardHeader>

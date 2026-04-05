@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { BellIcon, CheckCheckIcon, Loader2Icon } from "lucide-react"
@@ -35,11 +35,12 @@ export function NotificationsDropdown() {
   const isStudent = pathname?.startsWith("/student")
   const { data, loading, refetch } = useQuery<{ getMyNotifications: Notification[] }>(GET_MY_NOTIFICATIONS, {
     variables: { limit: 20 },
-    pollInterval: 30_000,
+    pollInterval: 10_000,
+    fetchPolicy: "network-only",
   })
   const { data: countData, refetch: refetchCount } = useQuery<{ getUnreadNotificationCount: number }>(
     GET_UNREAD_NOTIFICATION_COUNT,
-    { pollInterval: 30_000 }
+    { pollInterval: 10_000, fetchPolicy: "network-only" }
   )
   const { data: paymentsData } = useQuery<{ getPaymentsByUser: Array<{ isPaid: boolean; paymentDate: string }> }>(GET_PAYMENTS_BY_USER, {
     variables: { userId: userProfileInfo?.id ?? "" },
@@ -65,10 +66,24 @@ export function NotificationsDropdown() {
   const unreadCount = countData?.getUnreadNotificationCount ?? 0
   const badgeCount = unreadCount + (pendingDuesCount > 0 ? pendingDuesCount : 0)
 
+  useEffect(() => {
+    if (open) {
+      refetch()
+      refetchCount()
+    }
+  }, [open, refetch, refetchCount])
+
   const handleNotificationClick = (n: Notification) => {
     setOpen(false)
     if (!n.readAt) markRead({ variables: { id: n.id } })
-    if (n.link) router.push(n.link)
+    if (n.link) {
+      const marksBase = "/student/marks"
+      if (n.link === marksBase || n.link.startsWith(`${marksBase}?`) || n.link.startsWith(`${marksBase}#`)) {
+        router.push(`${marksBase}?filter=pending`)
+        return
+      }
+      router.push(n.link)
+    }
   }
 
   return (
