@@ -70,19 +70,30 @@ export function CourseMultiSelect({
 
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+      <div
+        role="combobox"
+        tabIndex={disabled ? -1 : 0}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-disabled={disabled}
+        aria-label={placeholder}
+        onClick={() => {
+          if (disabled) return
+          setOpen((o) => !o)
+        }}
+        onKeyDown={(e) => {
+          if (disabled) return
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            setOpen((o) => !o)
+          }
+        }}
         className={cn(
           "border-border bg-card text-foreground placeholder:text-muted-foreground flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-2 rounded-2xl border px-4 py-2.5 text-left text-sm outline-none transition-colors",
           "focus-visible:border-ring focus-visible:ring-ring/30 focus-visible:ring-2",
-          "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+          disabled && "pointer-events-none cursor-not-allowed opacity-50",
           open && "border-ring ring-2 ring-ring/30"
         )}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={placeholder}
       >
         {value.length > 0 ? (
           <span className="flex min-w-0 max-h-24 flex-1 flex-wrap items-center gap-1.5 overflow-y-auto overflow-x-hidden">
@@ -109,7 +120,7 @@ export function CourseMultiSelect({
         <ChevronDownIcon
           className={cn("ml-auto size-4 shrink-0 text-muted-foreground", open && "rotate-180")}
         />
-      </button>
+      </div>
 
       {open && (
         <div

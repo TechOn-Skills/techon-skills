@@ -135,7 +135,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
                     </span>
                   ) : (
                     <Button asChild size="xl" shape="pill" variant="brand-secondary">
-                      <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                      <Link href={`${CONFIG.ROUTES.PUBLIC.ENROLLMENT}?course=${encodeURIComponent(course.slug)}`}>
                         {hero.enrollLabel}
                         <ArrowRightIcon className="size-4" />
                       </Link>
@@ -312,7 +312,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
               </span>
             ) : (
               <Button asChild size="xl" shape="pill" variant="brand-secondary">
-                <Link href={`${CONFIG.ROUTES.PUBLIC.CONTACT}?course=${encodeURIComponent(course.slug)}`}>
+                <Link href={`${CONFIG.ROUTES.PUBLIC.ENROLLMENT}?course=${encodeURIComponent(course.slug)}`}>
                   {cta.buttonLabel}
                   <ArrowRightIcon className="size-4" />
                 </Link>

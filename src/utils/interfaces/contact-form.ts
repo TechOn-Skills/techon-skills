@@ -6,6 +6,8 @@ export interface IContactForm {
     message?: string;
     courses: IContactFormCourse[];
     phone: string;
+    /** Base64 data URL of fee payment screenshot (legacy; prefer enrollment-application API). */
+    feePaymentScreenshotDataUrl?: string;
 }
 
 export interface IContactFormSubmission {

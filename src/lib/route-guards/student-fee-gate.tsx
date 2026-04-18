@@ -2,34 +2,32 @@
 
 import { useQuery } from "@apollo/client/react"
 import { usePathname, useRouter } from "next/navigation"
-import { ReactNode, useEffect } from "react"
+import { Fragment, ReactNode, useEffect } from "react"
 
 import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
+import { isDueMonthReached } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 import { CONFIG } from "@/utils/constants"
+import { UserRole, UserStatus } from "@/utils/enums/user"
 import { StudentLayout } from "@/lib/layouts"
 import { ContentAreaLoader } from "@/lib/ui/useable-components/content-area-loader"
 
-const STUDENT_FEES_PATH = "/student/fees"
+const STUDENT_FEES_PATH = CONFIG.ROUTES.STUDENT.FEES
 
-/**
- * Fee is due when the month of the due date (12th) is equal to or less than the current month.
- * Example: due date March 12 → due from March 1 onwards; due date April 12 → due from April 1 onwards.
- */
+function normalizePath(path: string | null): string {
+  if (!path) return ""
+  return path.split("?")[0]?.replace(/\/$/, "") ?? ""
+}
+
+function isFeesPath(path: string | null): boolean {
+  return normalizePath(path) === STUDENT_FEES_PATH
+}
+
 function hasOverdueUnpaidPayment(
   payments: Array<{ paymentDate: string; isPaid: boolean }> | undefined
 ): boolean {
   if (!payments?.length) return false
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth()
-  return payments.some((p) => {
-    if (p.isPaid) return false
-    const due = new Date(p.paymentDate)
-    const dueYear = due.getFullYear()
-    const dueMonth = due.getMonth()
-    return dueYear < currentYear || (dueYear === currentYear && dueMonth <= currentMonth)
-  })
+  return payments.some((p) => !p.isPaid && isDueMonthReached(p.paymentDate))
 }
 
 /**
@@ -41,12 +39,19 @@ export function StudentFeeGate({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const userId = userProfileInfo?.id ?? ""
+  const path = normalizePath(pathname)
+  const onFeesRoute = isFeesPath(pathname)
+
+  const inactiveStudent =
+    userProfileInfo?.role === UserRole.STUDENT && userProfileInfo?.status === UserStatus.INACTIVE
 
   const { data, loading } = useQuery<{
     getPaymentsByUser: Array<{ paymentDate: string; isPaid: boolean }>
   }>(GET_PAYMENTS_BY_USER, {
     variables: { userId },
-    skip: !userId,
+    skip: !userId || inactiveStudent,
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
   })
 
   const payments = data?.getPaymentsByUser ?? []
@@ -54,13 +59,13 @@ export function StudentFeeGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!profileLoaded || loading) return
-    if (!userId) return
+    if (!userId || inactiveStudent) return
     if (!hasOverdue) return
-    if (pathname === STUDENT_FEES_PATH) return
+    if (onFeesRoute) return
     router.replace(STUDENT_FEES_PATH)
-  }, [profileLoaded, loading, userId, hasOverdue, pathname, router])
+  }, [profileLoaded, loading, userId, inactiveStudent, hasOverdue, onFeesRoute, router])
 
-  if (!profileLoaded || (userId && loading)) {
+  if (!profileLoaded || (userId && !inactiveStudent && loading)) {
     return (
       <StudentLayout>
         <ContentAreaLoader />
@@ -68,7 +73,7 @@ export function StudentFeeGate({ children }: { children: ReactNode }) {
     )
   }
 
-  if (userId && hasOverdue && pathname !== STUDENT_FEES_PATH) {
+  if (userId && !inactiveStudent && hasOverdue && !onFeesRoute) {
     return (
       <StudentLayout>
         <ContentAreaLoader />
@@ -76,5 +81,5 @@ export function StudentFeeGate({ children }: { children: ReactNode }) {
     )
   }
 
-  return <>{children}</>
+  return <Fragment key={path}>{children}</Fragment>
 }
