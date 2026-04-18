@@ -2,7 +2,14 @@ import { getConfig } from "@/lib/services/config";
 import { fetchURL, getClientTimezone, handleApiResponse } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
 import { FetchMethod } from "@/utils/enums";
-import { ApiResponse, IContactFormSubmission, IUser, IUserProfileInfo } from "@/utils/interfaces";
+import {
+    ApiResponse,
+    IContactFormSubmission,
+    IEnrollmentApplication,
+    IEnrollmentApplicationSubmit,
+    IUser,
+    IUserProfileInfo,
+} from "@/utils/interfaces";
 
 class ApiService {
     constructor() { }
@@ -149,6 +156,54 @@ class ApiService {
             headers: tz ? { "X-Timezone": tz } : undefined,
         });
         return handleApiResponse(response);
+    }
+
+    submitEnrollmentApplication = async (
+        formData: IEnrollmentApplicationSubmit
+    ): Promise<ApiResponse<IEnrollmentApplication>> => {
+        const path = CONFIG.BACKEND_PATHS.ENROLLMENT_APPLICATION.SUBMIT;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify(formData),
+                headers: { "Content-Type": "application/json" },
+            },
+        });
+        return handleApiResponse<IEnrollmentApplication>(response);
+    }
+
+    getEnrollmentApplications = async (
+        page: number,
+        limit: number,
+        status?: string
+    ): Promise<ApiResponse<IEnrollmentApplication[]>> => {
+        const q = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (status) q.set("status", status);
+        const path = `${CONFIG.BACKEND_PATHS.ENROLLMENT_APPLICATION.LIST}?${q.toString()}`;
+        const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.GET } });
+        return handleApiResponse<IEnrollmentApplication[]>(response);
+    }
+
+    approveEnrollmentApplication = async (applicationId: string): Promise<ApiResponse<unknown>> => {
+        const path = `${CONFIG.BACKEND_PATHS.ENROLLMENT_APPLICATION.APPROVE}?application_id=${encodeURIComponent(applicationId)}`;
+        const response = await fetchURL({ path, isGraphQL: false, options: { method: FetchMethod.POST } });
+        return handleApiResponse(response);
+    }
+
+    rejectEnrollmentApplication = async (applicationId: string, reason?: string): Promise<ApiResponse<IEnrollmentApplication>> => {
+        const path = `${CONFIG.BACKEND_PATHS.ENROLLMENT_APPLICATION.REJECT}?application_id=${encodeURIComponent(applicationId)}`;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify({ reason: reason ?? "" }),
+                headers: { "Content-Type": "application/json" },
+            },
+        });
+        return handleApiResponse<IEnrollmentApplication>(response);
     }
 }
 
