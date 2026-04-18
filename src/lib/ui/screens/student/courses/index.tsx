@@ -21,6 +21,7 @@ import {
     CardTitle,
 } from "@/lib/ui/useable-components/card"
 import { REQUEST_COURSE_FOR_USER } from "@/lib/graphql"
+import { CONFIG } from "@/utils/constants/config"
 import type { ICourse } from "@/utils/interfaces"
 
 export const StudentCoursesScreen = () => {
@@ -219,7 +220,7 @@ export const StudentCoursesScreen = () => {
                                                 onClick={(e) => {
                                                     e.preventDefault()
                                                     e.stopPropagation()
-                                                    router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
+                                                    router.push(`${CONFIG.ROUTES.PUBLIC.ENROLLMENT}?course=${encodeURIComponent(c.slug)}`)
                                                 }}
                                             >
                                                 Contact

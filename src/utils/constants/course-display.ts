@@ -4,7 +4,7 @@
  * Courses loaded from API use this by slug; use COURSE_DISPLAY_BY_SLUG[slug] ?? { icon: "code", benefits: [] } for unknown slugs.
  */
 export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: string; benefits?: string[] }> = {
-  "software-engineering": {
+  "software-engineering-1-year": {
     icon: "wrench",
     highlight: "Career track",
     benefits: ["System design & architecture", "PostgreSQL + advanced tooling", "Career growth support"],

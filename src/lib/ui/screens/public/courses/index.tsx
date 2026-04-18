@@ -27,6 +27,7 @@ import {
 } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Icons } from "@/utils/constants"
+import { CONFIG } from "@/utils/constants/config"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
 export const PublicCoursesScreen = () => {
@@ -231,7 +232,7 @@ export const PublicCoursesScreen = () => {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            router.push(`/contact?course=${encodeURIComponent(c.slug)}`)
+                            router.push(`${CONFIG.ROUTES.PUBLIC.ENROLLMENT}?course=${encodeURIComponent(c.slug)}`)
                           }}
                         >
                           Enroll now

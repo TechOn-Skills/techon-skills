@@ -21,7 +21,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [userData] = useState<IUser | null>(null);
 
     const pathname = usePathname();
-    const { data, loading, error, refetch: refetchUserProfileInfo } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO, {
+    const { data, loading, error } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO, {
         fetchPolicy: "network-only",
         skip: !pathname || pathname === CONFIG.ROUTES.AUTH.VERIFY_MAGIC_LINK,
     });
@@ -48,7 +48,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return data?.userProfileInfo?.requestedCourses ?? [];
     }, [data?.userProfileInfo?.requestedCourses]);
 
-    const profileLoaded = !loading;
+    /** True after first response; stays true during background refetches so route guards don't flash/spin on every navigation. */
+    const profileLoaded = !loading || data !== undefined;
 
     useEffect(() => {
         if (userProfileInfo) {
@@ -61,9 +62,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             logger({ type: LoggerLevel.ERROR, message: JSON.stringify(error), showToast: true });
         }
     }, [error]);
-    useEffect(() => {
-        if (pathname && pathname !== CONFIG.ROUTES.AUTH.VERIFY_MAGIC_LINK) { refetchUserProfileInfo() }
-    }, [pathname, refetchUserProfileInfo])
 
     const value = useMemo(
         () => ({ userProfileInfo: error ? null : userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded }),
