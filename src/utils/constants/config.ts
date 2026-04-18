@@ -12,6 +12,11 @@ export const CONFIG = {
         USER: {
             PROFILE: "profile",
         },
+        /** One submit per browser tab session; cleared when the tab closes. */
+        SESSION: {
+            CONTACT_FORM_SUBMITTED: "techon_session_contact_form_submitted",
+            ENROLLMENT_FORM_SUBMITTED: "techon_session_enrollment_form_submitted",
+        },
     },
     BACKEND_PATHS: {
         GRAPHQL: "graphql-techonskills",
@@ -20,6 +25,12 @@ export const CONFIG = {
             GET_CONTACT_SUBMISSIONS: "/contact-form/get-contact-form-requests",
             SEND_EMAIL: "/contact-form/send-email",
             ASSIGN_COURSES: "/contact-form/assign-courses",
+        },
+        ENROLLMENT_APPLICATION: {
+            SUBMIT: "/enrollment-application/submit",
+            LIST: "/enrollment-application/list",
+            APPROVE: "/enrollment-application/approve",
+            REJECT: "/enrollment-application/reject",
         },
         AUTH: {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
@@ -47,6 +58,7 @@ export const CONFIG = {
             NEWS: "/news",
             ABOUT: "/about",
             CONTACT: "/contact",
+            ENROLLMENT: "/enrollment",
             FAQS: "/faqs",
             TERMS_OF_SERVICE: "/terms-of-service",
             PRIVACY_POLICY: "/privacy-policy",
@@ -80,6 +92,7 @@ export const CONFIG = {
         },
         STUDENT: {
             HOME: "/student",
+            PENDING_APPROVAL: "/student/pending-approval",
             DASHBOARD: "/student/dashboard",
             MY_ENROLLED_COURSES: "/student/my-enrolled-courses",
             PROFILE: "/student/profile",

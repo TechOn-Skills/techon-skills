@@ -13,16 +13,20 @@ export interface PhoneValue {
 
 const DEFAULT_COUNTRY = COUNTRY_CODES_LIST[0]
 
-/** Minimum/maximum digits for the number part (without country code) */
+/** Minimum/maximum digits for the national number (subscriber part, no country code). */
 const MIN_DIGITS = 7
 const MAX_DIGITS = 15
 
+/** E.164 allows at most 15 digits total including country code. */
+const MAX_E164_TOTAL_DIGITS = 15
+
 export function getFullPhone(value: PhoneValue): string {
-  const digits = value.number.replace(/\D/g, "").replace(/0/g, "")
-  return `${value.countryCode}${digits}`
+  const nationalDigits = value.number.replace(/\D/g, "")
+  const ccDigits = value.countryCode.replace(/\D/g, "")
+  return `+${ccDigits}${nationalDigits}`
 }
 
-/** Parse a stored phone string (e.g. "+923001234567" or "3001234567") into PhoneValue for the input. Does not strip 0s so existing data displays correctly; 0 is only blocked when typing. */
+/** Parse a stored phone string (e.g. "+923001234567" or "3001234567") into PhoneValue for the input. */
 export function parsePhoneFromString(full: string | null | undefined): PhoneValue {
   if (!full || typeof full !== "string") return { countryCode: DEFAULT_COUNTRY.code, number: "" }
   const digitsOnly = full.replace(/\D/g, "")
@@ -37,9 +41,12 @@ export function parsePhoneFromString(full: string | null | undefined): PhoneValu
 }
 
 export function validatePhone(value: PhoneValue): boolean {
-  const digits = value.number.replace(/\D/g, "").replace(/0/g, "")
-  if (digits.length < MIN_DIGITS || digits.length > MAX_DIGITS) return false
-  return /^\d+$/.test(digits) && !digits.includes("0")
+  const nationalDigits = value.number.replace(/\D/g, "")
+  const ccDigits = value.countryCode.replace(/\D/g, "")
+  if (nationalDigits.length < MIN_DIGITS || nationalDigits.length > MAX_DIGITS) return false
+  if (!/^\d+$/.test(nationalDigits)) return false
+  if (ccDigits.length + nationalDigits.length > MAX_E164_TOTAL_DIGITS) return false
+  return true
 }
 
 export interface PhoneInputProps {
@@ -81,7 +88,7 @@ export function PhoneInput({
   const handleNumberChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = e.target.value
-      const digits = raw.replace(/\D/g, "").replace(/0/g, "").slice(0, MAX_DIGITS)
+      const digits = raw.replace(/\D/g, "").slice(0, MAX_DIGITS)
       onChange({ ...value, number: digits })
     },
     [value, onChange]
@@ -95,8 +102,6 @@ export function PhoneInput({
     },
     [value, onChange]
   )
-
-  const selectedEntry = COUNTRY_CODES_LIST.find((c) => c.code === value.countryCode) ?? DEFAULT_COUNTRY
 
   return (
     <div className={cn("w-full", className)}>
@@ -145,7 +150,9 @@ export function PhoneInput({
       </div>
       {showError && !suppressErrorMessage && (
         <p className="text-destructive mt-1 text-xs">
-          {value.number.trim() ? `Enter a valid phone number (${MIN_DIGITS}-${MAX_DIGITS} digits)` : "Phone number is required."}
+          {value.number.trim()
+            ? `Enter a valid number (${MIN_DIGITS}–${MAX_DIGITS} digits; with country code at most ${MAX_E164_TOTAL_DIGITS} digits total).`
+            : "Phone number is required."}
         </p>
       )}
     </div>

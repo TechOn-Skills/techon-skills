@@ -24,7 +24,6 @@ const DEFAULT_DESCRIPTION = "Modern, outcome-driven training in web development,
 export const metadata: Metadata = {
   title: { default: `${SITE_NAME} - Learn Web Development, Mobile Apps & Software Engineering`, template: `%s | ${SITE_NAME}` },
   description: DEFAULT_DESCRIPTION,
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
   openGraph: {
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
