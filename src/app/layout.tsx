@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@/lib/services/i18react-next";
@@ -20,6 +20,12 @@ const geistMono = Geist_Mono({
 
 const SITE_NAME = "TechOn Skills"
 const DEFAULT_DESCRIPTION = "Modern, outcome-driven training in web development, mobile app development, software engineering, and e-commerce (Shopify + WordPress + Wix). Starting from PKR 2,500/month only. Career support for top performers."
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+}
 
 export const metadata: Metadata = {
   title: { default: `${SITE_NAME} - Learn Web Development, Mobile Apps & Software Engineering`, template: `%s | ${SITE_NAME}` },
@@ -45,9 +51,9 @@ export default function RootLayout({
 }>) {
 
   return (
-    <html lang="en">
+    <html lang="en" className="min-w-0">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-w-0 antialiased`}
       >
         <TopLoaderWrapper />
         <Providers>

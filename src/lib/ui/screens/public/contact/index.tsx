@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { useCourses } from "@/lib/providers/courses"
 import { SimpleContactForm } from "@/lib/ui/screens/public/shared/simple-contact-form"
 import Link from "next/link"
-import { CONFIG } from "@/utils/constants"
+import { CONFIG, SITE_PHONE_DISPLAY } from "@/utils/constants"
 
 export const PublicContactScreen = () => {
   const params = useSearchParams()
@@ -50,7 +50,7 @@ export const PublicContactScreen = () => {
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {[
-                  "Phone: +923180617788",
+                  `Phone: ${SITE_PHONE_DISPLAY}`,
                   "Email: info@cloudrika.com",
                   "Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan",
                 ].map((t) => (

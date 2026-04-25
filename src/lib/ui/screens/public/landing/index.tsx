@@ -2,14 +2,19 @@
 import Link from "next/link"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import {
+  ActivityIcon,
   ArrowRightIcon,
   AwardIcon,
   BriefcaseIcon,
   CheckCircle2Icon,
+  ClipboardListIcon,
   CodeIcon,
+  CompassIcon,
   FileCheck2Icon,
   GraduationCapIcon,
+  HandshakeIcon,
   MessageCircleIcon,
+  RocketIcon,
   SparklesIcon,
   SmartphoneIcon,
   StarsIcon,
@@ -25,7 +30,7 @@ import { EnrollmentFormCard } from "@/lib/ui/screens/public/enrollment/enrollmen
 import { SimpleContactForm } from "@/lib/ui/screens/public/shared/simple-contact-form"
 import { cn, logger } from "@/lib/helpers"
 import { useCourses } from "@/lib/providers/courses"
-import { CONFIG } from "@/utils/constants"
+import { CONFIG, SITE_PHONE_DISPLAY } from "@/utils/constants"
 import { LoggerLevel } from "@/utils/enums"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
 
@@ -140,7 +145,7 @@ export const LandingPageScreen = () => {
   }, [])
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       <DialogPrimitive.Root open={contactModalOpen} onOpenChange={setContactModalOpen}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-md transition-all duration-500" />
@@ -195,7 +200,7 @@ export const LandingPageScreen = () => {
         <div className="absolute -bottom-40 -left-40 h-112 w-md rounded-full bg-[radial-gradient(circle_at_center,rgba(242,140,40,0.16),transparent_65%)] blur-3xl" />
       </div>
 
-      <div className="w-full">
+      <div className="w-full min-w-0">
         <section
           id="hero"
           data-reveal
@@ -232,17 +237,28 @@ export const LandingPageScreen = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                    <Button asChild size="xl" shape="pill">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                    <Button
+                      asChild
+                      size="xl"
+                      shape="pill"
+                      className="max-sm:min-h-16 max-sm:w-full max-sm:px-8 max-sm:text-lg max-sm:has-[>svg]:px-7"
+                    >
                       <Link href="/courses">
                         Explore courses
-                        <ArrowRightIcon className="size-4" />
+                        <ArrowRightIcon className="size-4 max-sm:size-5" />
                       </Link>
                     </Button>
-                    <Button asChild variant="outline" size="xl" shape="pill">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="xl"
+                      shape="pill"
+                      className="max-sm:min-h-16 max-sm:w-full max-sm:px-8 max-sm:text-lg"
+                    >
                       <Link href={CONFIG.ROUTES.PUBLIC.ENROLLMENT}>Enroll now</Link>
                     </Button>
-                    <Button asChild variant="outline" size="xl" shape="pill">
+                    <Button asChild variant="outline" size="xl" shape="pill" className="hidden sm:inline-flex">
                       <Link href="#contact">Contact</Link>
                     </Button>
                   </div>
@@ -287,10 +303,10 @@ export const LandingPageScreen = () => {
         <section
           id="courses"
           data-reveal
-          className="scroll-mt-24 transition-all duration-700 ease-out will-change-transform"
+          className="scroll-mt-24 overflow-x-visible transition-all duration-700 ease-out will-change-transform"
         >
           <div className="px-4 py-12 sm:px-6 sm:py-14 lg:px-8 2xl:px-10">
-            <div className="mx-auto max-w-6xl space-y-8">
+            <div className="mx-auto min-w-0 max-w-6xl space-y-8 overflow-visible">
               <div className="space-y-2">
                 <div className="text-sm font-semibold text-secondary">Featured</div>
                 <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -302,7 +318,12 @@ export const LandingPageScreen = () => {
                 </p>
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div
+                className={cn(
+                  "grid gap-x-7 gap-y-10 overflow-visible py-1 sm:gap-x-8 sm:gap-y-11",
+                  "grid-cols-[repeat(auto-fit,minmax(min(100%,18.5rem),1fr))]",
+                )}
+              >
                 {featuredCourses.map((c, idx) => {
                   const palette = getFeaturedPalette(c.slug)
                   const highlight = COURSE_DISPLAY_BY_SLUG[c.slug]?.highlight
@@ -312,10 +333,12 @@ export const LandingPageScreen = () => {
                       key={c.slug}
                       href={`/courses/${c.slug}`}
                       className={cn(
-                        "group relative block min-w-96 max-w-96 h-full min-h-76 rounded-[1.35rem] outline-none focus-visible:ring-2 focus-visible:ring-(--brand-highlight) focus-visible:ring-offset-2",
+                        "group relative isolate block h-full min-h-76 min-w-0 rounded-[1.35rem] outline-none focus-visible:ring-2 focus-visible:ring-(--brand-highlight) focus-visible:ring-offset-2",
                         "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-5 motion-safe:duration-700",
+                        "w-[calc(100%+0.875rem)] max-w-none -mx-1.75 justify-self-stretch",
+                        "transition-[transform,box-shadow] duration-300 hover:z-50!",
                       )}
-                      style={{ animationDelay: `${120 + idx * 90}ms` }}
+                      style={{ animationDelay: `${120 + idx * 90}ms`, zIndex: 10 + idx }}
                     >
                       {/* Ambient glow on hover */}
                       <span
@@ -328,7 +351,7 @@ export const LandingPageScreen = () => {
                       />
                       <article
                         className={cn(
-                          "relative flex h-full min-h-[inherit] flex-col overflow-hidden rounded-[1.35rem] border border-border/70",
+                          "relative flex h-full min-h-76 flex-col overflow-hidden rounded-[1.35rem] border border-border/70",
                           "bg-background/85 backdrop-blur-xl supports-backdrop-filter:bg-background/75",
                           "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.06),0_12px_24px_-8px_rgba(7,26,43,0.12)]",
                           "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -529,55 +552,118 @@ export const LandingPageScreen = () => {
             <div className="pointer-events-none absolute inset-0 -z-10">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,195,232,0.14),transparent_55%)]" />
             </div>
-            <div className="mx-auto max-w-6xl space-y-10">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs font-semibold">
-                  <SparklesIcon className="size-3.5 text-(--brand-highlight)" />
-                  Outcomes
+            <div className="mx-auto max-w-6xl">
+              <div className="mb-10 flex flex-col gap-6 lg:mb-14 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+                <div className="max-w-2xl space-y-4">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-(--brand-highlight)/20 bg-(--brand-highlight)/10 px-3 py-1 text-xs font-semibold text-(--brand-secondary) dark:text-(--brand-highlight)">
+                    <SparklesIcon className="size-3.5 shrink-0 text-(--brand-highlight)" aria-hidden />
+                    Outcomes
+                  </div>
+                  <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
+                    Built to upgrade you — fast.
+                  </h2>
                 </div>
-                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Built to upgrade you — fast.
-                </h2>
-                <p className="text-muted-foreground max-w-3xl text-pretty">
-                  You’ll build proof, not just learn theory. Your dashboard keeps you accountable with assignments, submissions,
-                  and marks.
+                <p className="text-muted-foreground max-w-xl text-pretty text-base leading-relaxed lg:max-w-md lg:pb-1 lg:text-right lg:text-[1.0625rem] lg:leading-8">
+                  You’ll build proof, not just theory. Your dashboard keeps you accountable with assignments, submissions, and
+                  marks — so momentum stays visible week after week.
                 </p>
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-3">
+              <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { title: "Clear roadmap", description: "Know exactly what to learn next — no confusion." },
-                  { title: "Portfolio ready", description: "Projects that prove skill and unlock confidence." },
-                  { title: "Career lift", description: "Top performers get support to start careers." },
-                ].map((t) => (
+                  {
+                    title: "Clear roadmap",
+                    description: "Always know the next lesson and the next win — no guessing, no stalled progress.",
+                    icon: CompassIcon,
+                    accent: "from-sky-500/15 to-transparent",
+                  },
+                  {
+                    title: "Portfolio ready",
+                    description: "Ship real projects you can talk through in interviews — not “tutorial clones” nobody remembers.",
+                    icon: RocketIcon,
+                    accent: "from-orange-500/12 to-transparent",
+                  },
+                  {
+                    title: "Career lift",
+                    description: "Strong consistency + standout submissions can unlock introductions when you’re ready to step up.",
+                    icon: HandshakeIcon,
+                    accent: "from-emerald-500/12 to-transparent",
+                  },
+                ].map((t, idx) => (
                   <div
                     key={t.title}
-                    className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.18),rgba(79,195,232,0.22),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl"
+                    className={cn(
+                      "group relative overflow-hidden rounded-2xl border border-border/80 bg-card/90 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-(--brand-highlight)/35 hover:shadow-lg",
+                      "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-5 motion-safe:duration-700",
+                    )}
+                    style={{ animationDelay: `${120 + idx * 90}ms` }}
                   >
-                    <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{t.title}</CardTitle>
-                        <CardDescription className="text-sm leading-7">{t.description}</CardDescription>
-                      </CardHeader>
-                    </Card>
+                    <div
+                      className={cn(
+                        "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100",
+                        "bg-linear-to-br",
+                        t.accent
+                      )}
+                      aria-hidden
+                    />
+                    <div className="relative flex flex-col gap-4 p-6 sm:p-7">
+                      <div className="flex size-12 items-center justify-center rounded-2xl bg-(--brand-primary)/8 text-(--brand-secondary) ring-1 ring-border/60 transition-transform duration-300 group-hover:scale-105 group-hover:bg-(--brand-secondary)/10 dark:bg-(--brand-highlight)/10 dark:text-(--brand-highlight)">
+                        <t.icon className="size-6" strokeWidth={1.75} aria-hidden />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold tracking-tight">{t.title}</h3>
+                        <p className="text-muted-foreground text-sm leading-relaxed sm:text-[0.9375rem] sm:leading-7">
+                          {t.description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
-                <CardContent className="grid gap-6 p-6 sm:grid-cols-3 sm:p-8">
-                  {[
-                    { k: "Marks tracking", v: "See progress clearly" },
-                    { k: "Assignments", v: "Build discipline" },
-                    { k: "Career support", v: "For deserving candidates" },
-                  ].map((s) => (
-                    <div key={s.k} className="rounded-2xl border bg-background/40 p-5">
-                      <div className="text-muted-foreground text-xs">{s.k}</div>
-                      <div className="mt-1 text-xl font-semibold">{s.v}</div>
+              <div
+                aria-label="How we support your progress"
+                className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-5"
+              >
+                {[
+                  {
+                    label: "Marks tracking",
+                    headline: "See progress clearly",
+                    hint: "Scores and feedback stay in one place so you always know what to improve next.",
+                    icon: ActivityIcon,
+                  },
+                  {
+                    label: "Assignments",
+                    headline: "Build discipline",
+                    hint: "Regular deadlines turn learning into a habit — the same rhythm real teams expect.",
+                    icon: ClipboardListIcon,
+                  },
+                  {
+                    label: "Career support",
+                    headline: "For deserving candidates",
+                    hint: "When your work consistently stands out, we help you take the next professional step.",
+                    icon: BriefcaseIcon,
+                  },
+                ].map((s, idx) => (
+                  <div
+                    key={s.label}
+                    className={cn(
+                      "flex gap-4 rounded-2xl border border-border/70 bg-background/75 p-5 shadow-sm backdrop-blur-sm supports-backdrop-filter:bg-background/65 sm:flex-col sm:p-6",
+                      "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-5 motion-safe:duration-700",
+                    )}
+                    style={{ animationDelay: `${420 + idx * 90}ms` }}
+                  >
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-(--brand-secondary)/12 text-(--brand-secondary) dark:bg-(--brand-highlight)/12 dark:text-(--brand-highlight)">
+                      <s.icon className="size-5" strokeWidth={2} aria-hidden />
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">{s.label}</div>
+                      <div className="text-lg font-semibold leading-snug tracking-tight">{s.headline}</div>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{s.hint}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -613,7 +699,7 @@ export const LandingPageScreen = () => {
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   {[
-                    { k: "Phone", v: "+923180617788" },
+                    { k: "Phone", v: SITE_PHONE_DISPLAY },
                     { k: "Email", v: "info@cloudrika.com" },
                     { k: "Address", v: "8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan" },
                   ].map((r) => (
@@ -670,6 +756,90 @@ export const LandingPageScreen = () => {
                     />
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="after-enrollment"
+          data-reveal
+          className="scroll-mt-24 transition-all duration-700 ease-out will-change-transform"
+        >
+          <div className="relative px-4 py-14 sm:px-6 sm:py-16 lg:px-8 2xl:px-10">
+            <div className="pointer-events-none absolute inset-0 -z-10">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(27,119,182,0.10),transparent_60%)]" />
+            </div>
+            <div className="mx-auto max-w-6xl space-y-8">
+              <div className="space-y-2 text-center sm:text-left">
+                <div className="mx-auto inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs font-semibold sm:mx-0">
+                  <SparklesIcon className="size-3.5 text-(--brand-highlight)" />
+                  Before you send a message
+                </div>
+                <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+                  You’re one step away from a real training rhythm
+                </h2>
+                <p className="text-muted-foreground mx-auto max-w-3xl text-pretty sm:mx-0">
+                  Most students who do well here commit to the same loop: short lessons → hands-on tasks → submissions → clear
+                  marks. If that sounds like how you learn best, you’re in the right place.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  {
+                    title: "Structured path",
+                    body: "No guesswork about what to study next — follow the track and stack skills week by week.",
+                    icon: StarsIcon,
+                  },
+                  {
+                    title: "Proof in your portfolio",
+                    body: "Build projects you can show in interviews, not just tick boxes on a checklist.",
+                    icon: AwardIcon,
+                  },
+                  {
+                    title: "Marks you can trust",
+                    body: "See feedback and scores on submissions so you always know where you stand.",
+                    icon: FileCheck2Icon,
+                  },
+                  {
+                    title: "Career lift for top work",
+                    body: "Consistent performance and strong projects can unlock introductions when you’re ready.",
+                    icon: BriefcaseIcon,
+                  },
+                ].map((item) => (
+                  <Card
+                    key={item.title}
+                    className="bg-background/65 text-left backdrop-blur supports-backdrop-filter:bg-background/55"
+                  >
+                    <CardHeader className="space-y-3 pb-2">
+                      <span className="bg-(--brand-primary)/10 text-(--brand-secondary) inline-flex size-10 items-center justify-center rounded-xl">
+                        <item.icon className="size-5" aria-hidden />
+                      </span>
+                      <CardTitle className="text-base leading-snug">{item.title}</CardTitle>
+                      <CardDescription className="text-sm leading-relaxed">{item.body}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+                <Button asChild variant="brand-secondary" shape="pill" className="w-full sm:w-auto">
+                  <Link href={CONFIG.ROUTES.PUBLIC.COURSES}>
+                    Browse all courses
+                    <ArrowRightIcon className="size-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" shape="pill" className="w-full sm:w-auto">
+                  <Link href={CONFIG.ROUTES.PUBLIC.FAQS}>Read FAQs</Link>
+                </Button>
+                <p className="text-muted-foreground w-full text-center text-sm sm:w-auto sm:flex-1 sm:text-left">
+                  Prefer WhatsApp or a quick call? Use the details in{" "}
+                  <Link href="#talk-to-us" className="text-(--brand-highlight) font-medium underline-offset-4 hover:underline">
+                    Talk to us
+                  </Link>{" "}
+                  above.
+                </p>
               </div>
             </div>
           </div>

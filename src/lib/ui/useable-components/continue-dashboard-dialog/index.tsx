@@ -87,8 +87,11 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   if (dashboardHref) {
     return (
-      <Button asChild variant="brand-secondary" shape="pill" className={cn(className)}>
-        <Link href={dashboardHref}>Continue to dashboard</Link>
+      <Button asChild variant="brand-secondary" shape="pill" className={cn("px-3 sm:px-4", className)}>
+        <Link href={dashboardHref}>
+          <span className="sm:hidden">Dashboard</span>
+          <span className="hidden sm:inline">Continue to dashboard</span>
+        </Link>
       </Button>
     )
   }
@@ -103,12 +106,9 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
       }
     }}>
       <DialogPrimitive.Trigger asChild>
-        <Button
-          variant="brand-secondary"
-          shape="pill"
-          className={cn(className)}
-        >
-          Continue to dashboard
+        <Button variant="brand-secondary" shape="pill" className={cn("max-w-46 px-3 sm:max-w-none sm:px-4", className)}>
+          <span className="sm:hidden">Dashboard</span>
+          <span className="hidden sm:inline">Continue to dashboard</span>
         </Button>
       </DialogPrimitive.Trigger>
 
