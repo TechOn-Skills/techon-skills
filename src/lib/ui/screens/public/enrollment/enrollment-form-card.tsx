@@ -22,7 +22,7 @@ import { PhoneInput, getFullPhone, type PhoneValue } from "@/lib/ui/useable-comp
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { FormSubmitSuccess } from "@/lib/ui/useable-components/form-submit-success"
-import { CONFIG } from "@/utils/constants"
+import { CONFIG, SITE_PHONE_DISPLAY, SITE_WHATSAPP_URL } from "@/utils/constants"
 import type { IContactFormCourse, IEnrollmentApplicationSubmit } from "@/utils/interfaces"
 import { LoggerLevel } from "@/utils/enums"
 
@@ -277,10 +277,10 @@ export function EnrollmentFormCard({
           {softSurface && <Separator />}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Questions? +923180617788</span>
+              <span className="text-muted-foreground">Questions? {SITE_PHONE_DISPLAY}</span>
               <Button variant="outline" size="sm" shape="pill" asChild>
                 <a
-                  href="https://wa.me/923180617788"
+                  href={SITE_WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5"

@@ -19,9 +19,25 @@ export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: 
     highlight: "Fast results",
     benefits: ["Cross‑platform apps", "Device features (GPS/Camera)", "API backend + data strategy"],
   },
-  ecommerce: {
+  "wordpress-wix-shopify-3-months": {
     icon: "store",
     highlight: "Business-ready",
-    benefits: ["Client-ready stores/sites", "Shopify + WP + Wix mastery", "SEO + conversion setup"],
+    benefits: ["Client-ready stores/sites", "WordPress + Wix mastery", "SEO + conversion setup"],
   },
+  "frontend-web-development": {
+    icon: "code",
+    highlight: "Fast results",
+    benefits: ["Portfolio projects", "Job-ready React + APIs", "Deployments + Git workflow", "Next.js + Tailwind CSS"],
+  },
+  "digital-marketing": {
+    icon: "marketing",
+    highlight: "Fast results",
+    benefits: ["Social Media Marketing", "Email Marketing", "Content Marketing", "SEO + Analytics"],
+  },
+  "ui-uix-graphic-design": {
+    icon: "palette",
+    highlight: "Fast results",
+    benefits: ["UI/UX Design", "Graphic Design", "Branding", "Animation"],
+  }
+
 }
