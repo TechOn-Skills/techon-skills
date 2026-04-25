@@ -10,8 +10,8 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
             <AdminSidebar />
             <SidebarInset className="bg-surface min-h-svh">
                 <AdminAppbar />
-                <div className="flex flex-1 flex-col">
-                    <div className={`${containerClass} flex-1 py-6`}>{children}</div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <div className={`${containerClass} min-w-0 flex-1 py-6`}>{children}</div>
                     <AdminFooter className="mt-auto" />
                 </div>
             </SidebarInset>
