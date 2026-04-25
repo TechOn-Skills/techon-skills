@@ -29,8 +29,8 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
         className
       )}
     >
-      <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 2xl:px-10">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="flex h-16 w-full min-w-0 items-center justify-between gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8 2xl:px-10">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-initial">
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -43,8 +43,11 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
                 <MenuIcon className="size-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side={SheetContentSide.LEFT} className="w-[18rem] p-0">
-              <SheetHeader className="border-border border-b p-4">
+            <SheetContent
+              side={SheetContentSide.LEFT}
+              className="flex h-full w-[min(18rem,85vw)] flex-col gap-0 p-0"
+            >
+              <SheetHeader className="border-border shrink-0 border-b p-4">
                 <SheetTitle className="flex items-center gap-2">
                   <Image
                     src={TechOnLogo}
@@ -57,7 +60,7 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
                 </SheetTitle>
               </SheetHeader>
 
-              <nav className="p-2">
+              <nav className="min-h-0 flex-1 overflow-y-auto p-2">
                 <div className="flex flex-col gap-1">
                   {NAV_ITEMS.map((item) => (
                     <SheetClose key={item.href} asChild>
@@ -73,6 +76,10 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
                   ))}
                 </div>
               </nav>
+              <div className="border-border mt-auto shrink-0 border-t p-4 lg:hidden">
+                <div className="text-muted-foreground mb-2 text-xs font-medium">Theme</div>
+                <ThemeSwitcher />
+              </div>
             </SheetContent>
           </Sheet>
 
@@ -105,9 +112,9 @@ export const WebappNavbar = ({ className }: { className?: string }) => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeSwitcher className="hidden sm:inline-flex" />
-          <ContinueToDashboardDialog />
+          <ContinueToDashboardDialog className="text-xs sm:text-sm" />
         </div>
       </div>
     </header>

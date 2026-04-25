@@ -10,8 +10,8 @@ export const StudentLayout = ({ children }: { children: ReactNode }) => {
             <StudentSidebar />
             <SidebarInset className="bg-surface min-h-svh">
                 <StudentAppbar />
-                <div className="flex flex-1 flex-col">
-                    <div className={`${containerClass} flex-1 py-6`}>{children}</div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <div className={`${containerClass} min-w-0 flex-1 py-6`}>{children}</div>
                     <StudentFooter className="mt-auto" />
                 </div>
             </SidebarInset>

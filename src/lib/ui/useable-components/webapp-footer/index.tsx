@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 import { cn } from "@/lib/helpers"
-import { COMPANY_NAME, FOOTER_LINKS } from "@/utils/constants"
+import { COMPANY_NAME, FOOTER_LINKS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL_HREF } from "@/utils/constants"
 
 export const WebappFooter = ({ className }: { className?: string }) => {
   return (
@@ -13,17 +13,22 @@ export const WebappFooter = ({ className }: { className?: string }) => {
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(to_right,transparent,rgba(70,208,255,0.75),rgba(255,138,61,0.55),transparent)]" />
       <div className="w-full px-4 py-10 sm:px-6 lg:px-8 2xl:px-10">
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="space-y-2">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-3">
+          <div className="min-w-0 space-y-2">
             <div className="text-sm font-semibold">{COMPANY_NAME}</div>
             <p className="text-(--text-on-dark)/75 text-sm leading-6">
               Modern, outcome-driven training in web development, mobile app development, and software engineering.
             </p>
           </div>
 
-          <div className="space-y-2 w-72">
+          <div className="min-w-0 space-y-2 break-words">
             <div className="text-sm font-semibold">Contact</div>
-            <div className="text-(--text-on-dark)/75 text-sm">Phone: +923180617788</div>
+            <div className="text-(--text-on-dark)/75 text-sm">
+              Phone:{" "}
+              <a href={SITE_PHONE_TEL_HREF} className="underline-offset-2 hover:underline">
+                {SITE_PHONE_DISPLAY}
+              </a>
+            </div>
             <div className="text-(--text-on-dark)/75 text-sm">Email: info@cloudrika.com</div>
             <div className="text-(--text-on-dark)/75 text-sm">Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan</div>
           </div>
