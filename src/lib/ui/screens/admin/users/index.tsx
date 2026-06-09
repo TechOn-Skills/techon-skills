@@ -70,6 +70,7 @@ export const AdminUsersScreen = () => {
   const currentUserRole = userProfileInfo?.role ?? null
   const isSuperAdmin = currentUserRole === "SUPER_ADMIN"
   const canManageStatus = currentUserRole === "ADMIN" || currentUserRole === "SUPER_ADMIN"
+  const canAssignStudentCourses = currentUserRole === "ADMIN" || currentUserRole === "SUPER_ADMIN"
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -348,7 +349,10 @@ export const AdminUsersScreen = () => {
                                       </button>
                                     </>
                                   )}
-                                  {user.role === "STUDENT" && user.status === "ACTIVE" && !user.isSuspended && (
+                                  {canAssignStudentCourses &&
+                                    user.role === "STUDENT" &&
+                                    user.status === "ACTIVE" &&
+                                    !user.isSuspended && (
                                     <button
                                       type="button"
                                       className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-background/60 transition-colors"
@@ -421,7 +425,10 @@ export const AdminUsersScreen = () => {
         user={assignCoursesUser}
         open={!!assignCoursesUser}
         onOpenChange={(open) => !open && setAssignCoursesUser(null)}
-        onSuccess={() => setAssignCoursesUser(null)}
+        onSuccess={() => {
+          setAssignCoursesUser(null)
+          refetch()
+        }}
       />
       <SendEmailToUserSheet
         user={sendEmailUser}
@@ -573,6 +580,14 @@ function DeleteUserDialog({
   )
 }
 
+function enrollmentDateDefaultYmd(): string {
+  const t = new Date()
+  const y = t.getFullYear()
+  const m = String(t.getMonth() + 1).padStart(2, "0")
+  const d = String(t.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 function AssignCoursesForUserSheet({
   user,
   open,
@@ -585,17 +600,36 @@ function AssignCoursesForUserSheet({
   onSuccess: () => void
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [enrollmentDateYmd, setEnrollmentDateYmd] = useState(enrollmentDateDefaultYmd)
+  const [paymentFile, setPaymentFile] = useState<File | null>(null)
+  const [paymentPreviewUrl, setPaymentPreviewUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const { data: coursesData } = useQuery<{ getCourses: { id: string; slug: string; title: string }[] }>(GET_COURSES)
   const [enrollMutation] = useMutation(ENROLL_USER_IN_COURSE)
   const courses = useMemo(() => coursesData?.getCourses ?? [], [coursesData])
 
   useEffect(() => {
-    if (user) setSelectedIds([])
+    if (user) {
+      setSelectedIds([])
+      setEnrollmentDateYmd(enrollmentDateDefaultYmd())
+      setPaymentFile(null)
+      setPaymentPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+    }
   }, [user?.id])
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const onPaymentFileChange = (file: File | null) => {
+    setPaymentFile(file)
+    setPaymentPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return file ? URL.createObjectURL(file) : null
+    })
   }
 
   const handleAssign = async () => {
@@ -603,8 +637,23 @@ function AssignCoursesForUserSheet({
     setSaving(true)
     const toastId = toast.loading("Assigning courses...")
     try {
+      let paymentScreenshotUrl: string | undefined
+      if (paymentFile) {
+        const uploadRes = await apiService.uploadImage(paymentFile, "users", user.id)
+        if (!uploadRes.success || !uploadRes.data?.url) {
+          toast.dismiss(toastId)
+          toast.error(getApiDisplayMessage(uploadRes, "Failed to upload payment screenshot."))
+          return
+        }
+        paymentScreenshotUrl = uploadRes.data.url
+      }
+      const inputBase = {
+        userId: user.id,
+        enrollmentDate: enrollmentDateYmd.trim() || undefined,
+        ...(paymentScreenshotUrl ? { paymentScreenshotUrl } : {}),
+      }
       for (const courseId of selectedIds) {
-        await enrollMutation({ variables: { input: { userId: user.id, courseId } } })
+        await enrollMutation({ variables: { input: { ...inputBase, courseId } } })
       }
       toast.dismiss(toastId)
       toast.success("Courses assigned successfully.")
@@ -620,7 +669,7 @@ function AssignCoursesForUserSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
+      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Assign courses</SheetTitle>
           <SheetDescription>
@@ -632,7 +681,44 @@ function AssignCoursesForUserSheet({
             ) : null}
           </SheetDescription>
         </SheetHeader>
-        <div className="px-4 space-y-2 max-h-[60vh] overflow-y-auto">
+        <div className="px-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div>
+            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Date of enrollment</label>
+            <Input
+              type="date"
+              value={enrollmentDateYmd}
+              onChange={(e) => setEnrollmentDateYmd(e.target.value)}
+              className="rounded-xl"
+            />
+            <p className="text-muted-foreground mt-1 text-xs">
+              Fees are due on the 12th of each month. If enrollment is before today, one fee row is created for each due date from the first due through today (up to the course installment limit). Enrollment on or after today still opens the full installment schedule.
+            </p>
+          </div>
+          <div>
+            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Payment screenshot (optional)</label>
+            <Input
+              type="file"
+              accept="image/*,application/pdf"
+              className="rounded-xl cursor-pointer text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5"
+              onChange={(e) => onPaymentFileChange(e.target.files?.[0] ?? null)}
+            />
+            {paymentPreviewUrl && paymentFile?.type.startsWith("image/") && (
+              <div
+                className="mt-2 h-40 w-full rounded-xl border bg-muted/30 bg-contain bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${paymentPreviewUrl})` }}
+                role="img"
+                aria-label="Payment proof preview"
+              />
+            )}
+            {paymentFile && !paymentFile.type.startsWith("image/") && (
+              <p className="text-muted-foreground mt-1 text-xs">{paymentFile.name}</p>
+            )}
+            <p className="text-muted-foreground mt-1 text-xs">
+              If you attach proof, the first fee installment for each assigned course is marked paid (admin-attested).
+            </p>
+          </div>
+          <div className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">Courses</div>
+          <div className="space-y-2">
           {courses.map((c) => (
             <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted-surface/50 cursor-pointer">
               <input
@@ -644,6 +730,7 @@ function AssignCoursesForUserSheet({
               <span className="text-sm font-medium">{c.title}</span>
             </label>
           ))}
+          </div>
         </div>
         <SheetFooter className="flex-row gap-2 sm:flex-row">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
