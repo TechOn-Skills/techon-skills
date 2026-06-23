@@ -9,13 +9,13 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ApolloClientProvider>
       <ThemeProvider>
-        <CoursesProvider>
-          <UserProvider>
+        <UserProvider>
+          <CoursesProvider>
             <LecturesProvider>
               {children}
             </LecturesProvider>
-          </UserProvider>
-        </CoursesProvider>
+          </CoursesProvider>
+        </UserProvider>
       </ThemeProvider>
     </ApolloClientProvider>
   )

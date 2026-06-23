@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://techonskills.com"
 type Props = { params: Promise<{ slug: string }> }
 
 async function getArticleBySlug(slug: string) {
-  const url = process.env.NEXT_PUBLIC_BACKEND_GRAPHQL_URL
+  const url = process.env.NEXT_PUBLIC_BACKEND_GRAPHQL_URL || "http://localhost:8080/graphql-techonskills"
   if (!url) return null
   try {
     const res = await fetch(url, {

@@ -3,6 +3,7 @@ export * from "./course-assignments";
 export * from "./courses";
 export * from "./lectures";
 export * from "./events";
+export * from "./fees";
 export * from "./news";
 export * from "./notifications";
 export * from "./payments";
