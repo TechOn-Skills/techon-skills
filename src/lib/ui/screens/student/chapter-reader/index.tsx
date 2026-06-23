@@ -7,15 +7,13 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import "highlight.js/styles/github-dark.min.css"
-import { GradedExerciseModal } from "@/lib/ui/useable-components/graded-exercise-modal"
 import { Button } from "@/lib/ui/useable-components/button"
 import { getNextChapter, API_COURSE_SLUG_TO_CONTENT_SLUG } from "@/utils/constants"
 import { CONFIG } from "@/utils/constants"
-import { ChevronLeftIcon, CreditCardIcon, FileQuestionIcon, Loader2Icon } from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, CreditCardIcon, Loader2Icon } from "lucide-react"
 import { useUser } from "@/lib/providers/user"
-import { GET_PAYMENTS_BY_USER, GET_SUBMISSION_BY_REFERENCE } from "@/lib/graphql"
+import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import { isDueMonthReached } from "@/lib/helpers"
-import toast from "react-hot-toast"
 
 type Props = {
     courseSlug: string
@@ -27,13 +25,10 @@ type Props = {
 const contentUrl = (courseSlug: string, moduleSlug: string, chapterSlug: string, type: "md" | "json") =>
     `/api/course-content?courseSlug=${encodeURIComponent(courseSlug)}&moduleSlug=${encodeURIComponent(moduleSlug)}&chapterSlug=${encodeURIComponent(chapterSlug)}&type=${type}`
 
-const PASSING_PERCENT = 40
-
 export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapterTitle }: Props) => {
     const [markdown, setMarkdown] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [exerciseOpen, setExerciseOpen] = useState(false)
     const { userProfileInfo, enrolledCoursesFromApi } = useUser()
     const courseIdForSlug = useMemo(
         () =>
@@ -42,44 +37,7 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
             )?.id ?? null,
         [enrolledCoursesFromApi, courseSlug]
     )
-    const referenceId = `${moduleSlug}/${chapterSlug}`
-    const { data: submissionData } = useQuery<{
-        getSubmissionByReference: { status: string; marks: number | null; maxMarks: number } | null
-    }>(GET_SUBMISSION_BY_REFERENCE, {
-        variables: {
-            userId: userProfileInfo?.id ?? "",
-            courseId: courseIdForSlug ?? "",
-            type: "graded_exercise",
-            referenceId,
-        },
-        skip: !courseIdForSlug || !userProfileInfo?.id,
-    })
-    const existingSubmission = submissionData?.getSubmissionByReference ?? null
-    const submissionStatus = existingSubmission?.status
-    const marksPercent =
-        existingSubmission?.maxMarks != null &&
-        existingSubmission.maxMarks > 0 &&
-        existingSubmission.marks != null
-            ? Math.round((existingSubmission.marks / existingSubmission.maxMarks) * 100)
-            : null
-    const passed = submissionStatus === "marked" && marksPercent != null && marksPercent >= PASSING_PERCENT
-    const canOpenExerciseModal =
-        !existingSubmission ||
-        (submissionStatus === "marked" && !passed)
 
-    const handleAttemptClick = useCallback(() => {
-        if (canOpenExerciseModal) {
-            setExerciseOpen(true)
-            return
-        }
-        if (submissionStatus === "submitted") {
-            toast.error("Please wait for your marks to be updated before attempting again.")
-            return
-        }
-        if (passed) {
-            toast.success("You have already passed this exercise.")
-        }
-    }, [canOpenExerciseModal, submissionStatus, passed])
     const { data: paymentsData } = useQuery<{
         getPaymentsByUser: Array<{ courseDetails?: { courseId: string } | null; isPaid: boolean; paymentDate: string }>;
     }>(GET_PAYMENTS_BY_USER, {
@@ -174,39 +132,27 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
                 </Link>
             </div>
 
+            <h1 className="mb-6 text-2xl font-semibold tracking-tight">{chapterTitle}</h1>
+
             <article className="chapter-prose">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                     {markdown}
                 </ReactMarkdown>
             </article>
 
-            <div className="mt-12 rounded-2xl border border-(--border-default-light) dark:border-(--border-default-dark) bg-(--background-secondary-light) dark:bg-(--background-secondary-dark) p-6">
-                <h3 className="mb-2 font-semibold">Finished this chapter?</h3>
-                <p className="text-muted-foreground mb-4 text-sm">
-                    Attempt the graded exercise (MCQs and short questions) to complete this chapter and unlock the next.
-                </p>
-                <Button
-                    type="button"
-                    variant="brand-secondary"
-                    shape="pill"
-                    onClick={handleAttemptClick}
-                    className="inline-flex items-center gap-2"
-                >
-                    <FileQuestionIcon className="size-4" />
-                    Attempt Graded Exercise
-                </Button>
-            </div>
-
-            <GradedExerciseModal
-                open={exerciseOpen}
-                onOpenChange={setExerciseOpen}
-                courseSlug={courseSlug}
-                courseId={courseIdForSlug}
-                moduleSlug={moduleSlug}
-                chapterSlug={chapterSlug}
-                fetchExerciseUrl={contentUrl(courseSlug, moduleSlug, chapterSlug, "json")}
-                nextChapter={nextChapter}
-            />
+            {nextChapter && (
+                <div className="mt-12 flex justify-end">
+                    <Button asChild variant="brand-secondary" shape="pill">
+                        <Link
+                            href={`/student/course/${courseSlug}/${nextChapter.moduleSlug}/${nextChapter.chapterSlug}`}
+                            className="inline-flex items-center gap-2"
+                        >
+                            Next chapter
+                            <ChevronRightIcon className="size-4" />
+                        </Link>
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }

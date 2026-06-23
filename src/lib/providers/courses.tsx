@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from "react"
 import { useQuery } from "@apollo/client/react"
-import { GET_COURSES } from "@/lib/graphql"
+import { GET_COURSES, GET_MY_FEE_STATUS } from "@/lib/graphql"
 import { mapApiCourseToICourse, type IApiCourse } from "@/lib/helpers/course"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
+import { useUser } from "@/lib/providers/user"
+import { UserRole } from "@/utils/enums/user"
 import type { ICourse, IStudentAssignment } from "@/utils/interfaces"
 
 export interface IFeaturedCourse {
@@ -53,7 +55,18 @@ export interface ICoursesContextValue {
 const CoursesContext = createContext<ICoursesContextValue | null>(null)
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
-  const { data, loading, error } = useQuery<{ getCourses: IApiCourse[] }>(GET_COURSES)
+  const { userProfileInfo } = useUser()
+  const isStudent = userProfileInfo?.role === UserRole.STUDENT
+
+  const { data: feeData } = useQuery<{ getMyFeeStatus: { locked: boolean } }>(GET_MY_FEE_STATUS, {
+    skip: !isStudent || !userProfileInfo?.id,
+    fetchPolicy: "cache-and-network",
+  })
+  const feeLocked = isStudent && (feeData?.getMyFeeStatus?.locked ?? false)
+
+  const { data, loading, error } = useQuery<{ getCourses: IApiCourse[] }>(GET_COURSES, {
+    skip: feeLocked,
+  })
 
   const courses = useMemo(
     () => (data?.getCourses ? mapApiCoursesToICourses(data.getCourses) : []),
@@ -84,10 +97,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       assignments,
       getCourseBySlug,
       getAssignmentById,
-      loading,
+      loading: feeLocked ? false : loading,
       error: error ?? undefined,
     }),
-    [courses, featuredCourses, assignments, getCourseBySlug, getAssignmentById, loading, error]
+    [courses, featuredCourses, assignments, getCourseBySlug, getAssignmentById, loading, error, feeLocked]
   )
 
   return (

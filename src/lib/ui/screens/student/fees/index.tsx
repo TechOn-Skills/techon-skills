@@ -10,7 +10,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { useUser } from "@/lib/providers/user"
-import { GET_PAYMENTS_BY_USER, UPDATE_PAYMENT } from "@/lib/graphql"
+import { GET_PAYMENTS_BY_USER, SUBMIT_FEE_PROOF } from "@/lib/graphql"
 import { apiService } from "@/lib/services"
 import { cn, formatDate, formatDateISO, getApiDisplayMessage, isDueMonthReached } from "@/lib/helpers"
 import type { IFeeEntry } from "@/utils/interfaces"
@@ -53,7 +53,7 @@ export const StudentFeesScreen = () => {
       }
     }>
   }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
-  const [updatePayment] = useMutation(UPDATE_PAYMENT, {
+  const [submitFeeProof] = useMutation(SUBMIT_FEE_PROOF, {
     onCompleted: () => {
       refetchPayments()
     },
@@ -160,11 +160,11 @@ export const StudentFeesScreen = () => {
         toast.error(getApiDisplayMessage(res, "Failed to upload screenshot."))
         return
       }
-      await updatePayment({
+      await submitFeeProof({
         variables: {
           input: {
-            id: selectedFee.id,
-            paymentAttachment: res.data.url,
+            paymentId: selectedFee.id,
+            attachmentUrl: res.data.url,
           },
         },
       })

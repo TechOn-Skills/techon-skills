@@ -19,7 +19,7 @@ export const CONFIG = {
         },
     },
     BACKEND_PATHS: {
-        GRAPHQL: "graphql-techonskills",
+        GRAPHQL: "/graphql-techonskills",
         FORM: {
             SUBMIT: "/contact-form/submit",
             GET_CONTACT_SUBMISSIONS: "/contact-form/get-contact-form-requests",
