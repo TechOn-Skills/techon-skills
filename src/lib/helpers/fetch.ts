@@ -16,6 +16,12 @@ export const fetchURL = async ({ path, options, isGraphQL = true }: { path: stri
     const tz = getClientTimezone()
     const headers = new Headers(options.headers ?? {})
     if (tz) headers.set("X-Timezone", tz)
+    if (typeof window !== "undefined") {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN)
+        if (token && !headers.has("Authorization")) {
+            headers.set("Authorization", `Bearer ${token}`)
+        }
+    }
     const _options: RequestInit = {
         ...options,
         credentials: "include",
