@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useQuery, useMutation } from "@apollo/client/react"
 import {
   CalendarIcon,
+  EyeIcon,
   Loader2Icon,
   PlusIcon,
   PencilIcon,
@@ -15,7 +17,7 @@ import {
 import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
@@ -23,6 +25,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { GET_EVENTS, CREATE_EVENT, UPDATE_EVENT, DELETE_EVENT } from "@/lib/graphql"
 import { cn } from "@/lib/helpers"
 import { EVENT_TYPE_CONFIG } from "@/utils/constants"
+import { AdminEventDetailDialog, type AdminEventDetail } from "./event-detail-dialog"
 
 const EVENT_TYPES = ["workshop", "webinar", "hackathon", "networking", "career"] as const
 
@@ -38,6 +41,7 @@ type EventRow = {
   isOnline: boolean
   totalSpots: number
   spotsLeft: number
+  registrationCount: number
   tags: string[]
   instructor?: string | null
 }
@@ -57,9 +61,11 @@ const emptyForm = {
 }
 
 export const AdminEventsScreen = () => {
+  const searchParams = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [detailEvent, setDetailEvent] = useState<AdminEventDetail | null>(null)
   const [form, setForm] = useState(emptyForm)
 
   const { data, loading, error, refetch } = useQuery<{ getEvents: EventRow[] }>(GET_EVENTS)
@@ -90,6 +96,15 @@ export const AdminEventsScreen = () => {
   })
 
   const events = data?.getEvents ?? []
+
+  useEffect(() => {
+    const eventId = searchParams.get("event")
+    if (!eventId || !events.length) return
+    const found = events.find((e) => e.id === eventId)
+    if (found) setDetailEvent(found)
+  }, [searchParams, events])
+
+  const openDetail = (e: EventRow) => setDetailEvent(e)
 
   const openEdit = (e: EventRow) => {
     setEditId(e.id)
@@ -171,9 +186,14 @@ export const AdminEventsScreen = () => {
             Events
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-            Create and manage workshops, webinars, and events. Students can register from their dashboard.
+            Create and manage events. Click an event to see who registered — name, email, phone, and profile photo.
           </p>
         </div>
+        <AdminEventDetailDialog
+          event={detailEvent}
+          open={!!detailEvent}
+          onOpenChange={(open) => !open && setDetailEvent(null)}
+        />
         <ConfirmDialog
           open={!!deleteConfirmId}
           onOpenChange={(open) => !open && setDeleteConfirmId(null)}
@@ -318,6 +338,29 @@ export const AdminEventsScreen = () => {
           <p className="text-destructive">Failed to load events.</p>
         </div>
       ) : (
+        <>
+          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+            <Card className="rounded-2xl">
+              <CardContent className="p-4">
+                <p className="text-muted-foreground text-xs">Total events</p>
+                <p className="text-2xl font-semibold">{events.length}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl">
+              <CardContent className="p-4">
+                <p className="text-muted-foreground text-xs">Total registrations</p>
+                <p className="text-2xl font-semibold">
+                  {events.reduce((sum, e) => sum + (e.registrationCount ?? 0), 0)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl">
+              <CardContent className="p-4">
+                <p className="text-muted-foreground text-xs">Spots remaining (all events)</p>
+                <p className="text-2xl font-semibold">{events.reduce((sum, e) => sum + e.spotsLeft, 0)}</p>
+              </CardContent>
+            </Card>
+          </div>
         <Card className="bg-background/70 backdrop-blur rounded-3xl overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -327,7 +370,8 @@ export const AdminEventsScreen = () => {
                     <th className="p-4 font-semibold">Event</th>
                     <th className="p-4 font-semibold">Type</th>
                     <th className="p-4 font-semibold">Date & Time</th>
-                    <th className="p-4 font-semibold">Spots</th>
+                    <th className="p-4 font-semibold">Registered</th>
+                    <th className="p-4 font-semibold">Capacity</th>
                     <th className="p-4 font-semibold">Location</th>
                     <th className="p-4 font-semibold">Actions</th>
                   </tr>
@@ -335,8 +379,14 @@ export const AdminEventsScreen = () => {
                 <tbody>
                   {events.map((ev) => {
                     const typeConfig = (EVENT_TYPE_CONFIG as Record<string, { label: string; color: string }>)[ev.type]
+                    const registered = ev.registrationCount ?? ev.totalSpots - ev.spotsLeft
+                    const fillPct = ev.totalSpots > 0 ? Math.round((registered / ev.totalSpots) * 100) : 0
                     return (
-                      <tr key={ev.id} className="border-b transition-colors hover:bg-muted-surface/20">
+                      <tr
+                        key={ev.id}
+                        className="border-b transition-colors hover:bg-muted-surface/20 cursor-pointer"
+                        onClick={() => openDetail(ev)}
+                      >
                         <td className="p-4">
                           <div className="font-semibold">{ev.title}</div>
                           <div className="text-muted-foreground text-xs line-clamp-1">{ev.description}</div>
@@ -351,9 +401,16 @@ export const AdminEventsScreen = () => {
                           <div className="text-muted-foreground text-xs">{ev.time} · {ev.duration}</div>
                         </td>
                         <td className="p-4">
+                          <div className="font-semibold text-(--brand-secondary)">{registered}</div>
+                          <div className="text-muted-foreground text-xs">student{registered !== 1 ? "s" : ""}</div>
+                          <div className="bg-muted-surface mt-1.5 h-1.5 w-24 overflow-hidden rounded-full">
+                            <div className="bg-(--brand-secondary) h-full rounded-full" style={{ width: `${fillPct}%` }} />
+                          </div>
+                        </td>
+                        <td className="p-4">
                           <span className="flex items-center gap-1">
                             <UsersIcon className="size-4 text-muted-foreground" />
-                            {ev.spotsLeft} / {ev.totalSpots}
+                            {ev.spotsLeft} left / {ev.totalSpots}
                           </span>
                         </td>
                         <td className="p-4">
@@ -367,8 +424,11 @@ export const AdminEventsScreen = () => {
                             </span>
                           )}
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" title="View registrations" onClick={() => openDetail(ev)}>
+                              <EyeIcon className="size-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => openEdit(ev)}>
                               <PencilIcon className="size-4" />
                             </Button>
@@ -391,6 +451,7 @@ export const AdminEventsScreen = () => {
             )}
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* Edit dialog */}

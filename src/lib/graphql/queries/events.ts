@@ -14,6 +14,7 @@ export const GET_EVENTS = gql`
             isOnline
             totalSpots
             spotsLeft
+            registrationCount
             isRegistered
             tags
             instructor
@@ -35,6 +36,7 @@ export const GET_EVENT = gql`
             isOnline
             totalSpots
             spotsLeft
+            registrationCount
             isRegistered
             tags
             instructor
@@ -45,5 +47,18 @@ export const GET_EVENT = gql`
 export const GET_MY_EVENT_REGISTRATIONS = gql`
     query GetMyEventRegistrations {
         getMyEventRegistrations
+    }
+`;
+
+export const GET_EVENT_REGISTRATIONS = gql`
+    query GetEventRegistrations($eventId: ID!) {
+        getEventRegistrations(eventId: $eventId) {
+            userId
+            fullName
+            email
+            phoneNumber
+            profilePicture
+            registeredAt
+        }
     }
 `;
