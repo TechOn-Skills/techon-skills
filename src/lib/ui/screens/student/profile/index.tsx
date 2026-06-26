@@ -28,7 +28,8 @@ import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn, formatDate, getImageSrc, isBackendImageUrl } from "@/lib/helpers"
-import { GET_USER_PROFILE_INFO, UPDATE_USER_INPUT } from "@/lib/graphql"
+import { GET_MY_PROGRESS, GET_USER_PROFILE_INFO, UPDATE_USER_INPUT } from "@/lib/graphql"
+import { useUser } from "@/lib/providers/user"
 import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
 import { apiService } from "@/lib/services"
 import { getApiDisplayMessage } from "@/lib/helpers"
@@ -42,6 +43,15 @@ export const StudentProfileScreen = () => {
   const [profilePreview, setProfilePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data, loading, error, refetch } = useQuery<{ userProfileInfo: ProfileApi | null }>(GET_USER_PROFILE_INFO)
+  const { data: progressData } = useQuery<{ getMyProgress: {
+    quizzesAttempted: number
+    quizzesPassed: number
+    assignmentsSubmitted: number
+    assignmentsGraded: number
+    averageMarksPercent: number | null
+    courses: Array<{ courseTitle: string; progressPercent: number }>
+  } }>(GET_MY_PROGRESS, { skip: !data?.userProfileInfo?.id })
+  const { enrolledCoursesFromApi } = useUser()
   const [updateUser] = useMutation(UPDATE_USER_INPUT)
   const apiProfile = data?.userProfileInfo
 
@@ -50,8 +60,8 @@ export const StudentProfileScreen = () => {
     name: "",
     email: "",
     phone: "",
-    location: "Lahore, Pakistan",
-    bio: "Passionate about web development and creating impactful digital experiences. Currently learning full-stack development to build my dream career in tech.",
+    location: "",
+    bio: "",
     github: "",
     linkedin: "",
     portfolio: "",
@@ -68,8 +78,9 @@ export const StudentProfileScreen = () => {
       email: apiProfile.email ?? prev.email,
       phone: apiProfile.phoneNumber ?? prev.phone,
       enrolledDate: apiProfile.createdAt ? formatDate(apiProfile.createdAt, { month: "long", year: "numeric", locale: "en-GB" }) : prev.enrolledDate,
+      currentCourse: enrolledCoursesFromApi?.[0]?.title ?? prev.currentCourse,
     }))
-  }, [apiProfile])
+  }, [apiProfile, enrolledCoursesFromApi])
 
   const profilePhoneValue = parsePhoneFromString(profile.phone)
 
@@ -155,8 +166,32 @@ export const StudentProfileScreen = () => {
     )
   }
 
-  // Only show stats when we have real data from API (no such API yet – hide section)
-  const stats: { label: string; value: string; icon: typeof BriefcaseIcon; percentage: number }[] = []
+  const progress = progressData?.getMyProgress
+  const stats = progress
+    ? [
+        {
+          label: "Quizzes completed",
+          value: `${progress.quizzesAttempted} (${progress.quizzesPassed} passed)`,
+          icon: TrophyIcon,
+          percentage: progress.quizzesAttempted > 0 ? Math.round((progress.quizzesPassed / progress.quizzesAttempted) * 100) : 0,
+        },
+        {
+          label: "Assignments submitted",
+          value: `${progress.assignmentsSubmitted} (${progress.assignmentsGraded} graded)`,
+          icon: AwardIcon,
+          percentage:
+            progress.assignmentsSubmitted > 0
+              ? Math.round((progress.assignmentsGraded / progress.assignmentsSubmitted) * 100)
+              : 0,
+        },
+        {
+          label: "Average score",
+          value: progress.averageMarksPercent != null ? `${progress.averageMarksPercent}%` : "—",
+          icon: BriefcaseIcon,
+          percentage: progress.averageMarksPercent ?? 0,
+        },
+      ]
+    : []
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">

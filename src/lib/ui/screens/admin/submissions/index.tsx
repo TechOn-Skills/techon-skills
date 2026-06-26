@@ -7,9 +7,9 @@ import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { GET_SUBMISSIONS_FOR_COURSE, GET_COURSES } from "@/lib/graphql"
+import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
 import { cn } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
-import { UserRole } from "@/utils/enums/user"
 
 import { SubmissionGradingBlock, type SubmissionRow } from "./submission-grading-block"
 
@@ -21,12 +21,10 @@ export const AdminSubmissionsScreen = () => {
     getCourses: Array<{ id: string; title: string; slug: string }>
   }>(GET_COURSES, { fetchPolicy: "network-only" })
   const allCourses = coursesData?.getCourses ?? []
-  const courses = useMemo(() => {
-    if (userProfileInfo?.role === UserRole.SUPER_ADMIN) return allCourses
-    const allowed = userProfileInfo?.allowedMarkGradesOn ?? []
-    if (allowed.length === 0) return []
-    return allCourses.filter((c) => allowed.includes(c.id))
-  }, [allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn])
+  const courses = useMemo(
+    () => filterCoursesForGrader(allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn),
+    [allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn]
+  )
 
   const courseId = selectedCourseId || courses[0]?.id || ""
   const { data: submissionsData, loading, refetch } = useQuery<{
@@ -65,8 +63,7 @@ export const AdminSubmissionsScreen = () => {
             Grade Submissions
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-            Assignments: enter total marks; if below 40% of max you can allow a resubmit. Graded exercises: MCQ band is automatic;
-            award short-answer marks per question.
+            Review assignment submissions and award marks. MCQ quizzes are graded automatically — see quiz results separately.
           </p>
         </div>
         <Button

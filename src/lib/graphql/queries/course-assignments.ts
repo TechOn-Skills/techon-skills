@@ -10,6 +10,8 @@ export const GET_COURSE_ASSIGNMENTS = gql`
       maxMarks
       referenceId
       dueDate
+      isPublished
+      publishedAt
       createdAt
       updatedAt
     }
