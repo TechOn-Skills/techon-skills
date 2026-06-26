@@ -137,6 +137,24 @@ class ApiService {
         return json as ApiResponse<{ url: string; filename: string; relativePath?: string }>;
     }
 
+    /** Submit fee payment proof (REST — bypasses GraphQL fee-lock for locked students). */
+    submitFeeProof = async (input: {
+        paymentId?: string;
+        attachmentUrl: string;
+    }): Promise<ApiResponse<{ id: string; paymentStatus: string; paymentAttachment: string; isPaid: boolean }>> => {
+        const path = CONFIG.BACKEND_PATHS.FEES.SUBMIT_PROOF;
+        const response = await fetchURL({
+            path,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify(input),
+                headers: { "Content-Type": "application/json" },
+            },
+        });
+        return handleApiResponse<{ id: string; paymentStatus: string; paymentAttachment: string; isPaid: boolean }>(response);
+    }
+
     getUploadedImages = async (params?: { category?: string; subPath?: string }): Promise<ApiResponse<{ id: string; category: string; subPath: string; filename: string; url: string; relativePath: string; createdAt: string }[]>> => {
         const { BACKEND_URL } = getConfig();
         const q = new URLSearchParams();

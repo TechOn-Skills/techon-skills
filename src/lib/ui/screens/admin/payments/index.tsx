@@ -15,7 +15,7 @@ import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
-import { formatDateISO } from "@/lib/helpers"
+import { formatDateISO, getImageSrc } from "@/lib/helpers"
 import { GET_PAYMENTS, UPDATE_PAYMENT } from "@/lib/graphql"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -148,7 +148,7 @@ export const AdminPaymentsScreen = () => {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-muted-foreground text-sm font-medium">Filter:</span>
-        <div className="flex rounded-xl border bg-muted-surface/30 p-0.5">
+        <div className="flex flex-wrap gap-2">
           {(
             [
               { value: "all" as const, label: "All" },
@@ -156,18 +156,16 @@ export const AdminPaymentsScreen = () => {
               { value: "pending_approval" as const, label: "Pending approval" },
             ] as const
           ).map(({ value, label }) => (
-            <button
+            <Button
               key={value}
               type="button"
+              variant={filterStatus === value ? "brand-secondary" : "outline"}
+              size="sm"
+              shape="pill"
               onClick={() => setFilterStatus(value)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                filterStatus === value
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -329,24 +327,23 @@ export const AdminPaymentsScreen = () => {
                     <div className="text-muted-foreground text-xs font-medium mb-2">Payment screenshot</div>
                     <div className="rounded-xl border bg-muted-surface/20 overflow-hidden">
                       {detailPayment.paymentAttachment &&
-                      detailPayment.paymentAttachment !== "pending" &&
-                      (detailPayment.paymentAttachment.startsWith("http") || detailPayment.paymentAttachment.startsWith("/")) ? (
+                      detailPayment.paymentAttachment !== "pending" ? (
                         <>
                           <a
-                            href={detailPayment.paymentAttachment}
+                            href={getImageSrc(detailPayment.paymentAttachment)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block focus:outline-none focus:ring-2 focus:ring-ring rounded-xl"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={detailPayment.paymentAttachment}
+                              src={getImageSrc(detailPayment.paymentAttachment)}
                               alt="Payment proof"
                               className="w-full max-h-[min(50vh,24rem)] object-contain bg-muted-surface/50"
                             />
                           </a>
                           <a
-                            href={detailPayment.paymentAttachment}
+                            href={getImageSrc(detailPayment.paymentAttachment)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground"

@@ -30,6 +30,10 @@ export function StudentRouteGuard({ children }: { children: ReactNode }) {
     }
 
     if (role && role !== UserRole.STUDENT) {
+      if (role === UserRole.INSTRUCTOR) {
+        router.replace(CONFIG.ROUTES.ADMIN.SUBMISSIONS);
+        return;
+      }
       router.replace(CONFIG.ROUTES.PUBLIC.HOME);
     }
   }, [profileLoaded, userProfileInfo, router]);

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useQuery } from "@apollo/client/react"
+import { useMutation, useQuery } from "@apollo/client/react"
+import Image from "next/image"
 import {
   AwardIcon,
   BriefcaseIcon,
@@ -16,23 +17,32 @@ import {
   PhoneIcon,
   SparklesIcon,
   TrophyIcon,
+  UploadIcon,
   UserIcon
 } from "lucide-react"
+import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { Textarea } from "@/lib/ui/useable-components/textarea"
 import { Separator } from "@/lib/ui/useable-components/separator"
-import { cn, formatDate } from "@/lib/helpers"
-import { GET_USER_PROFILE_INFO } from "@/lib/graphql"
+import { cn, formatDate, getImageSrc, isBackendImageUrl } from "@/lib/helpers"
+import { GET_USER_PROFILE_INFO, UPDATE_USER_INPUT } from "@/lib/graphql"
 import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
+import { apiService } from "@/lib/services"
+import { getApiDisplayMessage } from "@/lib/helpers"
 
 type ProfileApi = { id: string; email: string; fullName?: string | null; phoneNumber?: string | null; profilePicture?: string | null; createdAt?: string }
 
 export const StudentProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false)
-  const { data, loading, error } = useQuery<{ userProfileInfo: ProfileApi | null }>(GET_USER_PROFILE_INFO)
+  const [saving, setSaving] = useState(false)
+  const [profileFile, setProfileFile] = useState<File | null>(null)
+  const [profilePreview, setProfilePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { data, loading, error, refetch } = useQuery<{ userProfileInfo: ProfileApi | null }>(GET_USER_PROFILE_INFO)
+  const [updateUser] = useMutation(UPDATE_USER_INPUT)
   const apiProfile = data?.userProfileInfo
 
   const hasSynced = useRef(false)
@@ -62,6 +72,56 @@ export const StudentProfileScreen = () => {
   }, [apiProfile])
 
   const profilePhoneValue = parsePhoneFromString(profile.phone)
+
+  const displayPicture = profilePreview ?? getImageSrc(apiProfile?.profilePicture)
+
+  const handleProfileFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file")
+      return
+    }
+    setProfileFile(file)
+    setProfilePreview(URL.createObjectURL(file))
+    e.target.value = ""
+  }
+
+  const handleSaveProfile = async () => {
+    if (!apiProfile?.id) return
+    setSaving(true)
+    try {
+      let profilePictureUrl = apiProfile.profilePicture ?? undefined
+      if (profileFile) {
+        const uploadRes = await apiService.uploadImage(profileFile, "profiles", apiProfile.id)
+        if (!uploadRes.success || !uploadRes.data?.url) {
+          toast.error(getApiDisplayMessage(uploadRes, "Failed to upload profile picture."))
+          return
+        }
+        profilePictureUrl = uploadRes.data.url
+      }
+      await updateUser({
+        variables: {
+          input: {
+            id: apiProfile.id,
+            fullName: profile.name.trim() || undefined,
+            phoneNumber: getFullPhone(profilePhoneValue).trim() || undefined,
+            profilePicture: profilePictureUrl,
+          },
+        },
+      })
+      await refetch()
+      setProfileFile(null)
+      if (profilePreview) URL.revokeObjectURL(profilePreview)
+      setProfilePreview(null)
+      setIsEditing(false)
+      toast.success("Profile updated")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update profile")
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Calculate profile completion
   const profileCompletion = (() => {
@@ -164,9 +224,42 @@ export const StudentProfileScreen = () => {
             <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden">
               <div className="relative h-32 bg-[linear-gradient(135deg,rgba(70,208,255,0.4),rgba(255,138,61,0.3))]">
                 <div className="absolute -bottom-16 left-6">
-                  <div className="bg-background/90 backdrop-blur size-32 rounded-3xl border-4 border-background flex items-center justify-center shadow-xl">
-                    <UserIcon className="size-16 text-muted-foreground" />
+                  <div className="bg-background/90 backdrop-blur size-32 rounded-3xl border-4 border-background flex items-center justify-center shadow-xl overflow-hidden">
+                    {displayPicture ? (
+                      <Image
+                        src={displayPicture}
+                        alt="Profile"
+                        width={128}
+                        height={128}
+                        className="size-full object-cover"
+                        unoptimized={isBackendImageUrl(displayPicture)}
+                      />
+                    ) : (
+                      <UserIcon className="size-16 text-muted-foreground" />
+                    )}
                   </div>
+                  {isEditing && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleProfileFileChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="brand-secondary"
+                        size="sm"
+                        shape="pill"
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <UploadIcon className="size-3.5" />
+                        Change photo
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -188,11 +281,34 @@ export const StudentProfileScreen = () => {
                     type="button"
                     variant={isEditing ? "brand-secondary" : "outline"}
                     shape="pill"
-                    onClick={() => setIsEditing(!isEditing)}
+                    disabled={saving}
+                    onClick={() => {
+                      if (isEditing) {
+                        void handleSaveProfile()
+                      } else {
+                        setIsEditing(true)
+                      }
+                    }}
                   >
-                    <EditIcon className="size-4" />
-                    {isEditing ? "Save" : "Edit Profile"}
+                    {saving ? <Loader2Icon className="size-4 animate-spin" /> : <EditIcon className="size-4" />}
+                    {saving ? "Saving…" : isEditing ? "Save" : "Edit Profile"}
                   </Button>
+                  {isEditing && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      shape="pill"
+                      disabled={saving}
+                      onClick={() => {
+                        setIsEditing(false)
+                        setProfileFile(null)
+                        if (profilePreview) URL.revokeObjectURL(profilePreview)
+                        setProfilePreview(null)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
 

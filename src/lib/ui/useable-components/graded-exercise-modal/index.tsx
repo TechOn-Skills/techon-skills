@@ -10,7 +10,7 @@ import { setChapterProgress } from "@/utils/constants"
 import type { ChapterExerciseJson } from "@/utils/interfaces"
 import { useUser } from "@/lib/providers/user"
 import { CREATE_SUBMISSION, GET_SUBMISSION_BY_REFERENCE } from "@/lib/graphql"
-import { CheckCircle2Icon, ClockIcon, Loader2Icon } from "lucide-react"
+import { CheckCircle2Icon, ClockIcon, Loader2Icon, XIcon } from "lucide-react"
 import { cn } from "@/lib/helpers"
 import toast from "react-hot-toast"
 
@@ -216,6 +216,7 @@ export const GradedExerciseModal = ({
                     )}
                 />
                 <DialogPrimitive.Content
+                    onInteractOutside={(e) => e.preventDefault()}
                     className={cn(
                         "fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[min(36rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-(--border-default-light) dark:border-(--border-default-dark) bg-card shadow-2xl outline-none",
                         "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -223,8 +224,16 @@ export const GradedExerciseModal = ({
                         "data-[state=closed]:duration-200 data-[state=open]:duration-300"
                     )}
                 >
+                    <button
+                        type="button"
+                        aria-label="Close graded exercise"
+                        onClick={() => onOpenChange(false)}
+                        className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
+                    >
+                        <XIcon className="size-5" />
+                    </button>
                     {/* Header */}
-                    <div className="shrink-0 border-b border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-linear-to-b from-(--brand-secondary)/12 to-transparent px-5 py-4">
+                    <div className="shrink-0 border-b border-(--border-soft-divider-light) dark:border-(--border-soft-divider-dark) bg-linear-to-b from-(--brand-secondary)/12 to-transparent px-5 py-4 pr-12">
                         <DialogPrimitive.Title className="text-base font-semibold tracking-tight text-foreground">
                             Graded Exercise
                         </DialogPrimitive.Title>
