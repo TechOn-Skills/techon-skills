@@ -251,7 +251,7 @@ export const StudentMyLecturesScreen = () => {
                         <div className="text-muted-foreground flex items-center gap-1">
                           <CalendarIcon className="size-3.5" /> Starts
                         </div>
-                        <div className="mt-1 font-semibold">{formatTime(startsAt ?? l.startAt)}</div>
+                        <div className="mt-1 font-semibold">{formatTime(startsAt ?? l.startAt).split(":").slice(0, 2).join(":")}</div>
                       </div>
                       <div className="rounded-xl border p-3 text-sm">
                         <div className="text-muted-foreground flex items-center gap-1">
