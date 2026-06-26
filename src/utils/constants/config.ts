@@ -69,6 +69,7 @@ export const CONFIG = {
             COOKIE_POLICY: "/cookie-policy",
             SUPPORT: "/support",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+            CERTIFICATE_VERIFY: "/certificates/verify",
         },
         NOT_FOUND_404: "/404",
         AUTH: {
@@ -91,6 +92,7 @@ export const CONFIG = {
             ASSIGNMENTS: "/admin/assignments",
             QUIZZES: "/admin/quizzes",
             STUDENT_PROGRESS: "/admin/student-progress",
+            CERTIFICATES: "/admin/certificates",
             ARTICLES: "/admin/articles",
             IMAGES: "/admin/images",
             SCHEDULE_LECTURES: "/admin/schedule-lectures",
@@ -105,6 +107,7 @@ export const CONFIG = {
             ASSIGNMENTS: "/student/assignments",
             QUIZZES: "/student/quizzes",
             MARKS: "/student/marks",
+            CERTIFICATES: "/student/certificates",
             COURSES: "/student/courses",
             NEWS: "/student/news",
             ANNOUNCEMENTS: "/student/announcements",

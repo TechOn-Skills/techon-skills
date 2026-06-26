@@ -265,7 +265,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
             {!hasSubmissionRecord &&
               "Add up to multiple files (images or PDF). Total size must not exceed 5MB."}
             {hasSubmissionRecord && canUpload &&
-              "Your instructor allowed a resubmit. Add files and notes below; total size must not exceed 5MB."}
+              "Re-attempt allowed. Add files and notes below; total size must not exceed 5MB."}
             {pendingReview &&
               "Pending review — your instructor will grade this submission."}
             {graded && !canUpload && sub?.passingGrade &&
