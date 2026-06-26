@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://techonskills.cloudrika.com
+
+# Sitemaps
+Sitemap: https://techonskills.cloudrika.com/sitemap.xml
