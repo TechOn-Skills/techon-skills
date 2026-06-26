@@ -1,14 +1,16 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { useQuery } from "@apollo/client/react"
 import { AwardIcon, Loader2Icon, TrendingUpIcon } from "lucide-react"
 import { Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts"
 
+import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/lib/ui/useable-components/chart"
-import { GET_MY_MARKS_SUMMARY } from "@/lib/graphql"
+import { GET_MY_COURSE_ASSIGNMENTS, GET_MY_MARKS_SUMMARY } from "@/lib/graphql"
 import { formatDateLong } from "@/lib/helpers"
 import { useCourses } from "@/lib/providers/courses"
 import { cn } from "@/lib/helpers"
@@ -26,7 +28,10 @@ type SubmissionItem = {
   status: string
   markedAt: string | null
   createdAt: string
+  canStudentSubmit: boolean
 }
+
+const PASSING_PERCENT = 50
 
 export const StudentMarksScreen = () => {
   const searchParams = useSearchParams()
@@ -41,10 +46,21 @@ export const StudentMarksScreen = () => {
     }
   }>(GET_MY_MARKS_SUMMARY)
 
+  const { data: assignData } = useQuery<{
+    getMyCourseAssignments: Array<{ id: string; courseId: string; referenceId: string }>
+  }>(GET_MY_COURSE_ASSIGNMENTS, { fetchPolicy: "network-only" })
+
+  const assignmentIdByRef = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of assignData?.getMyCourseAssignments ?? []) {
+      map.set(`${a.courseId}:${a.referenceId}`, a.id)
+    }
+    return map
+  }, [assignData?.getMyCourseAssignments])
+
   const { courses } = useCourses()
   const courseTitle = (id: string) => courses.find((c) => c.id === id)?.title ?? id
 
-  const PASSING_PERCENT = 40
   const summary = data?.getMyMarksSummary
   const submissions = summary?.submissions ?? []
   const tableSubmissions = useMemo(
@@ -52,12 +68,16 @@ export const StudentMarksScreen = () => {
     [submissions, pendingOnly]
   )
   const marked = submissions.filter(
-    (s) => s.status === "marked" && s.marks != null && s.maxMarks > 0 && Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT
+    (s) =>
+      s.status === "marked" &&
+      s.marks != null &&
+      s.maxMarks > 0 &&
+      Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT
   )
-  const isPassed = (s: SubmissionItem) =>
-    s.status === "marked" && s.maxMarks > 0 && s.marks != null && Math.round((s.marks / s.maxMarks) * 100) >= PASSING_PERCENT
+  const pct = (s: SubmissionItem) => (s.maxMarks > 0 && s.marks != null ? Math.round((s.marks / s.maxMarks) * 100) : 0)
+  const isPassed = (s: SubmissionItem) => s.status === "marked" && s.maxMarks > 0 && s.marks != null && pct(s) >= PASSING_PERCENT
   const isNotPassed = (s: SubmissionItem) =>
-    s.status === "marked" && s.maxMarks > 0 && (s.marks == null || Math.round((s.marks / s.maxMarks) * 100) < PASSING_PERCENT)
+    s.status === "marked" && s.maxMarks > 0 && (s.marks == null || pct(s) < PASSING_PERCENT)
 
   const chartData = useMemo(
     () =>
@@ -66,7 +86,7 @@ export const StudentMarksScreen = () => {
           title: s.title.length > 20 ? s.title.slice(0, 18) + "…" : s.title,
           fullTitle: s.title,
           marks: s.marks ?? 0,
-          pct: s.maxMarks > 0 ? Math.round(((s.marks ?? 0) / s.maxMarks) * 100) : 0,
+          pct: pct(s),
         }))
         .reverse(),
     [marked]
@@ -101,7 +121,6 @@ export const StudentMarksScreen = () => {
         )}
       </div>
 
-      {/* Summary cards */}
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
         <Card className="bg-background/70 backdrop-blur rounded-3xl">
           <CardContent className="p-6">
@@ -133,7 +152,6 @@ export const StudentMarksScreen = () => {
         </Card>
       </div>
 
-      {/* Marks per exercise chart */}
       {chartData.length > 0 && (
         <Card className="bg-background/70 backdrop-blur rounded-3xl mb-8">
           <CardContent className="pt-6">
@@ -164,7 +182,6 @@ export const StudentMarksScreen = () => {
         </Card>
       )}
 
-      {/* Table */}
       <Card className="bg-background/70 backdrop-blur rounded-3xl overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -177,52 +194,77 @@ export const StudentMarksScreen = () => {
                   <th className="p-4 font-semibold">Marks</th>
                   <th className="p-4 font-semibold">Submitted</th>
                   <th className="p-4 font-semibold">Marked at</th>
+                  <th className="p-4 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {tableSubmissions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
                       {pendingOnly
                         ? "No submissions waiting for marks."
                         : "No submissions yet. Complete graded exercises or assignments to see marks here."}
                     </td>
                   </tr>
                 ) : (
-                  tableSubmissions.map((s) => (
-                    <tr key={s.id} className="border-b transition-colors hover:bg-muted-surface/20">
-                      <td className="p-4">
-                        <div>
-                          <div className="font-medium">{s.title}</div>
-                          <div className="text-muted-foreground text-xs">{courseTitle(s.courseId)}</div>
-                        </div>
-                      </td>
-                      <td className="p-4 capitalize">{s.type.replace("_", " ")}</td>
-                      <td className="p-4">
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-1 text-xs font-medium",
-                            isPassed(s)
-                              ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                              : isNotPassed(s)
-                                ? "bg-red-500/20 text-red-600 dark:text-red-400"
-                                : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                  tableSubmissions.map((s) => {
+                    const assignmentId =
+                      s.type === "assignment"
+                        ? assignmentIdByRef.get(`${s.courseId}:${s.referenceId}`)
+                        : undefined
+                    const canResubmit = s.type === "assignment" && s.canStudentSubmit && assignmentId
+                    return (
+                      <tr key={s.id} className="border-b transition-colors hover:bg-muted-surface/20">
+                        <td className="p-4">
+                          <div>
+                            <div className="font-medium">{s.title}</div>
+                            <div className="text-muted-foreground text-xs">{courseTitle(s.courseId)}</div>
+                          </div>
+                        </td>
+                        <td className="p-4 capitalize">{s.type.replace("_", " ")}</td>
+                        <td className="p-4">
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-1 text-xs font-medium",
+                              isPassed(s)
+                                ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                                : canResubmit
+                                  ? "bg-sky-500/20 text-sky-700 dark:text-sky-400"
+                                  : isNotPassed(s)
+                                    ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                                    : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                            )}
+                          >
+                            {isPassed(s)
+                              ? "Passed"
+                              : canResubmit
+                                ? "Re-attempt allowed"
+                                : isNotPassed(s)
+                                  ? "Not passed"
+                                  : "Pending"}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {s.status === "marked" && s.marks != null
+                            ? `${s.marks} / ${s.maxMarks}`
+                            : "—"}
+                        </td>
+                        <td className="p-4 text-muted-foreground">{formatDateLong(s.createdAt)}</td>
+                        <td className="p-4 text-muted-foreground">
+                          {s.markedAt ? formatDateLong(s.markedAt) : "—"}
+                        </td>
+                        <td className="p-4">
+                          {canResubmit ? (
+                            <Button asChild variant="brand-secondary" size="sm" shape="pill">
+                              <Link href={`/student/assignments/${assignmentId}`}>Resubmit</Link>
+                            </Button>
+                          ) : (
+                            "—"
                           )}
-                        >
-                          {isPassed(s) ? "Passed" : isNotPassed(s) ? "Not passed – re-attempt required" : "Pending"}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        {s.status === "marked" && s.marks != null
-                          ? `${s.marks} / ${s.maxMarks}`
-                          : "—"}
-                      </td>
-                      <td className="p-4 text-muted-foreground">{formatDateLong(s.createdAt)}</td>
-                      <td className="p-4 text-muted-foreground">
-                        {s.markedAt ? formatDateLong(s.markedAt) : "—"}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

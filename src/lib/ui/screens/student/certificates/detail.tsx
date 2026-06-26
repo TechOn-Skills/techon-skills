@@ -1,0 +1,82 @@
+"use client"
+
+import Link from "next/link"
+import { useQuery } from "@apollo/client/react"
+import { ArrowLeftIcon, Loader2Icon } from "lucide-react"
+
+import { Button } from "@/lib/ui/useable-components/button"
+import { CertificateView } from "@/lib/ui/useable-components/certificate-view"
+import { GET_CERTIFICATE_BY_ID } from "@/lib/graphql"
+import { CONFIG } from "@/utils/constants"
+
+export const StudentCertificateDetailScreen = ({ certificateId }: { certificateId: string }) => {
+  const { data, loading, error } = useQuery<{
+    getCertificateById: {
+      id: string
+      verificationCode: string
+      studentName: string
+      courseName: string
+      percentage: number
+      grade: string
+      message: string
+      status: string
+      template?: {
+        titleLine?: string
+        subtitleLine?: string
+        footerLine?: string
+      } | null
+    } | null
+  }>(GET_CERTIFICATE_BY_ID, {
+    variables: { id: certificateId },
+    skip: !certificateId,
+    fetchPolicy: "network-only",
+  })
+
+  const cert = data?.getCertificateById
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2Icon className="size-10 animate-spin text-(--brand-highlight)" />
+      </div>
+    )
+  }
+
+  if (error || !cert) {
+    return (
+      <div className="py-10 text-center">
+        <p className="text-destructive">{error?.message ?? "Certificate not found."}</p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link href={CONFIG.ROUTES.STUDENT.CERTIFICATES}>Back to certificates</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full py-10 animate-in fade-in duration-700">
+      <Button asChild variant="ghost" size="sm" className="mb-6">
+        <Link href={CONFIG.ROUTES.STUDENT.CERTIFICATES}>
+          <ArrowLeftIcon className="mr-2 size-4" />
+          All certificates
+        </Link>
+      </Button>
+      <CertificateView
+        data={{
+          studentName: cert.studentName,
+          courseName: cert.courseName,
+          percentage: cert.percentage,
+          grade: cert.grade,
+          message: cert.message,
+          verificationCode: cert.verificationCode,
+          status: cert.status,
+          titleLine: cert.template?.titleLine,
+          subtitleLine: cert.template?.subtitleLine,
+          footerLine: cert.template?.footerLine,
+        }}
+        showQr={cert.status === "live"}
+        pendingBadge
+      />
+    </div>
+  )
+}
