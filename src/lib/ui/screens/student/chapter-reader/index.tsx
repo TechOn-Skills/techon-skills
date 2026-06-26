@@ -173,24 +173,17 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
                 moduleSlug={moduleSlug}
                 chapterSlug={chapterSlug}
                 fetchExerciseUrl={exerciseUrl}
-                nextChapter={
-                    nextChapter
-                        ? {
-                              url: `/student/course/${courseSlug}/${nextChapter.moduleSlug}/${nextChapter.chapterSlug}`,
-                              label: nextChapter.title,
-                          }
-                        : null
-                }
+                nextChapter={nextChapter}
             />
 
             {nextChapter && (
                 <div className="mt-12 flex justify-end">
                     <Button asChild variant="brand-secondary" shape="pill">
                         <Link
-                            href={`/student/course/${courseSlug}/${nextChapter.moduleSlug}/${nextChapter.chapterSlug}`}
+                            href={nextChapter.url}
                             className="inline-flex items-center gap-2"
                         >
-                            Next chapter
+                            Next: {nextChapter.label}
                             <ChevronRightIcon className="size-4" />
                         </Link>
                     </Button>
