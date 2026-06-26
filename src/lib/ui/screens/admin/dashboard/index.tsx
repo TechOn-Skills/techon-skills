@@ -13,13 +13,14 @@ import {
 import {
   AdminRevenueChartCard,
   AdminContactSubmissionsChartCard,
-  AdminActiveStudentsCard,
+  AdminLearningActivityCard,
   AdminRegisteredStudentsChartCard,
   AdminEnrolledPerCourseChartCard,
 } from "@/lib/ui/useable-components/admin-dashboard-charts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { cn } from "@/lib/helpers"
 import { GET_ADMIN_DASHBOARD } from "@/lib/graphql"
+import { useUser } from "@/lib/providers/user"
 
 const activityIconMap: Record<string, typeof CheckCircle2Icon> = {
   enrollment: CheckCircle2Icon,
@@ -36,6 +37,7 @@ const activityColorMap: Record<string, string> = {
 }
 
 export const AdminDashboardScreen = () => {
+  const { userProfileInfo } = useUser()
   const { data, loading, error } = useQuery<{
     getAdminDashboard: {
       recentActivity: Array<{ id: string; type: string; user: string; action: string; time: string }>
@@ -50,6 +52,7 @@ export const AdminDashboardScreen = () => {
     color: activityColorMap[a.type] ?? "text-muted-foreground",
   }))
   const pendingTasks = data?.getAdminDashboard?.pendingTasks ?? []
+  const displayName = userProfileInfo?.fullName?.split(" ")[0] ?? "Admin"
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
@@ -57,7 +60,7 @@ export const AdminDashboardScreen = () => {
       <div className="mb-8">
         <div className="text-sm font-semibold text-secondary">Admin Dashboard</div>
         <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Welcome back, Admin
+          Welcome back, {displayName}
         </h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
           Here&apos;s what&apos;s happening with your platform today.
@@ -82,7 +85,7 @@ export const AdminDashboardScreen = () => {
         <AdminContactSubmissionsChartCard />
       </div>
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <AdminActiveStudentsCard />
+        <AdminLearningActivityCard />
         <AdminRegisteredStudentsChartCard />
       </div>
       <div className="mb-8">
@@ -99,7 +102,10 @@ export const AdminDashboardScreen = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {pendingTasks.map((task, idx) => (
+                {pendingTasks.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No pending tasks — you&apos;re all caught up.</p>
+                ) : (
+                  pendingTasks.map((task, idx) => (
                   <div
                     key={task.id + idx}
                     className="rounded-2xl border bg-background/40 p-3 transition-all hover:bg-background/60 cursor-pointer animate-in fade-in slide-in-from-right-4 duration-700"
@@ -116,7 +122,8 @@ export const AdminDashboardScreen = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -136,7 +143,10 @@ export const AdminDashboardScreen = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentActivity.map((activity, idx) => {
+                {recentActivity.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No recent activity yet.</p>
+                ) : (
+                  recentActivity.map((activity, idx) => {
                   const Icon = activity.icon
                   return (
                   <div
@@ -155,7 +165,8 @@ export const AdminDashboardScreen = () => {
                     </div>
                   </div>
                   )
-                })}
+                })
+                )}
               </div>
             </CardContent>
           </Card>

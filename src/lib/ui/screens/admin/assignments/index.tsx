@@ -15,10 +15,11 @@ import {
   DELETE_COURSE_ASSIGNMENT,
   GET_COURSE_ASSIGNMENTS,
   GET_COURSES,
+  PUBLISH_COURSE_ASSIGNMENT,
 } from "@/lib/graphql"
+import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
 import { cn } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
-import { UserRole } from "@/utils/enums/user"
 
 type AssignmentRow = {
   id: string
@@ -28,6 +29,7 @@ type AssignmentRow = {
   maxMarks: number
   referenceId: string
   dueDate: string | null
+  isPublished: boolean
   createdAt: string
 }
 
@@ -43,12 +45,10 @@ export const AdminAssignmentsScreen = () => {
     getCourses: Array<{ id: string; title: string; slug: string }>
   }>(GET_COURSES, { fetchPolicy: "network-only" })
   const allCourses = coursesData?.getCourses ?? []
-  const courses = useMemo(() => {
-    if (userProfileInfo?.role === UserRole.SUPER_ADMIN) return allCourses
-    const allowed = userProfileInfo?.allowedMarkGradesOn ?? []
-    if (allowed.length === 0) return []
-    return allCourses.filter((c) => allowed.includes(c.id))
-  }, [allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn])
+  const courses = useMemo(
+    () => filterCoursesForGrader(allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn),
+    [allCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn]
+  )
 
   const courseId = selectedCourseId || courses[0]?.id || ""
 
@@ -70,10 +70,18 @@ export const AdminAssignmentsScreen = () => {
       setDescription("")
       setMaxMarks("100")
       setDueDate("")
-      toast.success("Assignment created. Students can submit using this course’s assignment flow when wired to referenceId.")
+      toast.success("Assignment created as draft. Publish it so students can see it.")
       refetch()
     },
     onError: (e) => toast.error(e.message ?? "Failed to create assignment."),
+  })
+
+  const [publishAssignment, { loading: publishing }] = useMutation(PUBLISH_COURSE_ASSIGNMENT, {
+    onCompleted: () => {
+      toast.success("Assignment published.")
+      refetch()
+    },
+    onError: (e) => toast.error(e.message ?? "Failed to publish."),
   })
 
   const [deleteAssignment, { loading: deleting }] = useMutation(DELETE_COURSE_ASSIGNMENT, {
@@ -131,8 +139,7 @@ export const AdminAssignmentsScreen = () => {
             Course assignments
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-            Create assignments for courses you are allowed to grade. Each assignment gets a stable{" "}
-            <span className="font-mono text-xs">referenceId</span> for linking student submissions.
+            Create assignments for your course. Publish when ready — students submit work and you grade it from Grade Submissions.
           </p>
         </div>
         <Button
@@ -153,7 +160,7 @@ export const AdminAssignmentsScreen = () => {
         <label className="text-muted-foreground mb-2 block text-sm font-medium">Course</label>
         {courses.length === 0 ? (
           <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-4 text-sm">
-            You are not assigned to any course for grading. Ask an admin to add your courses to &quot;allowed mark grades on&quot;.
+            No courses available for your account.
           </p>
         ) : (
           <select
@@ -236,11 +243,11 @@ export const AdminAssignmentsScreen = () => {
                     <thead className="border-b bg-muted-surface/40">
                       <tr>
                         <th className="p-4 font-semibold">Title</th>
+                        <th className="p-4 font-semibold">Status</th>
                         <th className="p-4 font-semibold">Max marks</th>
-                        <th className="p-4 font-semibold">Reference</th>
                         <th className="p-4 font-semibold">Due</th>
                         <th className="p-4 font-semibold">Created</th>
-                        <th className="p-4 font-semibold w-24">Action</th>
+                        <th className="p-4 font-semibold">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -257,8 +264,17 @@ export const AdminAssignmentsScreen = () => {
                               <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{a.description}</p>
                             ) : null}
                           </td>
+                          <td className="p-4">
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-1 text-xs font-medium",
+                                a.isPublished ? "bg-green-500/20 text-green-700" : "bg-amber-500/20 text-amber-700"
+                              )}
+                            >
+                              {a.isPublished ? "Published" : "Draft"}
+                            </span>
+                          </td>
                           <td className="p-4">{a.maxMarks}</td>
-                          <td className="p-4 font-mono text-xs break-all max-w-[14rem]">{a.referenceId}</td>
                           <td className="p-4 text-muted-foreground text-xs">
                             {a.dueDate ? new Date(a.dueDate).toLocaleString() : "—"}
                           </td>
@@ -266,21 +282,35 @@ export const AdminAssignmentsScreen = () => {
                             {new Date(a.createdAt).toLocaleString()}
                           </td>
                           <td className="p-4">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              shape="pill"
-                              className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                              disabled={deleting}
-                              onClick={() => {
-                                if (!confirm("Delete this assignment definition? Existing submissions are not removed.")) return
-                                deleteAssignment({ variables: { id: a.id } })
-                              }}
-                            >
-                              <Trash2Icon className="size-4" />
-                              Delete
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                              {!a.isPublished && (
+                                <Button
+                                  type="button"
+                                  variant="brand-secondary"
+                                  size="sm"
+                                  shape="pill"
+                                  disabled={publishing}
+                                  onClick={() => publishAssignment({ variables: { id: a.id } })}
+                                >
+                                  Publish
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                shape="pill"
+                                className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                disabled={deleting}
+                                onClick={() => {
+                                  if (!confirm("Delete this assignment?")) return
+                                  deleteAssignment({ variables: { id: a.id } })
+                                }}
+                              >
+                                <Trash2Icon className="size-4" />
+                                Delete
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}

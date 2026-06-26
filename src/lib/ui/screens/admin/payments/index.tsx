@@ -126,7 +126,7 @@ export const AdminPaymentsScreen = () => {
           <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
             <CardContent className="p-6">
               <div className="text-muted-foreground text-xs mb-1">Pending approval</div>
-              <div className="text-3xl font-semibold tracking-tight text-(--brand-primary)">
+              <div className="text-3xl font-semibold tracking-tight text-foreground">
                 {loading ? "—" : pendingApprovalCount}
               </div>
               <div className="text-muted-foreground text-xs mt-1">With screenshot, awaiting action</div>

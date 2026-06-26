@@ -3,17 +3,27 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@apollo/client/react"
-import { CalendarIcon, ClockIcon, Loader2Icon, PlayIcon, SparklesIcon, TrophyIcon, TargetIcon, ZapIcon } from "lucide-react"
+import {
+  AwardIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  ClipboardListIcon,
+  ClockIcon,
+  ListTodoIcon,
+  Loader2Icon,
+  PlayIcon,
+} from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { CONFIG } from "@/utils/constants"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { ProgressRing } from "@/lib/ui/useable-components/progress-ring"
 import { cn, parseDate, formatTime } from "@/lib/helpers"
-import { GET_UPCOMING_LECTURES } from "@/lib/graphql"
+import { GET_MY_PROGRESS, GET_UPCOMING_LECTURES } from "@/lib/graphql"
+import { useUser } from "@/lib/providers/user"
 
 type LectureApi = {
   id: string
-  courseId?: string | null
   courseName?: string | null
   title: string
   meetUrl?: string | null
@@ -23,24 +33,58 @@ type LectureApi = {
 
 export const StudentMyLecturesScreen = () => {
   const [now, setNow] = useState<number>(() => Date.now())
-  const { data, loading, error } = useQuery<{ getUpcomingLectures: LectureApi[] }>(GET_UPCOMING_LECTURES)
+  const { userProfileInfo } = useUser()
+  const { data: lectureData, loading: loadingLectures, error: lectureError } = useQuery<{
+    getUpcomingLectures: LectureApi[]
+  }>(GET_UPCOMING_LECTURES)
+  const { data: progressData, loading: loadingProgress } = useQuery<{
+    getMyProgress: {
+      enrolledCoursesCount: number
+      publishedQuizzesTotal: number
+      quizzesAttempted: number
+      quizzesPassed: number
+      publishedAssignmentsTotal: number
+      assignmentsSubmitted: number
+      assignmentsGraded: number
+      assignmentsPendingReview: number
+      averageMarksPercent: number | null
+      courses: Array<{
+        courseId: string
+        courseTitle: string
+        courseSlug: string
+        progressPercent: number
+        quizzesTotal: number
+        quizzesAttempted: number
+        assignmentsTotal: number
+        assignmentsSubmitted: number
+        assignmentsPendingReview: number
+      }>
+    }
+  }>(GET_MY_PROGRESS, { skip: !userProfileInfo?.id, fetchPolicy: "network-only" })
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(t)
-  }, [now])
+  }, [])
+
+  const progress = progressData?.getMyProgress
+  const overallPercent = useMemo(() => {
+    if (!progress?.courses.length) return 0
+    const sum = progress.courses.reduce((a, c) => a + c.progressPercent, 0)
+    return Math.round(sum / progress.courses.length)
+  }, [progress?.courses])
 
   const upcoming = useMemo(() => {
-    const list = data?.getUpcomingLectures ?? []
+    const list = lectureData?.getUpcomingLectures ?? []
     return list.map((l) => ({
       id: l.id,
       course: l.courseName ?? "Course",
       title: l.title,
-      meetUrl: l.meetUrl ?? "#",
+      meetUrl: l.meetUrl,
       durationMins: l.durationMins ?? 60,
       startAt: l.startAt,
     }))
-  }, [data?.getUpcomingLectures])
+  }, [lectureData?.getUpcomingLectures])
 
   const toCountdown = (startAtMs: number) => {
     const diff = Math.max(0, startAtMs - now)
@@ -51,189 +95,192 @@ export const StudentMyLecturesScreen = () => {
     return { hrs, mins, secs, isLive: diff === 0 }
   }
 
+  const firstName = userProfileInfo?.fullName?.split(" ")[0] ?? "Student"
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="text-sm font-semibold text-secondary">My Dashboard</div>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-              Your learning journey
-            </h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-              Stay focused, stay consistent. Every lecture brings you closer to mastering your craft and achieving your dreams.
-            </p>
-          </div>
+        <div className="text-sm font-semibold text-secondary">My Dashboard</div>
+        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+          Welcome back, {firstName}
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
+          Your real progress across quizzes and assignments — updated from your actual submissions and attempts.
+        </p>
+      </div>
 
+      {loadingProgress ? (
+        <div className="mb-8 flex items-center gap-2 text-muted-foreground">
+          <Loader2Icon className="size-5 animate-spin" />
+          Loading progress…
         </div>
-
-        {/* Lectures: 3 timer cards */}
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-xl font-semibold">Upcoming Lectures</h2>
-            <span className="text-sm text-muted-foreground max-w-md text-right">
-              Next scheduled class per course. When a session starts, the following one appears automatically.
-            </span>
+      ) : progress ? (
+        <>
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardDescription>Overall progress</CardDescription>
+                <div className="flex items-center gap-3">
+                  <ProgressRing value={overallPercent} size={56} strokeWidth={4}>
+                    <span className="text-sm font-bold">{overallPercent}%</span>
+                  </ProgressRing>
+                  <CardTitle className="text-2xl">{overallPercent}%</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="text-muted-foreground text-xs">
+                {progress.enrolledCoursesCount} enrolled course{progress.enrolledCoursesCount !== 1 ? "s" : ""}
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-1">
+                  <ClipboardListIcon className="size-3.5" /> Quizzes
+                </CardDescription>
+                <CardTitle className="text-2xl">
+                  {progress.quizzesAttempted}/{progress.publishedQuizzesTotal}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground text-xs">
+                {progress.quizzesPassed} passed · instant results on submit
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-1">
+                  <ListTodoIcon className="size-3.5" /> Assignments
+                </CardDescription>
+                <CardTitle className="text-2xl">
+                  {progress.assignmentsSubmitted}/{progress.publishedAssignmentsTotal}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground text-xs">
+                {progress.assignmentsPendingReview} pending review · {progress.assignmentsGraded} graded
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-1">
+                  <AwardIcon className="size-3.5" /> Average score
+                </CardDescription>
+                <CardTitle className="text-2xl">
+                  {progress.averageMarksPercent != null ? `${progress.averageMarksPercent}%` : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground text-xs">From graded quizzes &amp; assignments</CardContent>
+            </Card>
           </div>
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-              <Loader2Icon className="size-6 animate-spin" />
-              <span>Loading lectures...</span>
+
+          {progress.courses.length > 0 && (
+            <div className="mb-8">
+              <h2 className="mb-4 text-xl font-semibold">Progress by course</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {progress.courses.map((c) => (
+                  <Link key={c.courseId} href={`/student/course/${c.courseSlug}`}>
+                    <Card className="transition-all hover:shadow-md">
+                      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+                        <div>
+                          <CardTitle className="text-base">{c.courseTitle}</CardTitle>
+                          <CardDescription className="text-xs">
+                            Quizzes {c.quizzesAttempted}/{c.quizzesTotal} · Assignments {c.assignmentsSubmitted}/
+                            {c.assignmentsTotal}
+                            {c.assignmentsPendingReview > 0 ? ` · ${c.assignmentsPendingReview} pending` : ""}
+                          </CardDescription>
+                        </div>
+                        <ProgressRing value={c.progressPercent} size={44} strokeWidth={3}>
+                          <span className="text-[10px] font-bold">{c.progressPercent}%</span>
+                        </ProgressRing>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
             </div>
-          ) : error ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <p className="text-destructive">Failed to load lectures. Please try again.</p>
-            </div>
-          ) : upcoming.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground rounded-3xl border border-dashed">
-              <p>No upcoming lectures scheduled.</p>
-            </div>
-          ) : (
+          )}
+        </>
+      ) : null}
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href={CONFIG.ROUTES.STUDENT.QUIZZES} className="rounded-2xl border p-4 transition-all hover:shadow-md">
+          <ClipboardListIcon className="text-(--brand-secondary) mb-2 size-5" />
+          <div className="font-semibold text-sm">My Quizzes</div>
+        </Link>
+        <Link href={CONFIG.ROUTES.STUDENT.ASSIGNMENTS} className="rounded-2xl border p-4 transition-all hover:shadow-md">
+          <ListTodoIcon className="text-(--brand-secondary) mb-2 size-5" />
+          <div className="font-semibold text-sm">My Assignments</div>
+        </Link>
+        <Link href={CONFIG.ROUTES.STUDENT.MARKS} className="rounded-2xl border p-4 transition-all hover:shadow-md">
+          <AwardIcon className="text-(--brand-secondary) mb-2 size-5" />
+          <div className="font-semibold text-sm">My Marks</div>
+        </Link>
+        <Link href={CONFIG.ROUTES.STUDENT.MY_ENROLLED_COURSES} className="rounded-2xl border p-4 transition-all hover:shadow-md">
+          <BookOpenIcon className="text-(--brand-secondary) mb-2 size-5" />
+          <div className="font-semibold text-sm">My Courses</div>
+        </Link>
+      </div>
+
+      <div className="mb-8">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-xl font-semibold">Upcoming lectures</h2>
+          <span className="text-muted-foreground max-w-md text-right text-sm">Next scheduled class per enrolled course</span>
+        </div>
+        {loadingLectures ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+            <Loader2Icon className="size-6 animate-spin" />
+            Loading lectures…
+          </div>
+        ) : lectureError ? (
+          <div className="py-12 text-center text-destructive">Failed to load lectures.</div>
+        ) : upcoming.length === 0 ? (
+          <div className="text-muted-foreground rounded-3xl border border-dashed py-12 text-center">No upcoming lectures scheduled.</div>
+        ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {upcoming.map((l, idx) => {
+            {upcoming.map((l) => {
               const startAtMs = parseDate(l.startAt)?.getTime() ?? 0
               const c = toCountdown(startAtMs)
               const startsAt = startAtMs ? new Date(startAtMs) : null
+              const canJoin = Boolean(l.meetUrl)
               return (
-                <div
-                  key={l.id}
-                  className="group rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.28),rgba(255,138,61,0.14),transparent_70%)] p-px transition-all hover:-translate-y-0.5 hover:shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700"
-                  style={{ animationDelay: `${idx * 150}ms` }}
-                >
-                  <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden">
-                    <div className="relative h-1.5 w-full bg-[linear-gradient(to_right,rgba(70,208,255,0.75),rgba(255,138,61,0.6))] opacity-70 transition-opacity group-hover:opacity-100" />
-                    <CardHeader className="space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <CardTitle className="text-lg">{l.title}</CardTitle>
-                          <CardDescription className="text-sm">{l.course ?? "Course"}</CardDescription>
+                <Card key={l.id} className="rounded-3xl">
+                  <CardHeader className="space-y-2">
+                    <CardTitle className="text-lg">{l.title}</CardTitle>
+                    <CardDescription>{l.course}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border p-3 text-sm">
+                        <div className="text-muted-foreground flex items-center gap-1">
+                          <CalendarIcon className="size-3.5" /> Starts
                         </div>
-                        <span className="bg-(--brand-secondary) text-(--text-on-dark) inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold">
-                          <SparklesIcon className="size-3.5" />
-                          Next
-                        </span>
+                        <div className="mt-1 font-semibold">{formatTime(startsAt ?? l.startAt)}</div>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl border bg-background/40 p-4">
-                          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                            <CalendarIcon className="size-4" />
-                            Starts at
-                          </div>
-                          <div className="mt-1 font-semibold">
-                            {formatTime(startsAt ?? l.startAt)}
-                          </div>
+                      <div className="rounded-xl border p-3 text-sm">
+                        <div className="text-muted-foreground flex items-center gap-1">
+                          <ClockIcon className="size-3.5" /> Countdown
                         </div>
-                        <div className="rounded-2xl border bg-background/40 p-4">
-                          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                            <ClockIcon className="size-4" />
-                            Starts in
-                          </div>
-                          <div className="mt-1 font-semibold">
-                            {c.isLive
-                              ? "Live now"
-                              : `${c.hrs}h ${c.mins}m ${c.secs}s`}
-                          </div>
+                        <div className="mt-1 font-semibold">
+                          {c.isLive ? "Live now" : `${c.hrs}h ${c.mins}m ${c.secs}s`}
                         </div>
                       </div>
-
-                      <Button asChild variant="brand-secondary" size="lg" shape="pill" className="w-full">
-                        <a href={l.meetUrl ?? "#"} target="_blank" rel="noreferrer">
+                    </div>
+                    {canJoin ? (
+                      <Button asChild variant="brand-secondary" shape="pill" className="w-full">
+                        <a href={l.meetUrl!} target="_blank" rel="noreferrer">
                           <PlayIcon className="size-4" />
                           Join live class
                         </a>
                       </Button>
-                    </CardContent>
-                  </Card>
-                </div>
+                    ) : (
+                      <Button variant="outline" shape="pill" className="w-full" disabled>
+                        Meet link not set yet
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
               )
             })}
           </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Link href={CONFIG.ROUTES.PUBLIC.COURSES} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block">
-              <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
-                <div className="text-3xl mb-2">📚</div>
-                <div className="font-semibold text-sm">Browse Courses</div>
-              </div>
-            </Link>
-            <Link href={CONFIG.ROUTES.STUDENT.ASSIGNMENTS} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "100ms" }}>
-              <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
-                <div className="text-3xl mb-2">✍️</div>
-                <div className="font-semibold text-sm">Submit Assignment</div>
-              </div>
-            </Link>
-            <Link href={CONFIG.ROUTES.STUDENT.EVENTS} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "200ms" }}>
-              <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
-                <div className="text-3xl mb-2">🎫</div>
-                <div className="font-semibold text-sm">Register Event</div>
-              </div>
-            </Link>
-            <Link href={CONFIG.ROUTES.STUDENT.SUPPORT} className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px transition-all hover:-translate-y-1 hover:shadow-xl animate-in fade-in duration-700 block" style={{ animationDelay: "300ms" }}>
-              <div className="bg-background/70 backdrop-blur rounded-3xl p-6 text-center">
-                <div className="text-3xl mb-2">💬</div>
-                <div className="font-semibold text-sm">Get Support</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Motivational Section */}
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-4">Your Success Mindset</h2>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-left-4 duration-700" style={{ animationDelay: "400ms" }}>
-              <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                <CardContent className="p-6 text-center">
-                  <div className="bg-(--brand-primary) text-(--text-on-dark) size-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <TrophyIcon className="size-7" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Stay Consistent</h3>
-                  <p className="text-muted-foreground text-sm leading-7">
-                    Success in tech isn&apos;t about being perfect—it&apos;s about showing up every day and putting in the work. Your future self will thank you.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: "500ms" }}>
-              <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                <CardContent className="p-6 text-center">
-                  <div className="bg-(--brand-accent) text-(--text-on-dark) size-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <TargetIcon className="size-7" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Focus on Growth</h3>
-                  <p className="text-muted-foreground text-sm leading-7">
-                    Every challenge you overcome, every concept you master, adds to your skillset. Embrace the learning process and celebrate small wins.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(242,140,40,0.25),rgba(79,195,232,0.15),transparent_70%)] p-px animate-in fade-in slide-in-from-right-4 duration-700" style={{ animationDelay: "600ms" }}>
-              <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl">
-                <CardContent className="p-6 text-center">
-                  <div className="bg-(--brand-secondary) text-(--text-on-dark) size-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <ZapIcon className="size-7" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Build Real Skills</h3>
-                  <p className="text-muted-foreground text-sm leading-7">
-                    Focus on projects that matter. Build things you can show to employers, clients, and the world.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
 }
-

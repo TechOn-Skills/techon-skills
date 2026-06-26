@@ -20,98 +20,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/lib/ui/useable-components/chart"
 import { cn } from "@/lib/helpers"
 import { GET_ADMIN_DASHBOARD } from "@/lib/graphql"
-import { COURSE_SLUG_TO_TITLE } from "@/utils/constants"
 
 const CHART_FILLS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"]
 
-// Mock data generators (replace with API later)
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-function useMonthlyRevenue() {
-  return React.useMemo(
-    () =>
-      MONTHS.map((month, i) => ({
-        month,
-        revenue: 2.1 + Math.sin(i / 2) * 0.8 + (i * 0.05),
-        total: 24.5,
-      })),
-    []
-  )
+type DashboardData = {
+  totalRevenue: number
+  totalContactSubmissions: number
+  totalRegisteredStudents: number
+  monthlyRevenue: Array<{ month: string; revenue: number }>
+  monthlyContactSubmissions: Array<{ month: string; count: number }>
+  monthlyRegistrations: Array<{ month: string; count: number }>
+  monthlyActivity: Array<{ month: string; quizAttempts: number; assignmentSubmissions: number }>
+  enrolledPerCourse: Array<{ slug: string; name: string; enrolled: number }>
 }
 
-function useMonthlyContactSubmissions() {
-  return React.useMemo(
-    () =>
-      MONTHS.map((month, i) => ({
-        month,
-        submissions: 12 + Math.floor(Math.random() * 20) + i * 2,
-        total: 248,
-      })),
-    []
-  )
+function useDashboardData() {
+  return useQuery<{ getAdminDashboard: DashboardData | null }>(GET_ADMIN_DASHBOARD)
 }
 
-function useMonthlyRegistrations() {
-  return React.useMemo(
-    () =>
-      MONTHS.map((month, i) => ({
-        month,
-        students: 45 + Math.floor(Math.random() * 30) + i * 3,
-        total: 1247,
-      })),
-    []
-  )
-}
-
-// Active students by segment (stacked expanded = % of total per month)
-function useActiveStudentsStacked() {
-  return React.useMemo(
-    () =>
-      MONTHS.map((month, i) => {
-        const web = 35 + (i % 5) * 2
-        const mobile = 28 + (i % 4)
-        const fullStack = 22 + (i % 3)
-        const other = 100 - web - mobile - fullStack
-        return {
-          month,
-          web: Math.max(5, web),
-          mobile: Math.max(5, mobile),
-          fullStack: Math.max(5, fullStack),
-          other: Math.max(5, other),
-        }
-      }).map((row) => {
-        const total = row.web + row.mobile + row.fullStack + row.other
-        return {
-          month: row.month,
-          web: Math.round((row.web / total) * 100),
-          mobile: Math.round((row.mobile / total) * 100),
-          fullStack: Math.round((row.fullStack / total) * 100),
-          other: Math.round((row.other / total) * 100),
-        }
-      }),
-    []
-  )
-}
-
-const COURSE_OPTIONS = Object.entries(COURSE_SLUG_TO_TITLE).map(([slug, title]) => ({ slug, title }))
-
-// --- Revenue: Area Chart - Linear ---
 const revenueConfig = {
   revenue: { label: "Revenue (PKR M)", color: "var(--chart-1)" },
-  total: { label: "Total", color: "var(--chart-2)" },
 } satisfies ChartConfig
 
 export function AdminRevenueChartCard() {
   const [mode, setMode] = React.useState<"total" | "monthly">("monthly")
-  const data = useMonthlyRevenue()
-  const totalRevenue = 24.5
+  const { data, loading } = useDashboardData()
+  const dash = data?.getAdminDashboard
+  const chartData = dash?.monthlyRevenue ?? []
+  const totalRevenue = dash?.totalRevenue ?? 0
 
   return (
     <Card className="rounded-3xl bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Revenue</CardTitle>
-          <CardDescription>Total and monthly revenue (area chart)</CardDescription>
+          <CardDescription>Paid fee installments (last 12 months)</CardDescription>
         </div>
         <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
@@ -123,20 +66,24 @@ export function AdminRevenueChartCard() {
                 mode === m ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {m === "total" ? "Total Revenue" : "Monthly Revenue"}
+              {m === "total" ? "Total" : "Monthly"}
             </button>
           ))}
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        {mode === "total" ? (
+        {loading ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">Loading…</div>
+        ) : mode === "total" ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center">
-            <p className="text-4xl font-bold text-(--brand-secondary)">PKR {totalRevenue}M</p>
-            <p className="text-muted-foreground text-sm">All-time total revenue</p>
+            <p className="text-4xl font-bold text-(--brand-secondary)">PKR {totalRevenue.toFixed(2)}M</p>
+            <p className="text-muted-foreground text-sm">All-time verified payments</p>
           </div>
+        ) : chartData.length === 0 ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">No payment data yet.</div>
         ) : (
           <ChartContainer config={revenueConfig} className="h-[300px] w-full">
-            <AreaChart data={data} margin={{ left: 52, right: 28, top: 20, bottom: 36 }}>
+            <AreaChart data={chartData} margin={{ left: 52, right: 28, top: 20, bottom: 36 }}>
               <defs>
                 <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.4} />
@@ -156,23 +103,23 @@ export function AdminRevenueChartCard() {
   )
 }
 
-// --- Contact Form Submissions Chart Card ---
 const contactConfig = {
   submissions: { label: "Submissions", color: "var(--chart-2)" },
-  total: { label: "Total", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
 export function AdminContactSubmissionsChartCard() {
   const [mode, setMode] = React.useState<"total" | "monthly">("monthly")
-  const data = useMonthlyContactSubmissions()
-  const total = 248
+  const { data, loading } = useDashboardData()
+  const dash = data?.getAdminDashboard
+  const chartData = dash?.monthlyContactSubmissions ?? []
+  const total = dash?.totalContactSubmissions ?? 0
 
   return (
     <Card className="rounded-3xl bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Contact Form Submissions</CardTitle>
-          <CardDescription>Total and monthly submissions</CardDescription>
+          <CardDescription>Public contact form (last 12 months)</CardDescription>
         </div>
         <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
@@ -190,20 +137,22 @@ export function AdminContactSubmissionsChartCard() {
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        {mode === "total" ? (
+        {loading ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">Loading…</div>
+        ) : mode === "total" ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center">
-            <p className="text-4xl font-bold text-chart-2">{total}</p>
+            <p className="text-4xl font-bold text-chart-2">{total.toLocaleString()}</p>
             <p className="text-muted-foreground text-sm">All-time submissions</p>
           </div>
         ) : (
           <ChartContainer config={contactConfig} className="h-[300px] w-full">
-            <BarChart data={data} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
+            <BarChart data={chartData} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
-              <YAxis width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
+              <YAxis width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} allowDecimals={false} />
               <Tooltip content={<ChartTooltipContent />} cursor={false} />
-              <Bar dataKey="submissions" fill="var(--color-submissions)" radius={[4, 4, 0, 0]} activeBar={false}>
-                <LabelList dataKey="submissions" position="top" className="fill-foreground text-xs font-medium" />
+              <Bar dataKey="count" fill="var(--color-submissions)" radius={[4, 4, 0, 0]} name="Submissions">
+                <LabelList dataKey="count" position="top" className="fill-foreground text-xs font-medium" />
               </Bar>
             </BarChart>
           </ChartContainer>
@@ -213,75 +162,60 @@ export function AdminContactSubmissionsChartCard() {
   )
 }
 
-// --- Active Students: Area Chart - Stacked Expanded (% by segment) ---
-const activeStackedConfig = {
-  web: { label: "Web Dev", color: "var(--chart-1)" },
-  mobile: { label: "Mobile", color: "var(--chart-2)" },
-  fullStack: { label: "Full Stack", color: "var(--chart-3)" },
-  other: { label: "Other", color: "var(--chart-4)" },
+const activityConfig = {
+  quizAttempts: { label: "Quiz attempts", color: "var(--chart-1)" },
+  assignmentSubmissions: { label: "Assignment submissions", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
-export function AdminActiveStudentsCard() {
-  const data = useActiveStudentsStacked()
+export function AdminLearningActivityCard() {
+  const { data, loading } = useDashboardData()
+  const chartData = data?.getAdminDashboard?.monthlyActivity ?? []
+
   return (
     <Card className="rounded-3xl bg-background/70 backdrop-blur">
       <CardHeader>
-        <CardTitle>Active Students</CardTitle>
-        <CardDescription>Stacked expanded view — share by course segment (%)</CardDescription>
+        <CardTitle>Student learning activity</CardTitle>
+        <CardDescription>Quiz attempts and assignment submissions (last 12 months)</CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
-        <ChartContainer config={activeStackedConfig} className="h-[300px] w-full">
-          <AreaChart data={data} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
-            <defs>
-              <linearGradient id="fillWeb" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="fillFullStack" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="fillOther" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--chart-4)" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="var(--chart-4)" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
-            <YAxis domain={[0, 100]} width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}%`} />
-            <Tooltip content={<ChartTooltipContent formatter={(v) => `${Number(v)}%`} />} />
-            <Area type="linear" dataKey="web" stackId="1" stroke="var(--color-web)" fill="url(#fillWeb)" strokeWidth={1} />
-            <Area type="linear" dataKey="mobile" stackId="1" stroke="var(--color-mobile)" fill="url(#fillMobile)" strokeWidth={1} />
-            <Area type="linear" dataKey="fullStack" stackId="1" stroke="var(--color-fullStack)" fill="url(#fillFullStack)" strokeWidth={1} />
-            <Area type="linear" dataKey="other" stackId="1" stroke="var(--color-other)" fill="url(#fillOther)" strokeWidth={1} />
-          </AreaChart>
-        </ChartContainer>
+        {loading ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">Loading…</div>
+        ) : chartData.every((d) => d.quizAttempts === 0 && d.assignmentSubmissions === 0) ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">No activity recorded yet.</div>
+        ) : (
+          <ChartContainer config={activityConfig} className="h-[300px] w-full">
+            <BarChart data={chartData} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
+              <YAxis width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} allowDecimals={false} />
+              <Tooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="quizAttempts" fill="var(--color-quizAttempts)" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="assignmentSubmissions" fill="var(--color-assignmentSubmissions)" radius={[4, 4, 0, 0]} stackId="a" />
+            </BarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-// --- Registered Students Chart Card ---
 const registeredConfig = {
-  students: { label: "Registered", color: "var(--chart-1)" },
-  total: { label: "Total", color: "var(--chart-2)" },
+  students: { label: "New students", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
 export function AdminRegisteredStudentsChartCard() {
   const [mode, setMode] = React.useState<"total" | "monthly">("monthly")
-  const data = useMonthlyRegistrations()
-  const total = 1247
+  const { data, loading } = useDashboardData()
+  const dash = data?.getAdminDashboard
+  const chartData = (dash?.monthlyRegistrations ?? []).map((r) => ({ month: r.month, students: r.count }))
+  const total = dash?.totalRegisteredStudents ?? 0
 
   return (
     <Card className="rounded-3xl bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Registered Students</CardTitle>
-          <CardDescription>Total and monthly new registrations</CardDescription>
+          <CardDescription>Student accounts created (last 12 months)</CardDescription>
         </div>
         <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["total", "monthly"] as const).map((m) => (
@@ -299,14 +233,16 @@ export function AdminRegisteredStudentsChartCard() {
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        {mode === "total" ? (
+        {loading ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">Loading…</div>
+        ) : mode === "total" ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center">
             <p className="text-4xl font-bold text-chart-1">{total.toLocaleString()}</p>
-            <p className="text-muted-foreground text-sm">All-time registered</p>
+            <p className="text-muted-foreground text-sm">All-time student accounts</p>
           </div>
         ) : (
           <ChartContainer config={registeredConfig} className="h-[300px] w-full">
-            <AreaChart data={data} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
+            <AreaChart data={chartData} margin={{ left: 44, right: 28, top: 20, bottom: 36 }}>
               <defs>
                 <linearGradient id="fillStudents" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.4} />
@@ -315,7 +251,7 @@ export function AdminRegisteredStudentsChartCard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
-              <YAxis width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
+              <YAxis width={40} tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} allowDecimals={false} />
               <Tooltip content={<ChartTooltipContent />} />
               <Area type="linear" dataKey="students" stroke="var(--color-students)" fill="url(#fillStudents)" strokeWidth={2}>
                 <LabelList dataKey="students" position="top" className="fill-foreground text-xs font-medium" />
@@ -328,18 +264,15 @@ export function AdminRegisteredStudentsChartCard() {
   )
 }
 
-// --- Enrolled per Course (Bar or Pie, toggle course) ---
 const enrolledConfig = {
   enrolled: { label: "Enrolled", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
 export function AdminEnrolledPerCourseChartCard() {
   const [view, setView] = React.useState<"bar" | "pie">("bar")
-  const { data: dashboardData } = useQuery<{
-    getAdminDashboard?: { enrolledPerCourse: Array<{ slug: string; name: string; enrolled: number }> }
-  }>(GET_ADMIN_DASHBOARD)
-  const enrolledFromApi = dashboardData?.getAdminDashboard?.enrolledPerCourse ?? []
-  const data = React.useMemo(
+  const { data, loading } = useDashboardData()
+  const enrolledFromApi = data?.getAdminDashboard?.enrolledPerCourse ?? []
+  const chartData = React.useMemo(
     () =>
       enrolledFromApi.map((item, i) => ({
         name: item.name,
@@ -355,7 +288,7 @@ export function AdminEnrolledPerCourseChartCard() {
       <CardHeader className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Enrolled Students per Course</CardTitle>
-          <CardDescription>Toggle chart type to compare courses</CardDescription>
+          <CardDescription>Current enrollments from student profiles</CardDescription>
         </div>
         <div className="flex rounded-lg border bg-muted-surface/50 p-0.5">
           {(["bar", "pie"] as const).map((v) => (
@@ -373,39 +306,48 @@ export function AdminEnrolledPerCourseChartCard() {
         </div>
       </CardHeader>
       <CardContent className="pt-4">
-        <ChartContainer config={enrolledConfig} className="h-[320px] w-full">
-          {view === "bar" ? (
-            <BarChart data={data} layout="vertical" margin={{ left: 4, right: 36, top: 20, bottom: 28 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} tickMargin={10} width={168} tick={{ fontSize: 11 }} />
-              <Tooltip content={<ChartTooltipContent />} cursor={false} />
-              <Bar dataKey="enrolled" fill="var(--color-enrolled)" radius={[0, 4, 4, 0]} activeBar={false}>
-                <LabelList dataKey="enrolled" position="right" className="fill-foreground text-xs font-medium" />
-              </Bar>
-            </BarChart>
-          ) : (
-            <PieChart>
-              <Tooltip content={<ChartTooltipContent />} />
-              <Pie
-                data={data}
-                dataKey="enrolled"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-              >
-                {data.map((entry, index) => (
-                  <Cell key={entry.slug} fill={entry.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          )}
-        </ChartContainer>
+        {loading ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">Loading…</div>
+        ) : chartData.length === 0 ? (
+          <div className="text-muted-foreground flex min-h-[200px] items-center justify-center text-sm">No enrollments yet.</div>
+        ) : (
+          <ChartContainer config={enrolledConfig} className="h-[320px] w-full">
+            {view === "bar" ? (
+              <BarChart data={chartData} layout="vertical" margin={{ left: 4, right: 36, top: 20, bottom: 28 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} tickMargin={10} tick={{ fontSize: 12 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} tickMargin={10} width={168} tick={{ fontSize: 11 }} />
+                <Tooltip content={<ChartTooltipContent />} cursor={false} />
+                <Bar dataKey="enrolled" fill="var(--color-enrolled)" radius={[0, 4, 4, 0]} activeBar={false}>
+                  <LabelList dataKey="enrolled" position="right" className="fill-foreground text-xs font-medium" />
+                </Bar>
+              </BarChart>
+            ) : (
+              <PieChart>
+                <Tooltip content={<ChartTooltipContent />} />
+                <Pie
+                  data={chartData}
+                  dataKey="enrolled"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                >
+                  {chartData.map((entry) => (
+                    <Cell key={entry.slug} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            )}
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
+
+/** @deprecated use AdminLearningActivityCard */
+export const AdminActiveStudentsCard = AdminLearningActivityCard

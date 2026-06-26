@@ -1,24 +1,9 @@
-import { ChapterReaderScreen } from "@/lib/ui/screens/student/chapter-reader"
+import { redirect } from "next/navigation"
 
-type Props = {
-    params: Promise<{ courseSlug: string; moduleSlug: string; chapterSlug: string }>
-}
+type Props = { params: Promise<{ courseSlug: string }> }
 
-function toTitle(slug: string): string {
-    return slug
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
+/** Chapter reader removed — course work is quizzes & assignments only. */
 export default async function ChapterPage({ params }: Props) {
-    const { courseSlug, moduleSlug, chapterSlug } = await params
-    const chapterTitle = toTitle(chapterSlug)
-    return (
-        <ChapterReaderScreen
-            courseSlug={courseSlug}
-            moduleSlug={moduleSlug}
-            chapterSlug={chapterSlug}
-            chapterTitle={chapterTitle}
-        />
-    )
+  const { courseSlug } = await params
+  redirect(`/student/course/${courseSlug}`)
 }

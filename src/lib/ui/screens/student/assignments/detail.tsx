@@ -267,7 +267,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
             {hasSubmissionRecord && canUpload &&
               "Your instructor allowed a resubmit. Add files and notes below; total size must not exceed 5MB."}
             {pendingReview &&
-              "Your submission is being reviewed. You cannot upload again until it is graded or your instructor allows a resubmit."}
+              "Pending review — your instructor will grade this submission."}
             {graded && !canUpload && sub?.passingGrade &&
               "This assignment is graded and passed. No further uploads are allowed."}
             {graded && !canUpload && sub && !sub.passingGrade &&
@@ -389,7 +389,7 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
               <Loader2Icon className="size-4 animate-spin" />
             ) : !canUpload ? (
               pendingReview ? (
-                "Under review"
+                "Pending review"
               ) : graded && sub?.passingGrade ? (
                 "Closed"
               ) : (

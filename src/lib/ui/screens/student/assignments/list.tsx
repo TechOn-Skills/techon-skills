@@ -36,13 +36,13 @@ type SubRow = {
   canStudentSubmit: boolean
 }
 
-function statusLabel(sub: SubRow | undefined): "Pending" | "Submitted" | "Graded" | "Resubmit allowed" {
-  if (!sub) return "Pending"
+function statusLabel(sub: SubRow | undefined): "Not started" | "Pending review" | "Graded" | "Resubmit allowed" {
+  if (!sub) return "Not started"
   if (sub.status === "marked") {
     if (sub.canStudentSubmit) return "Resubmit allowed"
     return "Graded"
   }
-  return "Submitted"
+  return "Pending review"
 }
 
 export const StudentAssignmentsListScreen = () => {
@@ -79,8 +79,7 @@ export const StudentAssignmentsListScreen = () => {
         <div className="text-sm font-semibold text-secondary">My Assignments</div>
         <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Course assignments</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-          Assignments are managed by your instructors here—separate from chapter exercises. Submit files and notes from the
-          detail page.
+          Submit your work here. After you submit, status shows as pending until your instructor grades it.
         </p>
       </div>
 
@@ -140,7 +139,7 @@ export const StudentAssignmentsListScreen = () => {
                                 ? "bg-green-500/20 text-green-600 dark:text-green-400"
                                 : st === "Resubmit allowed"
                                   ? "bg-sky-500/20 text-sky-700 dark:text-sky-400"
-                                  : st === "Submitted"
+                                  : st === "Pending review"
                                     ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                                     : "bg-muted-surface text-muted-foreground"
                             )}

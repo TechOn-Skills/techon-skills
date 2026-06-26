@@ -10,3 +10,4 @@ export * from "./payments";
 export * from "./submissions";
 export * from "./tickets";
 export * from "./users";
+export * from "./quizzes";
