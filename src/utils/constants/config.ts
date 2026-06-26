@@ -44,6 +44,9 @@ export const CONFIG = {
             GET_USER_PROFILE_INFO: "/auth/get-user-profile-info",
             SEND_EMAIL_TO_USER: "/auth/send-email-to-user",
         },
+        FEES: {
+            SUBMIT_PROOF: "/fees/submit-proof",
+        },
         UPLOAD: {
             IMAGE: "/upload/image",
             IMAGES: "/upload/images",

@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useMemo, useRef, useState } from "react"
-import { useQuery, useMutation } from "@apollo/client/react"
+import { useQuery } from "@apollo/client/react"
 import { CheckCircle2Icon, CopyIcon, CreditCardIcon, DownloadIcon, Loader2Icon, UploadIcon, XIcon } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -10,7 +10,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import { useUser } from "@/lib/providers/user"
-import { GET_PAYMENTS_BY_USER, SUBMIT_FEE_PROOF } from "@/lib/graphql"
+import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import { apiService } from "@/lib/services"
 import { cn, formatDate, formatDateISO, getApiDisplayMessage, isDueMonthReached } from "@/lib/helpers"
 import type { IFeeEntry } from "@/utils/interfaces"
@@ -53,13 +53,6 @@ export const StudentFeesScreen = () => {
       }
     }>
   }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
-  const [submitFeeProof] = useMutation(SUBMIT_FEE_PROOF, {
-    refetchQueries: [],
-    onCompleted: () => {
-      void refetchPayments()
-    },
-  })
-
 
   const bankDetails = useMemo(() => {
 
@@ -161,14 +154,15 @@ export const StudentFeesScreen = () => {
         toast.error(getApiDisplayMessage(res, "Failed to upload screenshot."))
         return
       }
-      await submitFeeProof({
-        variables: {
-          input: {
-            paymentId: selectedFee.id,
-            attachmentUrl: res.data.url,
-          },
-        },
+      const proofRes = await apiService.submitFeeProof({
+        paymentId: selectedFee.id,
+        attachmentUrl: res.data.url,
       })
+      if (!proofRes.success) {
+        toast.error(getApiDisplayMessage(proofRes, "Failed to submit payment proof."))
+        return
+      }
+      void refetchPayments()
       const next = { ...storedStatus, [selectedFee.id]: "pending_approval" as const }
       setStoredStatus(next)
       if (typeof window !== "undefined") {
@@ -178,10 +172,7 @@ export const StudentFeesScreen = () => {
       clearUpload()
       setOpen(false)
     } catch (err) {
-      const gqlErrors = (err as { graphQLErrors?: { message?: string }[] })?.graphQLErrors
-      const message =
-        gqlErrors?.[0]?.message ??
-        (err instanceof Error ? err.message : "Failed to submit payment proof.")
+      const message = err instanceof Error ? err.message : "Failed to submit payment proof."
       toast.error(message)
     } finally {
       setUploading(false)

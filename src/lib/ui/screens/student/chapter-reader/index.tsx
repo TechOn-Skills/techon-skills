@@ -8,9 +8,10 @@ import remarkGfm from "remark-gfm"
 import rehypeHighlight from "rehype-highlight"
 import "highlight.js/styles/github-dark.min.css"
 import { Button } from "@/lib/ui/useable-components/button"
+import { GradedExerciseModal } from "@/lib/ui/useable-components/graded-exercise-modal"
 import { getNextChapter, API_COURSE_SLUG_TO_CONTENT_SLUG } from "@/utils/constants"
 import { CONFIG } from "@/utils/constants"
-import { ChevronLeftIcon, ChevronRightIcon, CreditCardIcon, Loader2Icon } from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, CreditCardIcon, Loader2Icon, NotebookPenIcon } from "lucide-react"
 import { useUser } from "@/lib/providers/user"
 import { GET_PAYMENTS_BY_USER } from "@/lib/graphql"
 import { isDueMonthReached } from "@/lib/helpers"
@@ -29,6 +30,8 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
     const [markdown, setMarkdown] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [hasExercise, setHasExercise] = useState(false)
+    const [exerciseOpen, setExerciseOpen] = useState(false)
     const { userProfileInfo, enrolledCoursesFromApi } = useUser()
     const courseIdForSlug = useMemo(
         () =>
@@ -75,10 +78,18 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
         void fetchContent()
     }, [fetchContent])
 
+    useEffect(() => {
+        fetch(contentUrl(courseSlug, moduleSlug, chapterSlug, "json"))
+            .then((res) => setHasExercise(res.ok))
+            .catch(() => setHasExercise(false))
+    }, [courseSlug, moduleSlug, chapterSlug])
+
     const nextChapter = useMemo(
         () => getNextChapter(courseSlug, moduleSlug, chapterSlug),
         [courseSlug, moduleSlug, chapterSlug]
     )
+
+    const exerciseUrl = contentUrl(courseSlug, moduleSlug, chapterSlug, "json")
 
     if (loading) {
         return (
@@ -139,6 +150,38 @@ export const ChapterReaderScreen = ({ courseSlug, moduleSlug, chapterSlug, chapt
                     {markdown}
                 </ReactMarkdown>
             </article>
+
+            {hasExercise && (
+                <div className="mt-8">
+                    <Button
+                        type="button"
+                        variant="brand-secondary"
+                        shape="pill"
+                        onClick={() => setExerciseOpen(true)}
+                    >
+                        <NotebookPenIcon className="size-4" />
+                        Take graded exercise
+                    </Button>
+                </div>
+            )}
+
+            <GradedExerciseModal
+                open={exerciseOpen}
+                onOpenChange={setExerciseOpen}
+                courseSlug={courseSlug}
+                courseId={courseIdForSlug}
+                moduleSlug={moduleSlug}
+                chapterSlug={chapterSlug}
+                fetchExerciseUrl={exerciseUrl}
+                nextChapter={
+                    nextChapter
+                        ? {
+                              url: `/student/course/${courseSlug}/${nextChapter.moduleSlug}/${nextChapter.chapterSlug}`,
+                              label: nextChapter.title,
+                          }
+                        : null
+                }
+            />
 
             {nextChapter && (
                 <div className="mt-12 flex justify-end">

@@ -3,11 +3,10 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { type ChangeEvent, FormEvent, useMemo, useState } from "react"
 import Link from "next/link"
-import { MailIcon } from "lucide-react"
+import { CheckCircle2Icon, MailIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
-import { Separator } from "@/lib/ui/useable-components/separator"
 import { cn, getApiDisplayMessage, logger } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 import { apiService } from "@/lib/services"
@@ -85,6 +84,13 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
       : CONFIG.ROUTES.ADMIN.DASHBOARD
   }, [userProfileInfo])
 
+  const resetDialog = () => {
+    setSubmitted(false)
+    setResponseMessage(null)
+    setResponseStatus(ResponseStatus.INFO)
+    setFormData({ email: "" })
+  }
+
   if (dashboardHref) {
     return (
       <Button asChild variant="brand-secondary" shape="pill" className={cn("px-3 sm:px-4", className)}>
@@ -96,14 +102,13 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
     )
   }
 
+  const showSuccess = status === ResponseStatus.SUCCESS
+  const showInfo = status === ResponseStatus.INFO && submitted
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(v) => {
       setOpen(v)
-      if (!v) {
-        setSubmitted(false)
-        setResponseMessage(null)
-        setResponseStatus(ResponseStatus.INFO)
-      }
+      if (!v) resetDialog()
     }}>
       <DialogPrimitive.Trigger asChild>
         <Button variant="brand-secondary" shape="pill" className={cn("max-w-46 px-3 sm:max-w-none sm:px-4", className)}>
@@ -120,56 +125,72 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
           )}
         >
           <div className="p-6 sm:p-8">
-            <div className="flex items-start gap-3">
-              <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
-                <MailIcon className="size-5" />
-              </span>
-              <div className="min-w-0">
-                <DialogPrimitive.Title className="text-primary text-lg font-semibold">
-                  Continue to dashboard
+            {showSuccess ? (
+              <div className="rounded-3xl bg-[var(--system-success)] px-6 py-10 text-center text-white">
+                <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-white/20">
+                  <CheckCircle2Icon className="size-10 animate-in zoom-in-50 duration-500" strokeWidth={2.5} />
+                </div>
+                <DialogPrimitive.Title className="text-xl font-semibold text-white">
+                  Magic link sent
                 </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="text-muted-foreground text-sm">
-                  Enter your enrolled email to receive a magic link.
+                <DialogPrimitive.Description className="mt-3 text-sm leading-7 text-white/90">
+                  {responseMessage ?? "Check your email inbox for the sign-in link. It may take a minute to arrive — also check spam or promotions."}
                 </DialogPrimitive.Description>
+                <Button
+                  type="button"
+                  variant="outline"
+                  shape="pill"
+                  className="mt-6 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  onClick={() => setOpen(false)}
+                >
+                  Close
+                </Button>
               </div>
-            </div>
-
-            <form
-              className="mt-6 space-y-4"
-              onSubmit={handleSubmit}
-            >
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="h-11 rounded-full"
-                required
-              />
-
-              <Button
-                type="submit"
-                variant="brand-secondary"
-                shape="pill"
-                className="h-11 w-full"
-              >
-                Send magic link
-              </Button>
-            </form>
-
-            {status !== "idle" && responseMessage && (
+            ) : (
               <>
-                <Separator className="my-6" />
-
-                <div className="rounded-2xl border bg-background/50 p-4 text-sm">
-                  <div className="text-primary font-semibold">
-                    {status === ResponseStatus.SUCCESS ? "Magic link sent" : status === ResponseStatus.INFO ? "Please wait for approval" : "Unable to send magic link"}
-                  </div>
-                  <div className="text-muted-foreground mt-1 leading-7">
-                    {responseMessage}
+                <div className="flex items-start gap-3">
+                  <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-10 items-center justify-center rounded-2xl">
+                    <MailIcon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <DialogPrimitive.Title className="text-primary text-lg font-semibold">
+                      Continue to dashboard
+                    </DialogPrimitive.Title>
+                    <DialogPrimitive.Description className="text-muted-foreground text-sm">
+                      Enter your enrolled email to receive a magic link.
+                    </DialogPrimitive.Description>
                   </div>
                 </div>
+
+                {!submitted || status === ResponseStatus.ERROR ? (
+                  <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+                    <Input
+                      type="email"
+                      placeholder="you@example.com"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="h-11 rounded-full"
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      variant="brand-secondary"
+                      shape="pill"
+                      className="h-11 w-full"
+                    >
+                      Send magic link
+                    </Button>
+                    {status === ResponseStatus.ERROR && responseMessage && (
+                      <p className="text-destructive text-sm">{responseMessage}</p>
+                    )}
+                  </form>
+                ) : showInfo ? (
+                  <div className="mt-6 rounded-2xl border bg-background/50 p-4 text-sm">
+                    <div className="text-primary font-semibold">Please wait for approval</div>
+                    <div className="text-muted-foreground mt-1 leading-7">{responseMessage}</div>
+                  </div>
+                ) : null}
               </>
             )}
           </div>

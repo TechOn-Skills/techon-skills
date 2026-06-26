@@ -19,7 +19,8 @@ import {
   useSidebar,
 } from "@/lib/ui/useable-components/sidebar"
 import type { IAdminSidebarProps } from "@/utils/interfaces"
-import { ADMIN_SIDEBAR_ITEMS, COMPANY_NAME } from "@/utils/constants"
+import { ADMIN_SIDEBAR_ITEMS, COMPANY_NAME, getAdminSidebarItemsForRole } from "@/utils/constants"
+import { useUser } from "@/lib/providers/user"
 
 export const AdminSidebar = ({
   className,
@@ -27,6 +28,8 @@ export const AdminSidebar = ({
 }: IAdminSidebarProps) => {
   const pathname = usePathname()
   const { isMobile, setOpen } = useSidebar()
+  const { userProfileInfo } = useUser()
+  const sidebarItems = getAdminSidebarItemsForRole(userProfileInfo?.role)
 
   return (
     <Sidebar
@@ -60,7 +63,7 @@ export const AdminSidebar = ({
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarMenu>
-              {ADMIN_SIDEBAR_ITEMS.map((item) => {
+              {sidebarItems.map((item) => {
                 const active =
                   pathname === item.href ||
                   (item.href !== "/" && pathname?.startsWith(item.href + "/"))

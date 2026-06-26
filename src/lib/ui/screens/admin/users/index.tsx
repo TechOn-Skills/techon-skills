@@ -184,7 +184,7 @@ export const AdminUsersScreen = () => {
               className={cn(
                 "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all capitalize",
                 roleFilter === role
-                  ? "bg-(--brand-primary) text-(--text-on-dark)"
+                  ? "bg-[var(--brand-secondary)] text-[color:var(--text-on-dark)]"
                   : "bg-background/70 border hover:bg-background/90"
               )}
             >
@@ -199,7 +199,7 @@ export const AdminUsersScreen = () => {
               className={cn(
                 "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all capitalize",
                 statusFilter === status
-                  ? "bg-(--brand-primary) text-(--text-on-dark)"
+                  ? "bg-[var(--brand-secondary)] text-[color:var(--text-on-dark)]"
                   : "bg-background/70 border hover:bg-background/90"
               )}
             >

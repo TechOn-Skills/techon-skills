@@ -1,22 +1,37 @@
 import { CalendarIcon, FileTextIcon, LogsIcon, NewspaperIcon, SettingsIcon, TicketIcon, UsersIcon, LayoutDashboardIcon, UserPlusIcon, InboxIcon, ImageIcon, BookOpenIcon, BanknoteIcon, ClipboardCheckIcon, NotebookPenIcon, VideoIcon } from "lucide-react"
 import { CONFIG } from "./config"
+import { UserRole } from "@/utils/enums/user"
+
+const ALL_STAFF = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.INSTRUCTOR] as const
+const ADMIN_ONLY = [UserRole.SUPER_ADMIN, UserRole.ADMIN] as const
+const INSTRUCTOR_STAFF = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.INSTRUCTOR] as const
 
 export const ADMIN_SIDEBAR_ITEMS = [
-    { label: "Dashboard", href: CONFIG.ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboardIcon, disabled: false },
-    { label: "Registration requests", href: CONFIG.ROUTES.ADMIN.REGISTRATION_REQUESTS, icon: UserPlusIcon, disabled: false },
-    { label: "Enrollment requests", href: CONFIG.ROUTES.ADMIN.ENROLLMENT_REQUESTS, icon: BookOpenIcon, disabled: false },
-    { label: "Contact submissions", href: CONFIG.ROUTES.ADMIN.CONTACT_SUBMISSIONS, icon: InboxIcon, disabled: false },
-    { label: "Users", href: CONFIG.ROUTES.ADMIN.USERS, icon: UsersIcon, disabled: false },
-    { label: "Tickets", href: CONFIG.ROUTES.ADMIN.TICKETS, icon: TicketIcon, disabled: false },
-    { label: "News", href: CONFIG.ROUTES.ADMIN.NEWS, icon: NewspaperIcon, disabled: false },
-    { label: "Articles", href: CONFIG.ROUTES.ADMIN.ARTICLES, icon: FileTextIcon, disabled: false },
-    { label: "Logs", href: CONFIG.ROUTES.ADMIN.LOGS, icon: LogsIcon, disabled: false },
-    { label: "Settings", href: CONFIG.ROUTES.ADMIN.SETTINGS, icon: SettingsIcon, disabled: false },
-    { label: "Events", href: CONFIG.ROUTES.ADMIN.EVENTS, icon: CalendarIcon, disabled: false },
-    { label: "Courses", href: CONFIG.ROUTES.ADMIN.COURSES, icon: TicketIcon, disabled: false },
-    { label: "Payments", href: CONFIG.ROUTES.ADMIN.PAYMENTS, icon: BanknoteIcon, disabled: false },
-    { label: "Grade Submissions", href: CONFIG.ROUTES.ADMIN.SUBMISSIONS, icon: ClipboardCheckIcon, disabled: false },
-    { label: "Course assignments", href: CONFIG.ROUTES.ADMIN.ASSIGNMENTS, icon: NotebookPenIcon, disabled: false },
-    { label: "Schedule lectures", href: CONFIG.ROUTES.ADMIN.SCHEDULE_LECTURES, icon: VideoIcon, disabled: false },
-    { label: "Uploaded images", href: CONFIG.ROUTES.ADMIN.IMAGES, icon: ImageIcon, disabled: false },
-]
+    { label: "Dashboard", href: CONFIG.ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboardIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Registration requests", href: CONFIG.ROUTES.ADMIN.REGISTRATION_REQUESTS, icon: UserPlusIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Enrollment requests", href: CONFIG.ROUTES.ADMIN.ENROLLMENT_REQUESTS, icon: BookOpenIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Contact submissions", href: CONFIG.ROUTES.ADMIN.CONTACT_SUBMISSIONS, icon: InboxIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Users", href: CONFIG.ROUTES.ADMIN.USERS, icon: UsersIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Tickets", href: CONFIG.ROUTES.ADMIN.TICKETS, icon: TicketIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "News", href: CONFIG.ROUTES.ADMIN.NEWS, icon: NewspaperIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Articles", href: CONFIG.ROUTES.ADMIN.ARTICLES, icon: FileTextIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Logs", href: CONFIG.ROUTES.ADMIN.LOGS, icon: LogsIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Settings", href: CONFIG.ROUTES.ADMIN.SETTINGS, icon: SettingsIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Events", href: CONFIG.ROUTES.ADMIN.EVENTS, icon: CalendarIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Courses", href: CONFIG.ROUTES.ADMIN.COURSES, icon: TicketIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Payments", href: CONFIG.ROUTES.ADMIN.PAYMENTS, icon: BanknoteIcon, disabled: false, roles: ADMIN_ONLY },
+    { label: "Grade Submissions", href: CONFIG.ROUTES.ADMIN.SUBMISSIONS, icon: ClipboardCheckIcon, disabled: false, roles: INSTRUCTOR_STAFF },
+    { label: "Course assignments", href: CONFIG.ROUTES.ADMIN.ASSIGNMENTS, icon: NotebookPenIcon, disabled: false, roles: INSTRUCTOR_STAFF },
+    { label: "Schedule lectures", href: CONFIG.ROUTES.ADMIN.SCHEDULE_LECTURES, icon: VideoIcon, disabled: false, roles: INSTRUCTOR_STAFF },
+    { label: "Uploaded images", href: CONFIG.ROUTES.ADMIN.IMAGES, icon: ImageIcon, disabled: false, roles: ADMIN_ONLY },
+] as const
+
+export type AdminSidebarItem = (typeof ADMIN_SIDEBAR_ITEMS)[number]
+
+/** Sidebar entries visible for the given role. */
+export function getAdminSidebarItemsForRole(role: UserRole | undefined) {
+    if (!role) return []
+    return ADMIN_SIDEBAR_ITEMS.filter((item) => (item.roles as readonly UserRole[]).includes(role))
+}
+
+export { ALL_STAFF }

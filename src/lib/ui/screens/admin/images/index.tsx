@@ -79,7 +79,7 @@ export const AdminImagesScreen = () => {
             className={cn(
               "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
               categoryFilter === cat
-                ? "bg-(--brand-primary) text-(--text-on-dark)"
+                ? "bg-[var(--brand-secondary)] text-[color:var(--text-on-dark)]"
                 : "bg-muted-surface/60 hover:bg-muted-surface"
             )}
           >

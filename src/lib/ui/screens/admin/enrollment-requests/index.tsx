@@ -205,7 +205,7 @@ function PublicEnrollmentApplicationsPanel() {
             <Button
               key={s}
               type="button"
-              variant={statusFilter === s ? "secondary" : "outline"}
+              variant={statusFilter === s ? "brand-secondary" : "outline"}
               size="sm"
               shape="pill"
               onClick={() => {
