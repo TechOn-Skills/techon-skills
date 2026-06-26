@@ -54,8 +54,9 @@ export const StudentFeesScreen = () => {
     }>
   }>(GET_PAYMENTS_BY_USER, { variables: { userId }, skip: !userId })
   const [submitFeeProof] = useMutation(SUBMIT_FEE_PROOF, {
+    refetchQueries: [],
     onCompleted: () => {
-      refetchPayments()
+      void refetchPayments()
     },
   })
 
@@ -177,7 +178,11 @@ export const StudentFeesScreen = () => {
       clearUpload()
       setOpen(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit payment proof.")
+      const gqlErrors = (err as { graphQLErrors?: { message?: string }[] })?.graphQLErrors
+      const message =
+        gqlErrors?.[0]?.message ??
+        (err instanceof Error ? err.message : "Failed to submit payment proof.")
+      toast.error(message)
     } finally {
       setUploading(false)
     }

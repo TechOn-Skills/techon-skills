@@ -58,14 +58,20 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   const { userProfileInfo } = useUser()
   const isStudent = userProfileInfo?.role === UserRole.STUDENT
 
-  const { data: feeData } = useQuery<{ getMyFeeStatus: { locked: boolean } }>(GET_MY_FEE_STATUS, {
-    skip: !isStudent || !userProfileInfo?.id,
-    fetchPolicy: "cache-and-network",
-  })
-  const feeLocked = isStudent && (feeData?.getMyFeeStatus?.locked ?? false)
+  const { data: feeData, loading: feeStatusLoading } = useQuery<{ getMyFeeStatus: { locked: boolean } }>(
+    GET_MY_FEE_STATUS,
+    {
+      skip: !isStudent || !userProfileInfo?.id,
+      fetchPolicy: "cache-and-network",
+    }
+  )
+  const feeLocked = feeData?.getMyFeeStatus?.locked === true
+  /** Avoid firing getCourses before fee status is known — otherwise locked students hit FEE_LOCKED. */
+  const skipCourses =
+    isStudent && (!userProfileInfo?.id || feeStatusLoading || feeLocked)
 
   const { data, loading, error } = useQuery<{ getCourses: IApiCourse[] }>(GET_COURSES, {
-    skip: feeLocked,
+    skip: skipCourses,
   })
 
   const courses = useMemo(
@@ -97,10 +103,10 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       assignments,
       getCourseBySlug,
       getAssignmentById,
-      loading: feeLocked ? false : loading,
-      error: error ?? undefined,
+      loading: skipCourses ? feeStatusLoading : loading,
+      error: skipCourses ? undefined : (error ?? undefined),
     }),
-    [courses, featuredCourses, assignments, getCourseBySlug, getAssignmentById, loading, error, feeLocked]
+    [courses, featuredCourses, assignments, getCourseBySlug, getAssignmentById, loading, error, skipCourses, feeStatusLoading]
   )
 
   return (

@@ -119,11 +119,16 @@ class ApiService {
         if (subPath) formData.append("subPath", subPath);
         formData.append("image", file);
         const tz = getClientTimezone();
+        const token =
+            typeof window !== "undefined" ? localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN) : null;
         const response = await fetch(`${BACKEND_URL}${path}`, {
             method: FetchMethod.POST,
             body: formData,
             credentials: "include",
-            headers: tz ? { "X-Timezone": tz } : undefined,
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                ...(tz ? { "X-Timezone": tz } : {}),
+            },
         });
         const json = await response.json();
         if (json?.data?.url) {
