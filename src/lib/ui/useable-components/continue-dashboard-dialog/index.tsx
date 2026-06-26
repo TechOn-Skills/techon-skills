@@ -26,6 +26,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
     email: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState("")
   const [responseMessage, setResponseMessage] = useState<string | null>(null)
   const [responseStatus, setResponseStatus] = useState<ResponseStatus>(ResponseStatus.INFO)
 
@@ -41,12 +42,14 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
     event.preventDefault()
     setResponseMessage(null)
     setResponseStatus(ResponseStatus.INFO)
+    const email = formData.email.trim()
     const toastId = toast.loading("Sending magic link...")
     try {
-      const data: ApiResponse<null> = await apiService.sendMagicLink(formData.email.trim())
+      const data: ApiResponse<null> = await apiService.sendMagicLink(email)
       logger({ type: LoggerLevel.INFO, message: JSON.stringify(data) })
       if (data.success) {
         const message = getApiDisplayMessage(data, "Magic link sent.")
+        setSubmittedEmail(email)
         setResponseMessage(message)
         if (message.includes("requested")) {
           setResponseStatus(ResponseStatus.INFO)
@@ -86,6 +89,7 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   const resetDialog = () => {
     setSubmitted(false)
+    setSubmittedEmail("")
     setResponseMessage(null)
     setResponseStatus(ResponseStatus.INFO)
     setFormData({ email: "" })
@@ -126,21 +130,27 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
         >
           <div className="p-6 sm:p-8">
             {showSuccess ? (
-              <div className="rounded-3xl bg-[var(--system-success)] px-6 py-10 text-center text-white">
-                <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-white/20">
-                  <CheckCircle2Icon className="size-10 animate-in zoom-in-50 duration-500" strokeWidth={2.5} />
+              <div className="py-4 text-center">
+                <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-[var(--system-success)] text-white">
+                  <CheckCircle2Icon
+                    className="size-9 animate-in zoom-in-50 duration-500"
+                    strokeWidth={2.5}
+                  />
                 </div>
-                <DialogPrimitive.Title className="text-xl font-semibold text-white">
+                <DialogPrimitive.Title className="text-primary text-xl font-semibold">
                   Magic link sent
                 </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="mt-3 text-sm leading-7 text-white/90">
-                  {responseMessage ?? "Check your email inbox for the sign-in link. It may take a minute to arrive — also check spam or promotions."}
+                <DialogPrimitive.Description className="text-muted-foreground mt-3 text-sm leading-7">
+                  We sent a sign-in link to{" "}
+                  <span className="font-medium text-primary">{submittedEmail || "your email"}</span>.
+                  Open your inbox and click the link to verify and access your dashboard.
+                  If you do not see it within a few minutes, check spam or promotions.
                 </DialogPrimitive.Description>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="brand-secondary"
                   shape="pill"
-                  className="mt-6 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  className="mt-8 h-11 min-w-[8rem] px-6"
                   onClick={() => setOpen(false)}
                 >
                   Close
