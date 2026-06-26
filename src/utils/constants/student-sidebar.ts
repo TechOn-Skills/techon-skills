@@ -1,4 +1,4 @@
-import { BookIcon, BookOpenIcon, CalendarIcon, CreditCardIcon, FileTextIcon, HeadphonesIcon, LayoutDashboardIcon, ListTodoIcon, MegaphoneIcon, SettingsIcon, UserIcon, AwardIcon, ClipboardListIcon } from "lucide-react"
+import { BookIcon, BookOpenIcon, CalendarIcon, CreditCardIcon, FileTextIcon, HeadphonesIcon, LayoutDashboardIcon, ListTodoIcon, MegaphoneIcon, SettingsIcon, UserIcon, AwardIcon, ClipboardListIcon, ScrollTextIcon } from "lucide-react"
 import { CONFIG } from "./config"
 
 const STUDENT_ROUTES = CONFIG.ROUTES.STUDENT;
@@ -11,6 +11,7 @@ export const STUDENT_SIDEBAR_ITEMS = [
     { label: "My Assignments", href: STUDENT_ROUTES.ASSIGNMENTS, icon: ListTodoIcon, disabled: false },
     { label: "My Quizzes", href: STUDENT_ROUTES.QUIZZES, icon: ClipboardListIcon, disabled: false },
     { label: "My Marks", href: STUDENT_ROUTES.MARKS, icon: AwardIcon, disabled: false },
+    { label: "My Certificates", href: STUDENT_ROUTES.CERTIFICATES, icon: ScrollTextIcon, disabled: false },
     { label: "Fees", href: STUDENT_ROUTES.FEES, icon: CreditCardIcon, disabled: false },
     { label: "Events", href: STUDENT_ROUTES.EVENTS, icon: CalendarIcon, disabled: false },
     { label: "Articles", href: STUDENT_ROUTES.ARTICLES, icon: FileTextIcon, disabled: false },
