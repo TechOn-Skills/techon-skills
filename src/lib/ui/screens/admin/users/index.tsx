@@ -23,7 +23,7 @@ import toast from "react-hot-toast"
 import { getApiDisplayMessage } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { useUser } from "@/lib/providers/user"
-import { GET_USERS, GET_COURSES, ENROLL_USER_IN_COURSE, UPDATE_USER_INPUT, DELETE_USER } from "@/lib/graphql"
+import { GET_USERS, GET_COURSES, GET_USER_BY_ID, ENROLL_USER_IN_COURSE, UPDATE_USER_INPUT, DELETE_USER } from "@/lib/graphql"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -62,6 +62,7 @@ export const AdminUsersScreen = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus | "suspended">("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
   const [assignCoursesUser, setAssignCoursesUser] = useState<GraphQLUser | null>(null)
+  const [assignGradingCoursesUser, setAssignGradingCoursesUser] = useState<GraphQLUser | null>(null)
   const [sendEmailUser, setSendEmailUser] = useState<GraphQLUser | null>(null)
   const [editUser, setEditUser] = useState<GraphQLUser | null>(null)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<GraphQLUser | null>(null)
@@ -365,6 +366,22 @@ export const AdminUsersScreen = () => {
                                       Assign courses
                                     </button>
                                   )}
+                                  {canAssignStudentCourses &&
+                                    (user.role === "INSTRUCTOR" || user.role === "ADMIN") &&
+                                    user.status === "ACTIVE" &&
+                                    !user.isSuspended && (
+                                    <button
+                                      type="button"
+                                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-background/60 transition-colors"
+                                      onClick={() => {
+                                        setAssignGradingCoursesUser(user)
+                                        setShowActionMenu(null)
+                                      }}
+                                    >
+                                      <BookOpenIcon className="size-4" />
+                                      Assign grading courses
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-background/60 transition-colors"
@@ -429,6 +446,16 @@ export const AdminUsersScreen = () => {
           setAssignCoursesUser(null)
           refetch()
         }}
+      />
+      <AssignGradingCoursesForUserSheet
+        user={assignGradingCoursesUser}
+        open={!!assignGradingCoursesUser}
+        onOpenChange={(open) => !open && setAssignGradingCoursesUser(null)}
+        onSuccess={() => {
+          setAssignGradingCoursesUser(null)
+          refetch()
+        }}
+        updateUserMutation={updateUserMutation}
       />
       <SendEmailToUserSheet
         user={sendEmailUser}
@@ -744,6 +771,114 @@ function AssignCoursesForUserSheet({
           >
             {saving ? <Loader2Icon className="size-4 animate-spin" /> : <BookOpenIcon className="size-4" />}
             <span className="ml-2">{saving ? "Saving..." : "Assign courses"}</span>
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function AssignGradingCoursesForUserSheet({
+  user,
+  open,
+  onOpenChange,
+  onSuccess,
+  updateUserMutation,
+}: {
+  user: GraphQLUser | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess: () => void
+  updateUserMutation: (opts: { variables: { input: { id: string; allowedMarkGradesOn?: string[] } } }) => Promise<unknown>
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [saving, setSaving] = useState(false)
+  const { data: coursesData } = useQuery<{ getCourses: { id: string; title: string }[] }>(GET_COURSES)
+  const { data: userData, loading: userLoading } = useQuery<{ getUser: { allowedMarkGradesOn: string[] } | null }>(
+    GET_USER_BY_ID,
+    { variables: { id: user?.id ?? "" }, skip: !user?.id || !open }
+  )
+  const courses = useMemo(() => coursesData?.getCourses ?? [], [coursesData])
+
+  useEffect(() => {
+    if (open && userData?.getUser) {
+      setSelectedIds(userData.getUser.allowedMarkGradesOn ?? [])
+    } else if (open && user) {
+      setSelectedIds([])
+    }
+  }, [open, user?.id, userData?.getUser])
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const handleSave = async () => {
+    if (!user) return
+    setSaving(true)
+    try {
+      await updateUserMutation({
+        variables: {
+          input: {
+            id: user.id,
+            allowedMarkGradesOn: selectedIds,
+          },
+        },
+      })
+      onSuccess()
+      onOpenChange(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>Assign grading courses</SheetTitle>
+          <SheetDescription>
+            {user ? (
+              <>
+                Choose which courses{" "}
+                <span className="font-medium text-foreground">{user.fullName || user.email}</span> can grade, manage
+                quizzes, and schedule lectures for.
+                {user.role === "INSTRUCTOR" && (
+                  <span className="mt-2 block text-xs">
+                    Instructors only see courses selected here. Leave all unchecked to remove access.
+                  </span>
+                )}
+              </>
+            ) : null}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="px-4 max-h-[60vh] overflow-y-auto">
+          {userLoading ? (
+            <div className="flex items-center gap-2 py-8 text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin" />
+              Loading current assignments…
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {courses.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted-surface/50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(c.id)}
+                    onChange={() => toggle(c.id)}
+                    className="rounded border-input"
+                  />
+                  <span className="text-sm font-medium">{c.title}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        <SheetFooter className="flex-row gap-2 sm:flex-row">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" variant="brand-secondary" onClick={handleSave} disabled={saving || userLoading}>
+            {saving ? <Loader2Icon className="size-4 animate-spin" /> : "Save assignments"}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -1,15 +1,14 @@
 import { UserRole } from "@/utils/enums/user"
 
-type CourseRow = { id: string; title: string; slug?: string }
+type CourseRow = { id: string; title: string; slug?: string; courseDurationInMonths?: number | null }
 
-/** Matches backend canGradeCourse: super-admin sees all; empty allowedMarkGradesOn = all courses. */
+/** Super-admin and admin see all courses; instructors only see assigned courses. */
 export function filterCoursesForGrader(
   allCourses: CourseRow[],
   role: UserRole | undefined,
   allowedMarkGradesOn: string[] | undefined
 ): CourseRow[] {
-  if (!role || role === UserRole.SUPER_ADMIN) return allCourses
+  if (!role || role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) return allCourses
   const allowed = allowedMarkGradesOn ?? []
-  if (allowed.length === 0) return allCourses
   return allCourses.filter((c) => allowed.includes(c.id))
 }
