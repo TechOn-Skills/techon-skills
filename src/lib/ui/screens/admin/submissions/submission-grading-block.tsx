@@ -58,6 +58,14 @@ function computeMcqBandMarks(s: SubmissionRow): number {
   return Math.round((score / max) * pool)
 }
 
+function shortAnswerCap(sa: ShortAnswer, submission: SubmissionRow): number {
+  if (sa.maxMarks != null && sa.maxMarks > 0) return sa.maxMarks
+  const count = submission.shortAnswers.length
+  if (count <= 0) return 0
+  const mcqPool = (submission.mcqCount ?? 0) * MCQ_MARKS_PER_QUESTION
+  return Math.floor((submission.maxMarks - mcqPool) / count)
+}
+
 type MarkModalState =
   | { mode: "assignment"; submission: SubmissionRow; marksInput: string; allowResubmit: boolean }
   | { mode: "graded"; submission: SubmissionRow; perQuestion: Record<number, string> }
@@ -93,7 +101,9 @@ export function SubmissionGradingBlock({ submissions, loading, emptyMessage, ref
     if (s.type === "graded_exercise") {
       const perQuestion: Record<number, string> = {}
       for (const sa of s.shortAnswers) {
-        if ((sa.maxMarks ?? 0) > 0) perQuestion[sa.questionId] = ""
+        if (shortAnswerCap(sa, s) > 0) {
+          perQuestion[sa.questionId] = sa.marksAwarded != null ? String(sa.marksAwarded) : ""
+        }
       }
       setMarkModal({ mode: "graded", submission: s, perQuestion })
     } else {
@@ -113,7 +123,7 @@ export function SubmissionGradingBlock({ submissions, loading, emptyMessage, ref
     const mcqPool = (s.mcqCount ?? 0) * MCQ_MARKS_PER_QUESTION
     let shortSum = 0
     for (const sa of s.shortAnswers) {
-      if ((sa.maxMarks ?? 0) <= 0) continue
+      if (shortAnswerCap(sa, s) <= 0) continue
       const raw = markModal.perQuestion[sa.questionId] ?? ""
       const n = parseInt(raw, 10)
       if (!Number.isNaN(n)) shortSum += n
@@ -135,8 +145,12 @@ export function SubmissionGradingBlock({ submissions, loading, emptyMessage, ref
     if (!markModal) return
     if (markModal.mode === "assignment") {
       const num = parseInt(markModal.marksInput, 10)
-      if (Number.isNaN(num) || num < 0 || num > markModal.submission.maxMarks) {
+      if (markModal.marksInput.trim() === "" || Number.isNaN(num)) {
         toast.error(`Enter marks between 0 and ${markModal.submission.maxMarks}`)
+        return
+      }
+      if (num < 0 || num > markModal.submission.maxMarks) {
+        toast.error(`Marks must be between 0 and ${markModal.submission.maxMarks}`)
         return
       }
       const maxM = markModal.submission.maxMarks
@@ -155,15 +169,23 @@ export function SubmissionGradingBlock({ submissions, loading, emptyMessage, ref
     const { submission, perQuestion } = markModal
     const shortAnswerMarks: { questionId: number; marks: number }[] = []
     for (const sa of submission.shortAnswers) {
-      const cap = sa.maxMarks ?? 0
+      const cap = shortAnswerCap(sa, submission)
       if (cap <= 0) continue
       const raw = perQuestion[sa.questionId] ?? ""
+      if (raw.trim() === "") {
+        toast.error(`Enter marks for every short-answer question (0–${cap})`)
+        return
+      }
       const n = parseInt(raw, 10)
       if (Number.isNaN(n) || n < 0 || n > cap) {
-        toast.error(`Invalid marks for a short-answer question (use 0–${cap}).`)
+        toast.error(`Marks must be between 0 and ${cap}`)
         return
       }
       shortAnswerMarks.push({ questionId: sa.questionId, marks: n })
+    }
+    if (shortAnswerMarks.length === 0) {
+      toast.error("No short-answer questions to grade")
+      return
     }
     updateMarks({
       variables: {
@@ -415,11 +437,11 @@ export function SubmissionGradingBlock({ submissions, loading, emptyMessage, ref
                   </div>
                 </div>
 
-                {markModal.submission.shortAnswers.some((sa) => (sa.maxMarks ?? 0) > 0) && (
+                {markModal.submission.shortAnswers.some((sa) => shortAnswerCap(sa, markModal.submission) > 0) && (
                   <div className="mt-4 space-y-4">
                     <div className="font-medium text-sm">Short answers</div>
                     {markModal.submission.shortAnswers.map((sa) => {
-                      const cap = sa.maxMarks ?? 0
+                      const cap = shortAnswerCap(sa, markModal.submission)
                       if (cap <= 0) return null
                       return (
                         <div key={sa.questionId} className="rounded-lg border bg-muted-surface/20 p-3">

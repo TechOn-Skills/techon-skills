@@ -29,6 +29,8 @@ import {
   DELETE_LECTURE_SERIES,
 } from "@/lib/graphql"
 import { cn } from "@/lib/helpers"
+import { useUser } from "@/lib/providers/user"
+import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
 
 const WEEKDAYS_UTC = [
   { v: 0, label: "Sunday" },
@@ -119,6 +121,7 @@ function toggleWeekdayInList(current: number[], day: number): number[] {
 }
 
 export const AdminScheduleLecturesScreen = () => {
+  const { userProfileInfo } = useUser()
   const [createOpen, setCreateOpen] = useState(false)
   const [editRow, setEditRow] = useState<LectureRow | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -137,6 +140,10 @@ export const AdminScheduleLecturesScreen = () => {
   const [sortKey, setSortKey] = useState<SortKey>("start_desc")
 
   const { data: coursesData, loading: coursesLoading } = useQuery<{ getCourses: CourseOpt[] }>(GET_COURSES)
+  const courses = useMemo(
+    () => filterCoursesForGrader(coursesData?.getCourses ?? [], userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn),
+    [coursesData?.getCourses, userProfileInfo?.role, userProfileInfo?.allowedMarkGradesOn]
+  )
   const { data, loading, error, refetch } = useQuery<{ getLecturesForStaff: LectureRow[] }>(GET_LECTURES_FOR_STAFF, {
     fetchPolicy: "network-only",
   })
@@ -249,10 +256,14 @@ export const AdminScheduleLecturesScreen = () => {
       toast.error("Select at least one day of the week")
       return
     }
+    if (!scheduleForm.meetUrl.trim()) {
+      toast.error("Meeting URL is required")
+      return
+    }
     const input: Record<string, unknown> = {
       courseId: scheduleForm.courseId,
       title: scheduleForm.title.trim(),
-      meetUrl: scheduleForm.meetUrl.trim() || null,
+      meetUrl: scheduleForm.meetUrl.trim(),
       durationMins: scheduleForm.durationMins || 60,
       weekdays: wds,
       startDate: scheduleForm.startDate,
@@ -274,12 +285,16 @@ export const AdminScheduleLecturesScreen = () => {
       toast.error("Start date & time is required")
       return
     }
+    if (!editForm.meetUrl.trim()) {
+      toast.error("Meeting URL is required")
+      return
+    }
     void updateLecture({
       variables: {
         id: editRow.id,
         input: {
           title: editForm.title.trim(),
-          meetUrl: editForm.meetUrl.trim() || null,
+          meetUrl: editForm.meetUrl.trim(),
           durationMins: editForm.durationMins,
           startAt: fromDatetimeLocalValue(editForm.startAtLocal),
         },
@@ -350,7 +365,7 @@ export const AdminScheduleLecturesScreen = () => {
                     onChange={(e) => setFilterCourseId(e.target.value)}
                   >
                     <option value="">All courses</option>
-                    {(coursesData?.getCourses ?? []).map((c) => (
+                    {courses.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.title}
                       </option>
@@ -506,14 +521,17 @@ export const AdminScheduleLecturesScreen = () => {
           <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
           <DialogPrimitive.Content
             className={cn(
-              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 flex w-[min(32rem,calc(100vw-2rem))] max-h-[min(90vh,52rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden border bg-background shadow-lg duration-200 sm:rounded-lg",
             )}
           >
-            <DialogPrimitive.Title className="text-lg font-semibold">New recurring schedule</DialogPrimitive.Title>
-            <DialogPrimitive.Description className="text-muted-foreground text-sm">
-              Sessions repeat on the same UTC weekdays until the end date (or the course&apos;s default duration).
-            </DialogPrimitive.Description>
-            <div className="grid gap-4 py-2">
+            <div className="shrink-0 border-b px-6 py-4">
+              <DialogPrimitive.Title className="text-lg font-semibold">New recurring schedule</DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-muted-foreground mt-1 text-sm">
+                Sessions repeat on the same UTC weekdays until the end date (or the course&apos;s default duration).
+              </DialogPrimitive.Description>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="grid gap-4">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Course</span>
                 <select
@@ -523,7 +541,7 @@ export const AdminScheduleLecturesScreen = () => {
                   disabled={coursesLoading}
                 >
                   <option value="">Select course…</option>
-                  {(coursesData?.getCourses ?? []).map((c) => (
+                  {courses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.title}
                       {c.courseDurationInMonths != null ? ` (${c.courseDurationInMonths} mo)` : ""}
@@ -540,8 +558,10 @@ export const AdminScheduleLecturesScreen = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Meeting URL (optional)</span>
+                <span className="text-sm font-medium">Meeting URL</span>
                 <Input
+                  type="url"
+                  required
                   value={scheduleForm.meetUrl}
                   onChange={(e) => setScheduleForm((s) => ({ ...s, meetUrl: e.target.value }))}
                   placeholder="https://…"
@@ -613,7 +633,8 @@ export const AdminScheduleLecturesScreen = () => {
                 <p className="text-muted-foreground text-xs">If empty, the course&apos;s duration in months is used.</p>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            </div>
+            <div className="flex shrink-0 justify-end gap-2 border-t px-6 py-4">
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Cancel
               </Button>
@@ -630,10 +651,13 @@ export const AdminScheduleLecturesScreen = () => {
           <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
           <DialogPrimitive.Content
             className={cn(
-              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 flex w-[min(28rem,calc(100vw-2rem))] max-h-[min(90vh,40rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden border bg-background shadow-lg duration-200 sm:rounded-lg",
             )}
           >
-            <DialogPrimitive.Title className="text-lg font-semibold">Edit lecture</DialogPrimitive.Title>
+            <div className="shrink-0 border-b px-6 py-4">
+              <DialogPrimitive.Title className="text-lg font-semibold">Edit lecture</DialogPrimitive.Title>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="grid gap-3">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Title</span>
@@ -641,7 +665,7 @@ export const AdminScheduleLecturesScreen = () => {
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Meeting URL</span>
-                <Input value={editForm.meetUrl} onChange={(e) => setEditForm((f) => ({ ...f, meetUrl: e.target.value }))} />
+                <Input type="url" required value={editForm.meetUrl} onChange={(e) => setEditForm((f) => ({ ...f, meetUrl: e.target.value }))} placeholder="https://…" />
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Duration (minutes)</span>
@@ -662,7 +686,8 @@ export const AdminScheduleLecturesScreen = () => {
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            </div>
+            <div className="flex shrink-0 justify-end gap-2 border-t px-6 py-4">
               <Button type="button" variant="outline" onClick={() => setEditRow(null)}>
                 Cancel
               </Button>
