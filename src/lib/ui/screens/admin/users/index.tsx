@@ -16,51 +16,35 @@ import {
   Loader2Icon,
   BookOpenIcon,
   MailIcon,
-  SendIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
 import { getApiDisplayMessage } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { useUser } from "@/lib/providers/user"
-import { GET_USERS, GET_COURSES, GET_USER_BY_ID, ENROLL_USER_IN_COURSE, UPDATE_USER_INPUT, DELETE_USER } from "@/lib/graphql"
+import { GET_USERS, UPDATE_USER_INPUT, DELETE_USER } from "@/lib/graphql"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
-import { PhoneInput, getFullPhone, parsePhoneFromString } from "@/lib/ui/useable-components/phone-input"
-import { RichTextEditor } from "@/lib/ui/useable-components/rich-text-editor"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/lib/ui/useable-components/sheet"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { SheetContentSide } from "@/utils/enums"
 import { cn } from "@/lib/helpers"
-
-type UserRole = "STUDENT" | "INSTRUCTOR" | "ADMIN" | "SUPER_ADMIN"
-type UserStatus = "ACTIVE" | "INACTIVE"
-
-interface GraphQLUser {
-  id: string
-  email: string
-  fullName?: string | null
-  phoneNumber?: string | null
-  role: UserRole
-  status: UserStatus
-  isBlocked: boolean
-  isSuspended: boolean
-  isDeleted: boolean
-}
+import {
+  type GraphQLUser,
+  type UserRole,
+  type UserStatus,
+  CreateUserSheet,
+  EditUserSheet,
+  DeleteUserDialog,
+  AssignCoursesForUserSheet,
+  AssignGradingCoursesForUserSheet,
+  SendEmailToUserSheet,
+} from "./user-sheets"
 
 export const AdminUsersScreen = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<"all" | UserRole>("all")
   const [statusFilter, setStatusFilter] = useState<"all" | UserStatus | "suspended">("all")
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null)
+  const [createUserOpen, setCreateUserOpen] = useState(false)
   const [assignCoursesUser, setAssignCoursesUser] = useState<GraphQLUser | null>(null)
   const [assignGradingCoursesUser, setAssignGradingCoursesUser] = useState<GraphQLUser | null>(null)
   const [sendEmailUser, setSendEmailUser] = useState<GraphQLUser | null>(null)
@@ -85,8 +69,21 @@ export const AdminUsersScreen = () => {
 
   const { data, loading, error, refetch } = useQuery<{ getUsers: GraphQLUser[] }>(GET_USERS)
   const users = useMemo(() => data?.getUsers ?? [], [data?.getUsers])
-  const [updateUserMutation] = useMutation(UPDATE_USER_INPUT, { onCompleted: () => { toast.success("User updated"); refetch(); }, onError: (e) => toast.error(e.message) })
-  const [deleteUserMutation] = useMutation(DELETE_USER, { onCompleted: () => { toast.success("User deleted"); setDeleteConfirmUser(null); refetch(); }, onError: (e) => toast.error(e.message) })
+  const [updateUserMutation] = useMutation(UPDATE_USER_INPUT, {
+    onCompleted: () => {
+      toast.success("User updated")
+      refetch()
+    },
+    onError: (e) => toast.error(e.message),
+  })
+  const [deleteUserMutation] = useMutation(DELETE_USER, {
+    onCompleted: () => {
+      toast.success("User deleted")
+      setDeleteConfirmUser(null)
+      refetch()
+    },
+    onError: (e) => toast.error(e.message),
+  })
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -127,7 +124,6 @@ export const AdminUsersScreen = () => {
 
   return (
     <div className="w-full py-10 animate-in fade-in duration-700">
-      {/* Header */}
       <div className="mb-8">
         <div className="text-sm font-semibold text-secondary">User Management</div>
         <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -138,7 +134,6 @@ export const AdminUsersScreen = () => {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4 mb-6">
         {stats.map((stat, idx) => (
           <div
@@ -156,7 +151,6 @@ export const AdminUsersScreen = () => {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -169,16 +163,18 @@ export const AdminUsersScreen = () => {
               className="pl-10"
             />
           </div>
-          <Button variant="brand-secondary" shape="pill">
-            <UserIcon className="size-4" />
-            Add New User
-          </Button>
+          {canManageStatus && (
+            <Button variant="brand-secondary" shape="pill" onClick={() => setCreateUserOpen(true)}>
+              <UserIcon className="size-4" />
+              Add New User
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           <FilterIcon className="size-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground shrink-0">Role:</span>
-          {(["all", "STUDENT", "INSTRUCTOR", "ADMIN"] as const).map((role) => (
+          {(["all", "STUDENT", "INSTRUCTOR", "ADMIN", "SUPER_ADMIN"] as const).map((role) => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -210,7 +206,6 @@ export const AdminUsersScreen = () => {
         </div>
       </div>
 
-      {/* Users Table */}
       <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
         <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden">
           <CardContent className="p-0">
@@ -363,11 +358,11 @@ export const AdminUsersScreen = () => {
                                       }}
                                     >
                                       <BookOpenIcon className="size-4" />
-                                      Assign courses
+                                      Enroll in courses
                                     </button>
                                   )}
                                   {canAssignStudentCourses &&
-                                    (user.role === "INSTRUCTOR" || user.role === "ADMIN") &&
+                                    user.role === "INSTRUCTOR" &&
                                     user.status === "ACTIVE" &&
                                     !user.isSuspended && (
                                     <button
@@ -379,7 +374,7 @@ export const AdminUsersScreen = () => {
                                       }}
                                     >
                                       <BookOpenIcon className="size-4" />
-                                      Assign grading courses
+                                      Assign courses
                                     </button>
                                   )}
                                   <button
@@ -425,12 +420,19 @@ export const AdminUsersScreen = () => {
         </div>
       )}
 
+      <CreateUserSheet
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
+        onSuccess={() => refetch()}
+        isSuperAdmin={isSuperAdmin}
+      />
       <EditUserSheet
         user={editUser}
         open={!!editUser}
         onOpenChange={(open) => !open && setEditUser(null)}
         onSuccess={() => setEditUser(null)}
         updateUserMutation={updateUserMutation}
+        isSuperAdmin={isSuperAdmin}
       />
       <DeleteUserDialog
         user={deleteConfirmUser}
@@ -464,505 +466,5 @@ export const AdminUsersScreen = () => {
         onSuccess={() => setSendEmailUser(null)}
       />
     </div>
-  )
-}
-
-function EditUserSheet({
-  user,
-  open,
-  onOpenChange,
-  onSuccess,
-  updateUserMutation,
-}: {
-  user: GraphQLUser | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-  updateUserMutation: (opts: { variables: { input: { id: string; fullName?: string; email?: string; phoneNumber?: string; role?: UserRole; status?: UserStatus } } }) => Promise<unknown>
-}) {
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phoneValue, setPhoneValue] = useState(parsePhoneFromString(""))
-  const [role, setRole] = useState<UserRole>("STUDENT")
-  const [status, setStatus] = useState<UserStatus>("ACTIVE")
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (user) {
-      setFullName(user.fullName ?? "")
-      setEmail(user.email ?? "")
-      setPhoneValue(parsePhoneFromString(user.phoneNumber ?? ""))
-      setRole(user.role)
-      setStatus(user.status)
-    }
-  }, [user?.id, user?.fullName, user?.email, user?.phoneNumber, user?.role, user?.status])
-
-  const handleSave = async () => {
-    if (!user) return
-    setSaving(true)
-    try {
-      const fullPhone = getFullPhone(phoneValue)
-      await updateUserMutation({
-        variables: {
-          input: {
-            id: user.id,
-            fullName: fullName.trim() || undefined,
-            email: email.trim() || undefined,
-            phoneNumber: fullPhone.trim() || undefined,
-            role,
-            status,
-          },
-        },
-      })
-      onSuccess()
-      onOpenChange(false)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Edit user</SheetTitle>
-          <SheetDescription>
-            {user ? `Update profile for ${user.email}` : null}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 px-4">
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Full name</label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="rounded-xl" />
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Email</label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="rounded-xl" />
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Phone</label>
-            <PhoneInput value={phoneValue} onChange={setPhoneValue} placeholder="Phone number" />
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm">
-              <option value="STUDENT">Student</option>
-              <option value="INSTRUCTOR">Instructor</option>
-              <option value="ADMIN">Admin</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)} className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
-        </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="button" variant="brand-secondary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2Icon className="size-4 animate-spin" /> : "Save"}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-function DeleteUserDialog({
-  user,
-  open,
-  onOpenChange,
-  onConfirm,
-}: {
-  user: GraphQLUser | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: () => void
-}) {
-  return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(24rem,100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background p-6 shadow-xl">
-          <DialogPrimitive.Title className="text-lg font-semibold">Delete user</DialogPrimitive.Title>
-          <DialogPrimitive.Description className="mt-2 text-sm text-muted-foreground">
-            {user ? (
-              <>This will mark &quot;{user.fullName || user.email}&quot; as deleted. This action cannot be undone. Continue?</>
-            ) : null}
-          </DialogPrimitive.Description>
-          <div className="mt-6 flex justify-end gap-2">
-            <DialogPrimitive.Close asChild>
-              <Button type="button" variant="outline">Cancel</Button>
-            </DialogPrimitive.Close>
-            <Button type="button" variant="destructive" onClick={() => { onConfirm(); onOpenChange(false); }}>
-              Delete
-            </Button>
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
-  )
-}
-
-function enrollmentDateDefaultYmd(): string {
-  const t = new Date()
-  const y = t.getFullYear()
-  const m = String(t.getMonth() + 1).padStart(2, "0")
-  const d = String(t.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
-function AssignCoursesForUserSheet({
-  user,
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  user: GraphQLUser | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-}) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [enrollmentDateYmd, setEnrollmentDateYmd] = useState(enrollmentDateDefaultYmd)
-  const [paymentFile, setPaymentFile] = useState<File | null>(null)
-  const [paymentPreviewUrl, setPaymentPreviewUrl] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-  const { data: coursesData } = useQuery<{ getCourses: { id: string; slug: string; title: string }[] }>(GET_COURSES)
-  const [enrollMutation] = useMutation(ENROLL_USER_IN_COURSE)
-  const courses = useMemo(() => coursesData?.getCourses ?? [], [coursesData])
-
-  useEffect(() => {
-    if (user) {
-      setSelectedIds([])
-      setEnrollmentDateYmd(enrollmentDateDefaultYmd())
-      setPaymentFile(null)
-      setPaymentPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return null
-      })
-    }
-  }, [user?.id])
-
-  const toggle = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
-
-  const onPaymentFileChange = (file: File | null) => {
-    setPaymentFile(file)
-    setPaymentPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return file ? URL.createObjectURL(file) : null
-    })
-  }
-
-  const handleAssign = async () => {
-    if (!user) return
-    setSaving(true)
-    const toastId = toast.loading("Assigning courses...")
-    try {
-      let paymentScreenshotUrl: string | undefined
-      if (paymentFile) {
-        const uploadRes = await apiService.uploadImage(paymentFile, "users", user.id)
-        if (!uploadRes.success || !uploadRes.data?.url) {
-          toast.dismiss(toastId)
-          toast.error(getApiDisplayMessage(uploadRes, "Failed to upload payment screenshot."))
-          return
-        }
-        paymentScreenshotUrl = uploadRes.data.url
-      }
-      const inputBase = {
-        userId: user.id,
-        enrollmentDate: enrollmentDateYmd.trim() || undefined,
-        ...(paymentScreenshotUrl ? { paymentScreenshotUrl } : {}),
-      }
-      for (const courseId of selectedIds) {
-        await enrollMutation({ variables: { input: { ...inputBase, courseId } } })
-      }
-      toast.dismiss(toastId)
-      toast.success("Courses assigned successfully.")
-      onSuccess()
-      onOpenChange(false)
-    } catch (e) {
-      toast.dismiss(toastId)
-      toast.error(e instanceof Error ? e.message : "Failed to assign courses.")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Assign courses</SheetTitle>
-          <SheetDescription>
-            {user ? (
-              <>
-                For: <span className="font-medium text-foreground">{user.fullName || user.email}</span>
-                <span className="text-muted-foreground"> ({user.email})</span>
-              </>
-            ) : null}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="px-4 space-y-4 max-h-[60vh] overflow-y-auto">
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Date of enrollment</label>
-            <Input
-              type="date"
-              value={enrollmentDateYmd}
-              onChange={(e) => setEnrollmentDateYmd(e.target.value)}
-              className="rounded-xl"
-            />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Fees are due on the 12th of each month. If enrollment is before today, one fee row is created for each due date from the first due through today (up to the course installment limit). Enrollment on or after today still opens the full installment schedule.
-            </p>
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Payment screenshot (optional)</label>
-            <Input
-              type="file"
-              accept="image/*,application/pdf"
-              className="rounded-xl cursor-pointer text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5"
-              onChange={(e) => onPaymentFileChange(e.target.files?.[0] ?? null)}
-            />
-            {paymentPreviewUrl && paymentFile?.type.startsWith("image/") && (
-              <div
-                className="mt-2 h-40 w-full rounded-xl border bg-muted/30 bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${paymentPreviewUrl})` }}
-                role="img"
-                aria-label="Payment proof preview"
-              />
-            )}
-            {paymentFile && !paymentFile.type.startsWith("image/") && (
-              <p className="text-muted-foreground mt-1 text-xs">{paymentFile.name}</p>
-            )}
-            <p className="text-muted-foreground mt-1 text-xs">
-              If you attach proof, the first fee installment for each assigned course is marked paid (admin-attested).
-            </p>
-          </div>
-          <div className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">Courses</div>
-          <div className="space-y-2">
-          {courses.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted-surface/50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(c.id)}
-                onChange={() => toggle(c.id)}
-                className="rounded border-input"
-              />
-              <span className="text-sm font-medium">{c.title}</span>
-            </label>
-          ))}
-          </div>
-        </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="brand-secondary"
-            onClick={handleAssign}
-            disabled={saving || selectedIds.length === 0}
-          >
-            {saving ? <Loader2Icon className="size-4 animate-spin" /> : <BookOpenIcon className="size-4" />}
-            <span className="ml-2">{saving ? "Saving..." : "Assign courses"}</span>
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-function AssignGradingCoursesForUserSheet({
-  user,
-  open,
-  onOpenChange,
-  onSuccess,
-  updateUserMutation,
-}: {
-  user: GraphQLUser | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-  updateUserMutation: (opts: { variables: { input: { id: string; allowedMarkGradesOn?: string[] } } }) => Promise<unknown>
-}) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [saving, setSaving] = useState(false)
-  const { data: coursesData } = useQuery<{ getCourses: { id: string; title: string }[] }>(GET_COURSES)
-  const { data: userData, loading: userLoading } = useQuery<{ getUser: { allowedMarkGradesOn: string[] } | null }>(
-    GET_USER_BY_ID,
-    { variables: { id: user?.id ?? "" }, skip: !user?.id || !open }
-  )
-  const courses = useMemo(() => coursesData?.getCourses ?? [], [coursesData])
-
-  useEffect(() => {
-    if (open && userData?.getUser) {
-      setSelectedIds(userData.getUser.allowedMarkGradesOn ?? [])
-    } else if (open && user) {
-      setSelectedIds([])
-    }
-  }, [open, user?.id, userData?.getUser])
-
-  const toggle = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
-
-  const handleSave = async () => {
-    if (!user) return
-    setSaving(true)
-    try {
-      await updateUserMutation({
-        variables: {
-          input: {
-            id: user.id,
-            allowedMarkGradesOn: selectedIds,
-          },
-        },
-      })
-      onSuccess()
-      onOpenChange(false)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Assign grading courses</SheetTitle>
-          <SheetDescription>
-            {user ? (
-              <>
-                Choose which courses{" "}
-                <span className="font-medium text-foreground">{user.fullName || user.email}</span> can grade, manage
-                quizzes, and schedule lectures for.
-                {user.role === "INSTRUCTOR" && (
-                  <span className="mt-2 block text-xs">
-                    Instructors only see courses selected here. Leave all unchecked to remove access.
-                  </span>
-                )}
-              </>
-            ) : null}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="px-4 max-h-[60vh] overflow-y-auto">
-          {userLoading ? (
-            <div className="flex items-center gap-2 py-8 text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" />
-              Loading current assignments…
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {courses.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-muted-surface/50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(c.id)}
-                    onChange={() => toggle(c.id)}
-                    className="rounded border-input"
-                  />
-                  <span className="text-sm font-medium">{c.title}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" variant="brand-secondary" onClick={handleSave} disabled={saving || userLoading}>
-            {saving ? <Loader2Icon className="size-4 animate-spin" /> : "Save assignments"}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-function SendEmailToUserSheet({
-  user,
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  user: GraphQLUser | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-}) {
-  const [subject, setSubject] = useState("")
-  const [body, setBody] = useState("")
-  const [sending, setSending] = useState(false)
-
-  useEffect(() => {
-    if (user) {
-      setSubject("")
-      setBody("")
-    }
-  }, [user?.id])
-
-  const handleSend = async () => {
-    if (!user) return
-    setSending(true)
-    const toastId = toast.loading("Sending email...")
-    const response = await apiService.sendEmailToUser(user.id, subject, body)
-    toast.dismiss(toastId)
-    setSending(false)
-    if (response.success) {
-      toast.success(getApiDisplayMessage(response, "Email sent successfully."))
-      onSuccess()
-      onOpenChange(false)
-    } else {
-      toast.error(getApiDisplayMessage(response, "Failed to send email. Please try again."))
-    }
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={SheetContentSide.RIGHT} className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Send email</SheetTitle>
-          <SheetDescription>
-            {user ? (
-              <>
-                To: <span className="font-medium text-foreground">{user.fullName || user.email}</span>
-                <span className="text-muted-foreground"> ({user.email})</span>
-              </>
-            ) : null}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 px-4">
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Subject</label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Email subject" className="rounded-xl" />
-          </div>
-          <div>
-            <label className="text-muted-foreground mb-1.5 block text-sm font-medium">Message</label>
-            <RichTextEditor value={body} onChange={setBody} placeholder="Write your message..." minHeight="160px" />
-          </div>
-        </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="brand-secondary"
-            onClick={handleSend}
-            disabled={sending || !subject.trim() || !body.trim()}
-          >
-            {sending ? <Loader2Icon className="size-4 animate-spin" /> : <SendIcon className="size-4" />}
-            <span className="ml-2">{sending ? "Sending..." : "Send email"}</span>
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
   )
 }
