@@ -29,7 +29,7 @@ export const WebappFooter = ({ className }: { className?: string }) => {
                 {SITE_PHONE_DISPLAY}
               </a>
             </div>
-            <div className="text-(--text-on-dark)/75 text-sm">Email: info@cloudrika.com</div>
+            <div className="text-(--text-on-dark)/75 text-sm">Email: info@techonskills.com</div>
             <div className="text-(--text-on-dark)/75 text-sm">Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan</div>
           </div>
 
