@@ -700,7 +700,7 @@ export const LandingPageScreen = () => {
                 <CardContent className="space-y-3 text-sm">
                   {[
                     { k: "Phone", v: SITE_PHONE_DISPLAY },
-                    { k: "Email", v: "info@cloudrika.com" },
+                    { k: "Email", v: "info@techonskills.com" },
                     { k: "Address", v: "8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan" },
                   ].map((r) => (
                     <div key={r.k} className="rounded-2xl border bg-background/40 p-4">

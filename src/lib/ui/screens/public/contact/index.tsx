@@ -51,7 +51,7 @@ export const PublicContactScreen = () => {
               <CardContent className="space-y-3 text-sm">
                 {[
                   `Phone: ${SITE_PHONE_DISPLAY}`,
-                  "Email: info@cloudrika.com",
+                  "Email: info@techonskills.com",
                   "Address: 8th Floor, Office No. 812, Al Hafeez Executive Towers, Gulberg II, Firdous Market, Lahore, Punjab, Pakistan",
                 ].map((t) => (
                   <div key={t} className="flex items-start gap-2">
