@@ -1,6 +1,6 @@
 "use client"
 
-import { getApiDisplayMessage, logger } from "@/lib/helpers"
+import { getApiDisplayMessage, getPostLoginHomePath, logger } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { CONFIG, VERIFY_MAGIC_LINK_STATUS_CONTENT } from "@/utils/constants"
 import { MagicLinkStatus } from "@/utils/enums"
@@ -32,8 +32,11 @@ export const VerifyMagicLinkScreen = () => {
                     if (token && typeof window !== "undefined") {
                         localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN, token)
                     }
+                    if (data.data?.user && typeof window !== "undefined") {
+                        localStorage.setItem(CONFIG.STORAGE_KEYS.USER.PROFILE, JSON.stringify(data.data.user))
+                    }
                     setVerifyingStatus(MagicLinkStatus.VERIFIED)
-                    router.push(CONFIG.ROUTES.STUDENT.DASHBOARD)
+                    router.push(getPostLoginHomePath(data.data?.user?.role))
                 }
             } else {
                 logger({ type: LoggerLevel.ERROR, message: "Unable to verify magic link please try again", showToast: true })

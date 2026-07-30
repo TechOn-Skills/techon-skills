@@ -106,6 +106,10 @@ export function NotificationsDropdown() {
             "data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2"
           )}
         >
+          <DialogPrimitive.Title className="sr-only">Notifications</DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">
+            Your recent notifications and unpaid fee reminders
+          </DialogPrimitive.Description>
           <div className="border-b px-4 py-3 flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-sm">Notifications</span>

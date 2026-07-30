@@ -28,7 +28,7 @@ import {
   DELETE_LECTURE,
   DELETE_LECTURE_SERIES,
 } from "@/lib/graphql"
-import { cn } from "@/lib/helpers"
+import { cn, getStaffEyebrow } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
 
@@ -306,6 +306,7 @@ export const AdminScheduleLecturesScreen = () => {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-2xl font-semibold tracking-tight">Schedule live lectures</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
             Create weekly recurring sessions on whichever days you select (UTC). Leave &quot;Repeat until&quot; empty to

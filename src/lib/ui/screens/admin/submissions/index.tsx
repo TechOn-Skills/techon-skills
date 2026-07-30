@@ -8,7 +8,7 @@ import toast from "react-hot-toast"
 import { Button } from "@/lib/ui/useable-components/button"
 import { GET_SUBMISSIONS_FOR_COURSE, GET_COURSES } from "@/lib/graphql"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
-import { cn } from "@/lib/helpers"
+import { cn, getStaffEyebrow } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 
 import { SubmissionGradingBlock, type SubmissionRow } from "./submission-grading-block"
@@ -58,7 +58,7 @@ export const AdminSubmissionsScreen = () => {
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-secondary">Admin</div>
+          <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
             Grade Submissions
           </h1>

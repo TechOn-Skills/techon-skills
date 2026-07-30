@@ -18,7 +18,7 @@ import {
   PUBLISH_COURSE_ASSIGNMENT,
 } from "@/lib/graphql"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
-import { cn } from "@/lib/helpers"
+import { cn, getStaffEyebrow } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 
 type AssignmentRow = {
@@ -134,7 +134,7 @@ export const AdminAssignmentsScreen = () => {
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-secondary">Admin</div>
+          <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
             Course assignments
           </h1>

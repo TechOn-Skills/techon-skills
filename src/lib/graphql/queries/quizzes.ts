@@ -106,3 +106,23 @@ export const GET_MY_QUIZ_ATTEMPT = gql`
     }
   }
 `;
+
+export const GET_QUIZ_RESULTS = gql`
+  query GetQuizResults($quizId: ID!) {
+    getQuizResults(quizId: $quizId) {
+      id
+      quizId
+      userId
+      score
+      maxScore
+      percentage
+      passed
+      submittedAt
+      user {
+        id
+        fullName
+        email
+      }
+    }
+  }
+`;

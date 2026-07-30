@@ -18,7 +18,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { CONFIG } from "@/utils/constants"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { ProgressRing } from "@/lib/ui/useable-components/progress-ring"
-import { cn, parseDate, formatTime } from "@/lib/helpers"
+import { parseDate, formatTime } from "@/lib/helpers"
 import { GET_MY_PROGRESS, GET_UPCOMING_LECTURES } from "@/lib/graphql"
 import { useUser } from "@/lib/providers/user"
 
@@ -37,7 +37,7 @@ export const StudentMyLecturesScreen = () => {
   const { data: lectureData, loading: loadingLectures, error: lectureError } = useQuery<{
     getUpcomingLectures: LectureApi[]
   }>(GET_UPCOMING_LECTURES)
-  const { data: progressData, loading: loadingProgress } = useQuery<{
+  const { data: progressData, loading: loadingProgress, error: progressError } = useQuery<{
     getMyProgress: {
       enrolledCoursesCount: number
       publishedQuizzesTotal: number
@@ -114,6 +114,10 @@ export const StudentMyLecturesScreen = () => {
           <Loader2Icon className="size-5 animate-spin" />
           Loading progress…
         </div>
+      ) : progressError ? (
+        <div className="mb-8 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          Could not load your progress stats. Please refresh and try again.
+        </div>
       ) : progress ? (
         <>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -141,7 +145,7 @@ export const StudentMyLecturesScreen = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-muted-foreground text-xs">
-                {progress.quizzesPassed} passed · instant results on submit
+                {progress.quizzesPassed} passed · {Math.max(0, progress.publishedQuizzesTotal - progress.quizzesAttempted)} remaining
               </CardContent>
             </Card>
             <Card className="rounded-2xl">
@@ -197,24 +201,58 @@ export const StudentMyLecturesScreen = () => {
             </div>
           )}
         </>
+      ) : userProfileInfo?.id ? (
+        <div className="text-muted-foreground mb-8 rounded-2xl border border-dashed px-4 py-8 text-center text-sm">
+          No progress data yet. Enroll in a course to see quizzes and assignments here.
+        </div>
       ) : null}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href={CONFIG.ROUTES.STUDENT.QUIZZES} className="rounded-2xl border p-4 transition-all hover:shadow-md">
           <ClipboardListIcon className="text-(--brand-secondary) mb-2 size-5" />
           <div className="font-semibold text-sm">My Quizzes</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            {progress
+              ? `${progress.quizzesAttempted}/${progress.publishedQuizzesTotal} attempted · ${progress.quizzesPassed} passed`
+              : loadingProgress
+                ? "Loading…"
+                : "Open quiz list"}
+          </div>
         </Link>
         <Link href={CONFIG.ROUTES.STUDENT.ASSIGNMENTS} className="rounded-2xl border p-4 transition-all hover:shadow-md">
           <ListTodoIcon className="text-(--brand-secondary) mb-2 size-5" />
           <div className="font-semibold text-sm">My Assignments</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            {progress
+              ? `${progress.assignmentsSubmitted}/${progress.publishedAssignmentsTotal} submitted · ${progress.assignmentsPendingReview} pending`
+              : loadingProgress
+                ? "Loading…"
+                : "Open assignment list"}
+          </div>
         </Link>
         <Link href={CONFIG.ROUTES.STUDENT.MARKS} className="rounded-2xl border p-4 transition-all hover:shadow-md">
           <AwardIcon className="text-(--brand-secondary) mb-2 size-5" />
           <div className="font-semibold text-sm">My Marks</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            {progress
+              ? progress.averageMarksPercent != null
+                ? `Average ${progress.averageMarksPercent}% · ${progress.assignmentsGraded} graded`
+                : `${progress.assignmentsGraded} graded so far`
+              : loadingProgress
+                ? "Loading…"
+                : "View graded work"}
+          </div>
         </Link>
         <Link href={CONFIG.ROUTES.STUDENT.MY_ENROLLED_COURSES} className="rounded-2xl border p-4 transition-all hover:shadow-md">
           <BookOpenIcon className="text-(--brand-secondary) mb-2 size-5" />
           <div className="font-semibold text-sm">My Courses</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            {progress
+              ? `${progress.enrolledCoursesCount} enrolled · ${overallPercent}% overall`
+              : loadingProgress
+                ? "Loading…"
+                : "Browse enrolled courses"}
+          </div>
         </Link>
       </div>
 

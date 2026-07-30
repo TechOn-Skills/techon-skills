@@ -13,11 +13,12 @@ import {
   CREATE_QUIZ,
   DELETE_QUIZ,
   GET_COURSES,
+  GET_QUIZ_RESULTS,
   GET_QUIZZES_FOR_COURSE,
   PUBLISH_QUIZ,
 } from "@/lib/graphql"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
-import { cn } from "@/lib/helpers"
+import { cn, getStaffEyebrow } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 
 type QuestionDraft = {
@@ -37,6 +38,16 @@ type QuizRow = {
   createdAt: string
 }
 
+type QuizResultRow = {
+  id: string
+  score: number
+  maxScore: number
+  percentage: number
+  passed: boolean
+  submittedAt: string
+  user?: { id: string; fullName?: string | null; email?: string | null } | null
+}
+
 const emptyQuestion = (): QuestionDraft => ({
   prompt: "",
   marks: "1",
@@ -53,6 +64,7 @@ export const AdminQuizzesScreen = () => {
   const [passPercentage, setPassPercentage] = useState("50")
   const [dueDate, setDueDate] = useState("")
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()])
+  const [resultsQuizId, setResultsQuizId] = useState<string | null>(null)
 
   const { data: coursesData, refetch: refetchCourses } = useQuery<{
     getCourses: Array<{ id: string; title: string }>
@@ -106,6 +118,18 @@ export const AdminQuizzesScreen = () => {
 
   const quizzes = quizData?.getQuizzesForCourse ?? []
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const { data: resultsData, loading: loadingResults } = useQuery<{ getQuizResults: QuizResultRow[] }>(GET_QUIZ_RESULTS, {
+    variables: { quizId: resultsQuizId ?? "" },
+    skip: !resultsQuizId,
+    fetchPolicy: "network-only",
+  })
+  const quizResults = resultsData?.getQuizResults ?? []
+  const resultsQuizTitle = quizzes.find((q) => q.id === resultsQuizId)?.title ?? "Quiz"
+
+  useEffect(() => {
+    setResultsQuizId(null)
+  }, [courseId])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -180,7 +204,7 @@ export const AdminQuizzesScreen = () => {
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-secondary">Instructor</div>
+          <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Course quizzes</h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
             Create MCQ quizzes, mark the correct options, then publish. Students get instant results when they submit.
@@ -378,6 +402,15 @@ export const AdminQuizzesScreen = () => {
                           <td className="text-muted-foreground p-4 text-xs">{q.dueDate ? new Date(q.dueDate).toLocaleString() : "—"}</td>
                           <td className="p-4">
                             <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                shape="pill"
+                                onClick={() => setResultsQuizId(resultsQuizId === q.id ? null : q.id)}
+                              >
+                                {resultsQuizId === q.id ? "Hide results" : "Results"}
+                              </Button>
                               {!q.isPublished && (
                                 <Button
                                   type="button"
@@ -410,6 +443,65 @@ export const AdminQuizzesScreen = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {resultsQuizId && (
+                <div className="border-t p-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold">Results · {resultsQuizTitle}</h3>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setResultsQuizId(null)}>
+                      Close
+                    </Button>
+                  </div>
+                  {loadingResults ? (
+                    <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Loading attempts…
+                    </div>
+                  ) : quizResults.length === 0 ? (
+                    <p className="text-muted-foreground py-4 text-sm">No student attempts yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border">
+                      <table className="w-full text-left text-sm">
+                        <thead className="border-b bg-muted-surface/40">
+                          <tr>
+                            <th className="p-3 font-semibold">Student</th>
+                            <th className="p-3 font-semibold">Score</th>
+                            <th className="p-3 font-semibold">%</th>
+                            <th className="p-3 font-semibold">Result</th>
+                            <th className="p-3 font-semibold">Submitted</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {quizResults.map((r) => (
+                            <tr key={r.id} className="border-b last:border-0">
+                              <td className="p-3">
+                                <div className="font-medium">{r.user?.fullName || "Student"}</div>
+                                <div className="text-muted-foreground text-xs">{r.user?.email}</div>
+                              </td>
+                              <td className="p-3">
+                                {r.score}/{r.maxScore}
+                              </td>
+                              <td className="p-3">{r.percentage}%</td>
+                              <td className="p-3">
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2 py-0.5 text-xs font-medium",
+                                    r.passed ? "bg-green-500/20 text-green-700" : "bg-red-500/20 text-red-700"
+                                  )}
+                                >
+                                  {r.passed ? "Passed" : "Failed"}
+                                </span>
+                              </td>
+                              <td className="text-muted-foreground p-3 text-xs">
+                                {r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

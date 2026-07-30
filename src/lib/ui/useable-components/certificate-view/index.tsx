@@ -1,8 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { cn } from "@/lib/helpers"
-import { getConfig } from "@/lib/services/config"
+import { cn, getImageSrc } from "@/lib/helpers"
 
 export type CertificateViewData = {
   studentName: string
@@ -38,8 +37,7 @@ export function CertificateView({
   showQr?: boolean
   pendingBadge?: boolean
 }) {
-  const { BACKEND_URL } = getConfig()
-  const signatureUrl = `${BACKEND_URL}/assets/signatures/ceo.png`
+  const signatureUrl = getImageSrc("signatures/ceo.png")
   const verifyUrl = buildVerifyUrl(data.verificationCode, data.verifyBaseUrl)
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(verifyUrl)}`
   const isPending = data.status === "pending"

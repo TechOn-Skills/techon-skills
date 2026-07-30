@@ -146,8 +146,9 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
 
   const handleSubmit = async () => {
     if (!a || !userId) return
-    if (!notes.trim() && pendingItems.length === 0) {
-      toast.error("Add notes or attach at least one file.")
+    const trimmedNotes = notes.trim()
+    if (!trimmedNotes && pendingItems.length === 0) {
+      toast.error("Add a text answer or attach at least one file.")
       return
     }
     if (totalPendingBytes > MAX_TOTAL_BYTES) {
@@ -173,13 +174,16 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
             referenceId: a.referenceId,
             title: a.title,
             maxMarks: a.maxMarks,
-            shortAnswers: [
-              {
-                questionId: 1,
-                questionText: "Submission notes",
-                answer: notes.trim() || "(files only)",
-              },
-            ],
+            textAnswer: trimmedNotes || undefined,
+            shortAnswers: trimmedNotes
+              ? [
+                  {
+                    questionId: 1,
+                    questionText: "Submission notes",
+                    answer: trimmedNotes,
+                  },
+                ]
+              : [],
             attachmentUrls: uploadedUrls.length ? uploadedUrls : undefined,
             attachmentUrl: uploadedUrls[0] ?? undefined,
           },
@@ -263,9 +267,9 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
           <CardTitle className="text-base">Submit work</CardTitle>
           <CardDescription>
             {!hasSubmissionRecord &&
-              "Add up to multiple files (images or PDF). Total size must not exceed 5MB."}
+              "Submit a text answer and/or attach files (images or PDF). Text is optional when a file is attached. Total size must not exceed 5MB."}
             {hasSubmissionRecord && canUpload &&
-              "Re-attempt allowed. Add files and notes below; total size must not exceed 5MB."}
+              "Re-attempt allowed. Add a text answer and/or files; text is optional when a file is attached. Total size must not exceed 5MB."}
             {pendingReview &&
               "Pending review — your instructor will grade this submission."}
             {graded && !canUpload && sub?.passingGrade &&
@@ -279,7 +283,11 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={!canUpload}
-            placeholder="Notes or comments for your instructor…"
+            placeholder={
+              pendingItems.length > 0
+                ? "Optional notes for your instructor…"
+                : "Text answer (required unless you attach a file)…"
+            }
             className="min-h-32"
           />
 

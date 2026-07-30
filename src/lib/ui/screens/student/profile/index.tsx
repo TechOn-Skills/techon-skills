@@ -51,7 +51,7 @@ export const StudentProfileScreen = () => {
     averageMarksPercent: number | null
     courses: Array<{ courseTitle: string; progressPercent: number }>
   } }>(GET_MY_PROGRESS, { skip: !data?.userProfileInfo?.id })
-  const { enrolledCoursesFromApi } = useUser()
+  const { enrolledCoursesFromApi, refetchProfile } = useUser()
   const [updateUser] = useMutation(UPDATE_USER_INPUT)
   const apiProfile = data?.userProfileInfo
 
@@ -121,7 +121,7 @@ export const StudentProfileScreen = () => {
           },
         },
       })
-      await refetch()
+      await Promise.all([refetch(), refetchProfile()])
       setProfileFile(null)
       if (profilePreview) URL.revokeObjectURL(profilePreview)
       setProfilePreview(null)
