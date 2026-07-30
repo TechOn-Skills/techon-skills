@@ -9,7 +9,7 @@ import {
     UserIcon,
 } from "lucide-react"
 
-import { cn, logger } from "@/lib/helpers"
+import { cn, getImageSrc, isBackendImageUrl, logger } from "@/lib/helpers"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Separator } from "@/lib/ui/useable-components/separator"
 import TechOnLogo from "@/lib/assets/techon-skills-logo-rm-bg.png"
@@ -30,6 +30,7 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
     const { userProfileInfo } = useUser()
     const displayName = userProfileInfo?.fullName?.trim() || userProfileInfo?.email || "Student"
     const displaySub = userProfileInfo?.email ? (userProfileInfo.fullName ? userProfileInfo.email : COMPANY_NAME) : COMPANY_NAME
+    const avatarSrc = getImageSrc(userProfileInfo?.profilePicture)
 
     const handleLogout = useCallback(async () => {
         try {
@@ -58,7 +59,6 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                         <SidebarTrigger aria-label="Open navigation" />
                     </div>
 
-                    {/* Logo and home link */}
                     <Link
                         href={CONFIG.ROUTES.STUDENT.DASHBOARD}
                         className="hover:bg-(--brand-secondary)/10 flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
@@ -81,7 +81,6 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                     </Link>
                 </div>
 
-                {/* Notifications & Profile */}
                 <div className="ml-auto flex items-center gap-2">
                     <NotificationsDropdown />
                     <ThemeSwitcher className="hidden sm:inline-flex" />
@@ -94,13 +93,24 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                                 aria-label="Open profile menu"
                             >
                                 <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-8 items-center justify-center overflow-hidden rounded-full">
-                                    <Image
-                                        src={TechOnLogo}
-                                        alt="Profile"
-                                        width={20}
-                                        height={20}
-                                        className="size-5"
-                                    />
+                                    {avatarSrc ? (
+                                        <Image
+                                            src={avatarSrc}
+                                            alt=""
+                                            width={32}
+                                            height={32}
+                                            className="size-8 object-cover"
+                                            unoptimized={isBackendImageUrl(avatarSrc)}
+                                        />
+                                    ) : (
+                                        <Image
+                                            src={TechOnLogo}
+                                            alt=""
+                                            width={20}
+                                            height={20}
+                                            className="size-5"
+                                        />
+                                    )}
                                 </span>
                                 <span className="hidden max-w-40 truncate text-sm font-medium sm:block">
                                     {displayName}
@@ -116,21 +126,28 @@ export const StudentAppbar = ({ className }: { className?: string }) => {
                                     "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed right-4 top-[3.75rem] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-xl border shadow-lg outline-none"
                                 )}
                             >
+                                <DialogPrimitive.Title className="sr-only">
+                                    Account menu
+                                </DialogPrimitive.Title>
+                                <DialogPrimitive.Description className="sr-only">
+                                    Profile links and logout
+                                </DialogPrimitive.Description>
                                 <div className="p-3">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-(--brand-primary) text-(--text-on-dark) flex size-10 items-center justify-center overflow-hidden rounded-full">
-                                            {userProfileInfo?.profilePicture ? (
+                                            {avatarSrc ? (
                                                 <Image
-                                                    src={userProfileInfo.profilePicture}
-                                                    alt="Profile"
+                                                    src={avatarSrc}
+                                                    alt=""
                                                     width={40}
                                                     height={40}
                                                     className="size-10 object-cover"
+                                                    unoptimized={isBackendImageUrl(avatarSrc)}
                                                 />
                                             ) : (
                                                 <Image
                                                     src={TechOnLogo}
-                                                    alt="Profile"
+                                                    alt=""
                                                     width={24}
                                                     height={24}
                                                     className="size-6"

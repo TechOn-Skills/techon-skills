@@ -39,4 +39,5 @@ export interface IUserContextProvider {
     enrolledCoursesFromApi: IEnrolledCourseFromApi[];
     requestedCoursesFromApi: IEnrolledCourseFromApi[];
     profileLoaded: boolean;
+    refetchProfile: () => Promise<void>;
 }

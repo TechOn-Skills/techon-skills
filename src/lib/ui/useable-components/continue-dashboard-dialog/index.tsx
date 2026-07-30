@@ -7,13 +7,12 @@ import { CheckCircle2Icon, MailIcon } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
 import { Input } from "@/lib/ui/useable-components/input"
-import { cn, getApiDisplayMessage, logger } from "@/lib/helpers"
+import { cn, getApiDisplayMessage, getPostLoginHomePath, logger } from "@/lib/helpers"
 import { CONFIG } from "@/utils/constants"
 import { apiService } from "@/lib/services"
 import { ApiResponse } from "@/utils/interfaces"
 import { LoggerLevel } from "@/utils/enums/logger"
 import { ResponseStatus } from "@/utils/enums/magic-link"
-import { UserRole } from "@/utils/enums/user"
 
 import toast from "react-hot-toast"
 import { useUser } from "@/lib/providers/user"
@@ -82,11 +81,8 @@ export const ContinueToDashboardDialog = ({ className }: { className?: string })
 
   const dashboardHref = useMemo(() => {
     if (!userProfileInfo) return null
-    return userProfileInfo.role === UserRole.STUDENT
-      ? CONFIG.ROUTES.STUDENT.DASHBOARD
-      : CONFIG.ROUTES.ADMIN.DASHBOARD
+    return getPostLoginHomePath(userProfileInfo.role)
   }, [userProfileInfo])
-
   const resetDialog = () => {
     setSubmitted(false)
     setSubmittedEmail("")

@@ -21,6 +21,7 @@ import {
 import type { IAdminSidebarProps } from "@/utils/interfaces"
 import { ADMIN_SIDEBAR_ITEMS, COMPANY_NAME, getAdminSidebarItemsForRole } from "@/utils/constants"
 import { useUser } from "@/lib/providers/user"
+import { getStaffPanelLabel } from "@/lib/helpers"
 
 export const AdminSidebar = ({
   className,
@@ -30,6 +31,7 @@ export const AdminSidebar = ({
   const { isMobile, setOpen } = useSidebar()
   const { userProfileInfo } = useUser()
   const sidebarItems = getAdminSidebarItemsForRole(userProfileInfo?.role)
+  const panelLabel = getStaffPanelLabel(userProfileInfo?.role)
 
   return (
     <Sidebar
@@ -51,7 +53,7 @@ export const AdminSidebar = ({
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <div className="truncate text-sm font-semibold">{COMPANY_NAME}</div>
               <div className="text-sidebar-foreground/70 truncate text-xs">
-                Control panel
+                {panelLabel}
               </div>
             </div>
           </div>

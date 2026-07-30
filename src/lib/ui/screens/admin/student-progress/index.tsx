@@ -9,7 +9,7 @@ import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { GET_COURSES, GET_STUDENTS_PROGRESS } from "@/lib/graphql"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
-import { cn, formatDateLong } from "@/lib/helpers"
+import { cn, formatDateLong, getStaffEyebrow } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 
 type StudentRow = {
@@ -66,7 +66,7 @@ export const AdminStudentProgressScreen = () => {
     <div className="w-full py-10 animate-in fade-in duration-700">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-secondary">Evaluation</div>
+          <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Student progress</h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
             Track each student&apos;s quiz attempts, assignment submissions, and overall completion — all from live data.

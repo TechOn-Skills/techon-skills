@@ -16,9 +16,8 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 
-import { cn, getApiDisplayMessage, formatDateTime } from "@/lib/helpers"
+import { cn, getApiDisplayMessage, formatDateTime, getImageSrc } from "@/lib/helpers"
 import { apiService } from "@/lib/services/api"
-import { getConfig } from "@/lib/services/config"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -125,8 +124,6 @@ function PublicEnrollmentApplicationsPanel() {
   useEffect(() => {
     queueMicrotask(() => fetchApplications())
   }, [fetchApplications])
-
-  const backendBase = getConfig().BACKEND_URL.replace(/\/$/, "")
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return applications
@@ -243,7 +240,7 @@ function PublicEnrollmentApplicationsPanel() {
                   <tbody>
                     {filtered.map((app) => {
                       const busy = actionId === app._id
-                      const proofUrl = `${backendBase}/assets/${app.feePaymentScreenshotRelativePath}`
+                      const proofUrl = getImageSrc(app.feePaymentScreenshotRelativePath)
                       return (
                         <tr key={app._id} className="border-border border-b transition-colors hover:bg-background/60">
                           <td className="p-4 align-top">

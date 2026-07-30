@@ -1,5 +1,5 @@
 import { getConfig } from "@/lib/services/config";
-import { fetchURL, getClientTimezone, handleApiResponse } from "@/lib/helpers";
+import { fetchURL, getClientTimezone, handleApiResponse, getImageSrc } from "@/lib/helpers";
 import { CONFIG } from "@/utils/constants";
 import { FetchMethod } from "@/utils/enums";
 import {
@@ -132,7 +132,7 @@ class ApiService {
         });
         const json = await response.json();
         if (json?.data?.url) {
-            json.data.url = json.data.url.startsWith("http") ? json.data.url : `${BACKEND_URL.replace(/\/$/, "")}${json.data.url}`;
+            json.data.url = getImageSrc(json.data.url);
         }
         return json as ApiResponse<{ url: string; filename: string; relativePath?: string }>;
     }

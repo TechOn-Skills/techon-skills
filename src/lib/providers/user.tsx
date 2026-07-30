@@ -1,6 +1,6 @@
 "use client";
 import { IUser, IUserContextProvider, IUserProfileInfo, IEnrolledCourseFromApi } from "@/utils/interfaces";
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_USER_PROFILE_INFO } from "@/lib/graphql";
 import { LoggerLevel } from "@/utils/enums/logger";
@@ -21,7 +21,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [userData] = useState<IUser | null>(null);
 
     const pathname = usePathname();
-    const { data, loading, error } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO, {
+    const { data, loading, error, refetch } = useQuery<UserProfileQueryResult>(GET_USER_PROFILE_INFO, {
         fetchPolicy: "network-only",
         skip: !pathname || pathname === CONFIG.ROUTES.AUTH.VERIFY_MAGIC_LINK,
     });
@@ -51,6 +51,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     /** True after first response; stays true during background refetches so route guards don't flash/spin on every navigation. */
     const profileLoaded = !loading || data !== undefined;
 
+    const refetchProfile = useCallback(async () => {
+        await refetch();
+    }, [refetch]);
+
     useEffect(() => {
         if (userProfileInfo) {
             localStorage.setItem(CONFIG.STORAGE_KEYS.USER.PROFILE, JSON.stringify(userProfileInfo));
@@ -64,8 +68,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, [error]);
 
     const value = useMemo(
-        () => ({ userProfileInfo: error ? null : userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded }),
-        [userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded, error]
+        () => ({
+            userProfileInfo: error ? null : userProfileInfo,
+            userData,
+            enrolledCoursesFromApi,
+            requestedCoursesFromApi,
+            profileLoaded,
+            refetchProfile,
+        }),
+        [userProfileInfo, userData, enrolledCoursesFromApi, requestedCoursesFromApi, profileLoaded, error, refetchProfile]
     );
 
     return (

@@ -29,6 +29,21 @@ const nextConfig: NextConfig = {
         hostname: "api.qrserver.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "s3.ap-south-1.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "bucket.techonskills.s3.ap-south-1.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "ui-avatars.com",
+        pathname: "/**",
+      }
     ],
   },
 };
