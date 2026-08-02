@@ -53,9 +53,19 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
 )
 ChartContainer.displayName = "ChartContainer"
 
+type ChartTooltipPayloadEntry = {
+  name?: unknown
+  value?: unknown
+  dataKey?: unknown
+  color?: string
+  fill?: string
+  payload?: unknown
+}
+
 type ChartTooltipContentProps = {
   active?: boolean
-  payload?: Array<{ name?: string; value?: number | string; dataKey?: string; color?: string; fill?: string }>
+  /** Compatible with Recharts TooltipPayloadEntry (name/value/dataKey shapes vary by version). */
+  payload?: ChartTooltipPayloadEntry[]
   label?: string
   labelFormatter?: (label: unknown) => React.ReactNode
   formatter?: (value: unknown) => React.ReactNode
@@ -93,7 +103,10 @@ function ChartTooltipContent({
       <div className="flex flex-col gap-0.5">
         {payload.map((entry) => {
           const key = entry.dataKey ?? entry.name
-          const cfg = key ? config[key as keyof typeof config] : undefined
+          const cfg =
+            typeof key === "string" || typeof key === "number"
+              ? config[key as keyof typeof config]
+              : undefined
           const displayName = (cfg && typeof cfg === "object" && cfg.label) ?? entry.name ?? key
           const value = formatter ? formatter(entry.value) : entry.value
           const color = entry.color ?? entry.fill
@@ -106,9 +119,11 @@ function ChartTooltipContent({
                     style={{ backgroundColor: color }}
                   />
                 )}
-                <span className="text-muted-foreground">{displayName}</span>
+                <span className="text-muted-foreground">{String(displayName ?? "")}</span>
               </span>
-              <span className="font-medium tabular-nums text-foreground">{value}</span>
+              <span className="font-medium tabular-nums text-foreground">
+                {value as React.ReactNode}
+              </span>
             </div>
           )
         })}
