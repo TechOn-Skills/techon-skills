@@ -1,4 +1,11 @@
+import { getClientTimezone } from "./timezone"
+
 const FALLBACK = "—"
+
+function displayTimeZone(): string | undefined {
+  const tz = getClientTimezone()
+  return tz || undefined
+}
 
 /**
  * Parse a value into a Date. Handles ISO strings, milliseconds, seconds, and Date objects.
@@ -39,21 +46,27 @@ type FormatOptions = {
   day?: "numeric" | "2-digit"
   locale?: string | string[]
   fallback?: string
+  /** Override; defaults to the browser's personal IANA timezone. */
+  timeZone?: string
 }
 
 /**
  * Format a date for display. Returns fallback (default "—") for invalid or missing values.
  * Never returns "Invalid Date" or raw milliseconds.
+ * Uses the client's personal timezone (from browser Intl) unless `timeZone` is passed.
  */
 export function formatDate(
   value: string | number | Date | null | undefined,
   options: FormatOptions & Intl.DateTimeFormatOptions = {}
 ): string {
-  const { fallback = FALLBACK, locale, ...rest } = options
+  const { fallback = FALLBACK, locale, timeZone, ...rest } = options
   const d = parseDate(value)
   if (!d) return fallback
   try {
-    return d.toLocaleDateString(locale ?? undefined, rest as Intl.DateTimeFormatOptions)
+    return d.toLocaleDateString(locale ?? undefined, {
+      ...rest,
+      timeZone: timeZone ?? displayTimeZone(),
+    } as Intl.DateTimeFormatOptions)
   } catch {
     return fallback
   }
@@ -61,12 +74,13 @@ export function formatDate(
 
 /**
  * Format date and time for display (e.g. "16 Mar 2025, 2:30 pm").
+ * Converts UTC instants into the client's personal timezone.
  */
 export function formatDateTime(
   value: string | number | Date | null | undefined,
-  options: { locale?: string; fallback?: string } = {}
+  options: { locale?: string; fallback?: string; timeZone?: string } = {}
 ): string {
-  const { fallback = FALLBACK, locale } = options
+  const { fallback = FALLBACK, locale, timeZone } = options
   const d = parseDate(value)
   if (!d) return fallback
   try {
@@ -76,6 +90,7 @@ export function formatDateTime(
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: timeZone ?? displayTimeZone(),
     })
   } catch {
     return fallback
@@ -87,33 +102,15 @@ export function formatDateTime(
  */
 export function formatDateLong(
   value: string | number | Date | null | undefined,
-  options: { locale?: string; fallback?: string } = {}
+  options: { locale?: string; fallback?: string; timeZone?: string } = {}
 ): string {
-  const { fallback = FALLBACK, locale } = options
+  const { fallback = FALLBACK, locale, timeZone } = options
   const d = parseDate(value)
   if (!d) return fallback
   try {
-    return d.toLocaleDateString(locale, { dateStyle: "long" })
-  } catch {
-    return fallback
-  }
-}
-
-/**
- * Format time only (e.g. "2:30:45 pm").
- */
-export function formatTime(
-  value: string | number | Date | null | undefined,
-  options: { locale?: string; fallback?: string } = {}
-): string {
-  const { fallback = FALLBACK, locale } = options
-  const d = parseDate(value)
-  if (!d) return fallback
-  try {
-    return d.toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+    return d.toLocaleDateString(locale, {
+      dateStyle: "long",
+      timeZone: timeZone ?? displayTimeZone(),
     })
   } catch {
     return fallback
@@ -121,19 +118,56 @@ export function formatTime(
 }
 
 /**
- * Format as YYYY-MM-DD for display (e.g. "2025-03-16"). Useful for due dates from API.
+ * Format time only (e.g. "2:30:45 pm") in the client's personal timezone.
+ */
+export function formatTime(
+  value: string | number | Date | null | undefined,
+  options: { locale?: string; fallback?: string; timeZone?: string } = {}
+): string {
+  const { fallback = FALLBACK, locale, timeZone } = options
+  const d = parseDate(value)
+  if (!d) return fallback
+  try {
+    return d.toLocaleTimeString(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: timeZone ?? displayTimeZone(),
+    })
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * Format as YYYY-MM-DD for display (e.g. "2025-03-16") in the client's personal timezone.
  */
 export function formatDateISO(
   value: string | number | Date | null | undefined,
-  options: { fallback?: string } = {}
+  options: { fallback?: string; timeZone?: string } = {}
 ): string {
-  const { fallback = FALLBACK } = options
+  const { fallback = FALLBACK, timeZone } = options
   const d = parseDate(value)
   if (!d) return fallback
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
+  try {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: timeZone ?? displayTimeZone(),
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+        .formatToParts(d)
+        .filter((p) => p.type !== "literal")
+        .map((p) => [p.type, p.value])
+    ) as Record<string, string>
+    return `${parts.year}-${parts.month}-${parts.day}`
+  } catch {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${y}-${m}-${day}`
+  }
 }
 
 /**

@@ -28,11 +28,11 @@ import {
   DELETE_LECTURE,
   DELETE_LECTURE_SERIES,
 } from "@/lib/graphql"
-import { cn, getStaffEyebrow } from "@/lib/helpers"
+import { cn, getStaffEyebrow, getClientTimezone } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
 
-const WEEKDAYS_UTC = [
+const WEEKDAYS = [
   { v: 0, label: "Sunday" },
   { v: 1, label: "Monday" },
   { v: 2, label: "Tuesday" },
@@ -42,13 +42,34 @@ const WEEKDAYS_UTC = [
   { v: 6, label: "Saturday" },
 ] as const
 
+function clientTz(): string | undefined {
+  const tz = getClientTimezone()
+  return tz || undefined
+}
+
+/** UTC ISO → datetime-local value in the client's personal timezone. */
 function toDatetimeLocalValue(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ""
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const tz = clientTz()
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(d)
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value])
+  ) as Record<string, string>
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
 }
 
+/** datetime-local wall time in client TZ → UTC ISO (browser interprets as local). */
 function fromDatetimeLocalValue(s: string): string {
   const d = new Date(s)
   return d.toISOString()
@@ -56,7 +77,11 @@ function fromDatetimeLocalValue(s: string): string {
 
 function formatSession(iso: string): string {
   try {
-    return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    return new Date(iso).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: clientTz(),
+    })
   } catch {
     return iso
   }
@@ -107,7 +132,7 @@ const emptySchedule = {
   title: "",
   meetUrl: "",
   durationMins: 60,
-  /** 0=Sun … 6=Sat (UTC); any combination */
+  /** 0=Sun … 6=Sat (client local calendar); any combination */
   selectedWeekdays: [1, 2, 3] as number[],
   startDate: "",
   timeOfDay: "14:00",
@@ -122,6 +147,7 @@ function toggleWeekdayInList(current: number[], day: number): number[] {
 
 export const AdminScheduleLecturesScreen = () => {
   const { userProfileInfo } = useUser()
+  const timezoneLabel = getClientTimezone() || "your local timezone"
   const [createOpen, setCreateOpen] = useState(false)
   const [editRow, setEditRow] = useState<LectureRow | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -309,9 +335,9 @@ export const AdminScheduleLecturesScreen = () => {
           <div className="text-sm font-semibold text-secondary">{getStaffEyebrow(userProfileInfo?.role)}</div>
           <h1 className="text-2xl font-semibold tracking-tight">Schedule live lectures</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-            Create weekly recurring sessions on whichever days you select (UTC). Leave &quot;Repeat until&quot; empty to
-            use each course&apos;s duration. Students get an email about five minutes before each session with the meeting
-            link and dashboard URL.
+            Create weekly recurring sessions on whichever days you select, using your local time ({timezoneLabel}).
+            Leave &quot;Repeat until&quot; empty to use each course&apos;s duration. Students get an email about five
+            minutes before each session with the meeting link and dashboard URL.
           </p>
         </div>
         <Button type="button" className="shrink-0 gap-2" onClick={() => setCreateOpen(true)}>
@@ -324,11 +350,12 @@ export const AdminScheduleLecturesScreen = () => {
         <CardContent className="flex gap-3 pt-6 text-sm text-muted-foreground">
           <CalendarClockIcon className="mt-0.5 h-5 w-5 shrink-0 text-(--brand-primary)" />
           <div>
-            <p className="font-medium text-foreground">UTC times</p>
+            <p className="font-medium text-foreground">Your local timezone</p>
             <p>
-              Weekday and <span className="font-medium">Time (HH:mm)</span> follow UTC so they match the server calendar.
-              Editing a single session changes only that occurrence; use &quot;Delete series&quot; to remove every
-              session in the same recurring group.
+              Weekdays, dates, and <span className="font-medium">Time (HH:mm)</span> use{" "}
+              <span className="font-medium text-foreground">{timezoneLabel}</span>. The server stores them in UTC and
+              converts back for each viewer. Editing a single session changes only that occurrence; use &quot;Delete
+              series&quot; to remove every session in the same recurring group.
             </p>
           </div>
         </CardContent>
@@ -444,7 +471,7 @@ export const AdminScheduleLecturesScreen = () => {
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b text-muted-foreground">
-                  <th className="pb-3 pr-4 font-medium">When (local)</th>
+                  <th className="pb-3 pr-4 font-medium">When</th>
                   <th className="pb-3 pr-4 font-medium">Course</th>
                   <th className="pb-3 pr-4 font-medium">Title</th>
                   <th className="pb-3 pr-4 font-medium">Meet</th>
@@ -528,7 +555,8 @@ export const AdminScheduleLecturesScreen = () => {
             <div className="shrink-0 border-b px-6 py-4">
               <DialogPrimitive.Title className="text-lg font-semibold">New recurring schedule</DialogPrimitive.Title>
               <DialogPrimitive.Description className="text-muted-foreground mt-1 text-sm">
-                Sessions repeat on the same UTC weekdays until the end date (or the course&apos;s default duration).
+                Sessions repeat on the selected weekdays in {timezoneLabel} until the end date (or the course&apos;s
+                default duration). Times are converted to UTC when saved.
               </DialogPrimitive.Description>
             </div>
             <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -580,7 +608,7 @@ export const AdminScheduleLecturesScreen = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <span className="text-sm font-medium">Time (UTC HH:mm)</span>
+                  <span className="text-sm font-medium">Time (HH:mm, {timezoneLabel})</span>
                   <Input
                     value={scheduleForm.timeOfDay}
                     onChange={(e) => setScheduleForm((s) => ({ ...s, timeOfDay: e.target.value }))}
@@ -589,10 +617,10 @@ export const AdminScheduleLecturesScreen = () => {
                 </div>
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Days of the week (UTC)</span>
-                <p className="text-muted-foreground text-xs">Pick any combination; sessions repeat on those days each week.</p>
+                <span className="text-sm font-medium">Days of the week</span>
+                <p className="text-muted-foreground text-xs">Pick any combination; sessions repeat on those days each week in your timezone.</p>
                 <div className="flex flex-wrap gap-2">
-                  {WEEKDAYS_UTC.map((d) => {
+                  {WEEKDAYS.map((d) => {
                     const checked = scheduleForm.selectedWeekdays.includes(d.v)
                     return (
                       <label
@@ -617,7 +645,7 @@ export const AdminScheduleLecturesScreen = () => {
                 </div>
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">First week (start date, UTC calendar)</span>
+                <span className="text-sm font-medium">First week (start date)</span>
                 <Input
                   type="date"
                   value={scheduleForm.startDate}
@@ -679,7 +707,7 @@ export const AdminScheduleLecturesScreen = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Start (local)</span>
+                <span className="text-sm font-medium">Start ({timezoneLabel})</span>
                 <Input
                   type="datetime-local"
                   value={editForm.startAtLocal}
