@@ -201,7 +201,7 @@ export const PublicCourseDetailScreen = ({ slug }: { slug: string }) => {
                             alt=""
                             width={800}
                             height={600}
-                            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                            className="h-full w-full object-contain transition-transform duration-500 hover:scale-105"
                             sizes="(max-width: 1024px) 100vw, 50vw"
                             unoptimized={isBackendImageUrl(feature.image)}
                           />
