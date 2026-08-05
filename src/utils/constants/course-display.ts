@@ -39,7 +39,7 @@ export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: 
     highlight: "Fast results",
     benefits: ["UI/UX Design", "Graphic Design", "Branding", "Animation"],
   },
-  "ai-developer-bootcamp":{
+  "ai-development-course":{
     icon: "brain",
     highlight: "Fast results",
     benefits: ["Python and Automation", "Data Science and ML", "Generative AI and  LLMs", "LangChain and AI Agents"],
