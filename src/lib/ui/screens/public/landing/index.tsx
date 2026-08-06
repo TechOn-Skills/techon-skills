@@ -212,11 +212,11 @@ export const LandingPageScreen = () => {
                 <div className="space-y-6">
                   <div className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs font-medium">
                     <CheckCircle2Icon className="size-3.5 text-(--brand-highlight)" />
-                    Job-ready skills, built with real projects
+                   Structured courses. Real projects. Marks that mean something.
                   </div>
 
                   <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                    Learn skills that{" "}
+                    Learn skills that {" "}
                     <span className="bg-[linear-gradient(135deg,var(--brand-secondary),var(--brand-highlight))] bg-clip-text text-transparent">
                       convert
                     </span>{" "}
@@ -224,9 +224,7 @@ export const LandingPageScreen = () => {
                   </h1>
 
                   <p className="text-muted-foreground max-w-2xl text-pretty text-lg leading-8">
-                    TechOn Skills helps you become confident in Web Development, Mobile App Development, Software Engineering,
-                    and Ecommerce (Shopify + WordPress + Wix) — with structured learning, practical assignments, and a dashboard
-                    that tracks marks.
+                    Structured courses in AI , Machine Learning, Data Science, Web Development, Mobile App Development, Software Engineering, Digital Marketing and Ecommerce (Shopify, WordPress, Wix) - built by Cloudrika Technologies. Learn through real assignments, get graded, track your progress on a dashboard built for accountability.
                   </p>
 
                   <div className="border-border/60 bg-background/40 rounded-2xl border p-4 text-sm">
@@ -244,10 +242,13 @@ export const LandingPageScreen = () => {
                       shape="pill"
                       className="max-sm:min-h-16 max-sm:w-full max-sm:px-8 max-sm:text-lg max-sm:has-[>svg]:px-7"
                     >
-                      <Link href="/courses">
-                        Explore courses
+                      <Link href="https://wa.me/923257720992?text=Hi,%20I%20want%20a%20career%20diagnostic.">
+                        Get Career Diagnostic
                         <ArrowRightIcon className="size-4 max-sm:size-5" />
                       </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="xl" shape="pill" className="hidden sm:inline-flex">
+                      <Link href="/courses">Explore 2026 Programs</Link>
                     </Button>
                     <Button
                       asChild
@@ -258,16 +259,14 @@ export const LandingPageScreen = () => {
                     >
                       <Link href={CONFIG.ROUTES.PUBLIC.ENROLLMENT}>Enroll now</Link>
                     </Button>
-                    <Button asChild variant="outline" size="xl" shape="pill" className="hidden sm:inline-flex">
-                      <Link href="#contact">Contact</Link>
-                    </Button>
+                    
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
                     {[
-                      { label: "Hands-on", value: "Projects" },
-                      { label: "Guided", value: "Flow" },
-                      { label: "Clear", value: "Outcomes" },
+                      { label: "Agency-Grade", value: "Code Reviews" },
+                      { label: "Live Deployment", value: "Production" },
+                      { label: "Tracked Marks", value: "Accountability" },
                     ].map((s) => (
                       <div key={s.label} className="rounded-2xl border bg-background/60 p-4">
                         <div className="text-xl font-semibold">{s.value}</div>
@@ -284,9 +283,10 @@ export const LandingPageScreen = () => {
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     {[
-                      "A modern landing page + dashboard UI",
-                      "An API-driven app with authentication",
-                      "A deployable project with Git workflow",
+                      "Production Next.js & React Native Apps",
+                      "AI Agents, RAG Pipelines & FastAPI Backends",
+                      "Figma Design Systems & Conversion UIs",
+                      "Live Cloud Deployments (Vercel, Docker, AWS)",
                     ].map((t) => (
                       <div key={t} className="flex items-start gap-2">
                         <CheckCircle2Icon className="mt-0.5 size-4 text-(--brand-highlight)" />
@@ -310,11 +310,10 @@ export const LandingPageScreen = () => {
               <div className="space-y-2">
                 <div className="text-sm font-semibold text-secondary">Featured</div>
                 <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Pick a path — we’ll guide you to the finish line.
+                  Select your track, built for high-paying roles and dollar retainers.
                 </h2>
                 <p className="text-muted-foreground max-w-2xl">
-                  Choose one track or combine skills. Every course follows a clean flow: learn → practice → submit →
-                  feedback.
+                  Every course follows an active execution path: Learn → Practice → Submit → Graded Feedback.
                 </p>
               </div>
 
@@ -464,17 +463,17 @@ export const LandingPageScreen = () => {
                 {[
                   {
                     title: "Structured lessons",
-                    description: "Short lessons that build confidence without overwhelming you.",
+                    description: "Focused modules designed to avoid burnout while building core technical skills.",
                     icon: GraduationCapIcon,
                   },
                   {
-                    title: "Assignments + marks",
-                    description: "Submit work, get marks, and see progress clearly — like a real training program.",
+                    title: "Graded Submissions",
+                    description: "Submit code, receive specific scoring and feedback on every assignment to see progress regularly.",
                     icon: FileCheck2Icon,
                   },
                   {
-                    title: "Career support",
-                    description: "Deserving candidates get help to start careers through strong performance and projects.",
+                    title: "Career & Retainer Support",
+                    description: "Top candidates get matched with production projects and client acquisition guidance.",
                     icon: BriefcaseIcon,
                   },
                 ].map((f) => (
@@ -497,7 +496,7 @@ export const LandingPageScreen = () => {
                 ))}
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
+              <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr] lg:items-stretch">
                 <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
                   <CardHeader>
                     <CardTitle>How the flow works</CardTitle>
@@ -560,12 +559,11 @@ export const LandingPageScreen = () => {
                     Outcomes
                   </div>
                   <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-[2.5rem] lg:leading-tight">
-                    Built to upgrade you — fast.
+                    Built to upgrade you ,  fast.
                   </h2>
                 </div>
-                <p className="text-muted-foreground max-w-xl text-pretty text-base leading-relaxed lg:max-w-md lg:pb-1 lg:text-right lg:text-[1.0625rem] lg:leading-8">
-                  You’ll build proof, not just theory. Your dashboard keeps you accountable with assignments, submissions, and
-                  marks — so momentum stays visible week after week.
+                <p className="text-muted-foreground max-w-xl text-pretty text-base leading-relaxed  lg:pb-1 lg:text-[1.0625rem] lg:leading-8">
+                  You’ll build proof, not just theory. Your dashboard keeps you accountable with assignments, submissions, and marks ,  so momentum stays visible week after week.
                 </p>
               </div>
 
@@ -573,13 +571,13 @@ export const LandingPageScreen = () => {
                 {[
                   {
                     title: "Clear roadmap",
-                    description: "Always know the next lesson and the next win — no guessing, no stalled progress.",
+                    description: "Always know the next lesson and the next win ,  no guessing, no stalled progress.",
                     icon: CompassIcon,
                     accent: "from-sky-500/15 to-transparent",
                   },
                   {
                     title: "Portfolio ready",
-                    description: "Ship real projects you can talk through in interviews — not “tutorial clones” nobody remembers.",
+                    description: "Ship real projects you can talk through in interviews ,  not “tutorial clones” nobody remembers.",
                     icon: RocketIcon,
                     accent: "from-orange-500/12 to-transparent",
                   },
@@ -635,7 +633,7 @@ export const LandingPageScreen = () => {
                   {
                     label: "Assignments",
                     headline: "Build discipline",
-                    hint: "Regular deadlines turn learning into a habit — the same rhythm real teams expect.",
+                    hint: "Regular deadlines turn learning into a habit ,  the same rhythm real teams expect.",
                     icon: ClipboardListIcon,
                   },
                   {
@@ -687,7 +685,7 @@ export const LandingPageScreen = () => {
                   Reach the team
                 </h2>
                 <p className="text-muted-foreground max-w-3xl text-pretty">
-                  Call, email, or visit — we’ll help you choose the right course and explain how the program works.
+                  Call, email, or visit ,  we’ll help you choose the right course and explain how the program works.
                 </p>
               </div>
               <Card className="bg-background/60 backdrop-blur supports-backdrop-filter:bg-background/50">
@@ -711,7 +709,7 @@ export const LandingPageScreen = () => {
                   <div className="rounded-2xl border bg-background/40 p-4">
                     <div className="text-muted-foreground text-xs">Tip</div>
                     <div className="mt-1 leading-7">
-                      Mention your target course and your current level — we’ll suggest the fastest path.
+                      Mention your target course and your current level ,  we’ll suggest the fastest path.
                     </div>
                   </div>
                   <Button asChild variant="outline" shape="pill" className="w-full sm:w-auto">
@@ -789,7 +787,7 @@ export const LandingPageScreen = () => {
                 {[
                   {
                     title: "Structured path",
-                    body: "No guesswork about what to study next — follow the track and stack skills week by week.",
+                    body: "No guesswork about what to study next ,  follow the track and stack skills week by week.",
                     icon: StarsIcon,
                   },
                   {
@@ -864,7 +862,7 @@ export const LandingPageScreen = () => {
                   Send us a message
                 </h2>
                 <p className="text-muted-foreground max-w-3xl text-pretty">
-                  General questions only — no fee or payment required. For registration with fee proof, use{" "}
+                  General questions only ,  no fee or payment required. For registration with fee proof, use{" "}
                   <Link href="#enrollment" className="text-(--brand-highlight) font-medium underline-offset-4 hover:underline">
                     Enrollment
                   </Link>{" "}
