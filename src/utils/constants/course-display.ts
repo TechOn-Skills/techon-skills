@@ -11,7 +11,7 @@ export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: 
       "Deploy a live SaaS app",
       "Ship a published mobile app",
       "Real open-source contribution",
-      "Interview-ready with system design",
+      "System design",
     ],
   },
   "full-stack-web-6-months": {
@@ -84,4 +84,24 @@ export const COURSE_DISPLAY_BY_SLUG: Record<string, { icon: string; highlight?: 
       "Freelance in the AI niche",
     ],
   },
+  "machine-learning-bootcamp": {
+  icon: "brain",
+  highlight: "New track",
+  benefits: [
+    "Build ML models from scratch",
+    "Deploy with FastAPI + Docker",
+    "Real projects every weekend",
+    "Portfolio for Data Scientist roles",
+  ],
+},
+  "business-development": {
+  icon: "briefcase",
+  highlight: "5-week track",
+  benefits: [
+    "Land real client leads",
+    "Write proposals that convert",
+    "Master cold outreach + pitching",
+    "Hands-on with real BD tools",
+  ],
+},
 }
