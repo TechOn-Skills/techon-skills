@@ -44,3 +44,17 @@ export const GET_LECTURES_FOR_STAFF = gql`
         }
     }
 `;
+
+export const GET_LECTURES_FOR_COURSE = gql`
+    query GetLecturesForCourse($courseId: ID!) {
+        getLecturesForCourse(courseId: $courseId) {
+            id
+            courseId
+            courseName
+            title
+            meetUrl
+            durationMins
+            startAt
+        }
+    }
+`;

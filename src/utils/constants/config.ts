@@ -96,6 +96,8 @@ export const CONFIG = {
             ARTICLES: "/admin/articles",
             IMAGES: "/admin/images",
             SCHEDULE_LECTURES: "/admin/schedule-lectures",
+            COURSE_CONTENT: "/admin/course-content",
+            ATTENDANCE: "/admin/attendance",
         },
         STUDENT: {
             HOME: "/student",
@@ -109,6 +111,7 @@ export const CONFIG = {
             MARKS: "/student/marks",
             CERTIFICATES: "/student/certificates",
             COURSES: "/student/courses",
+            COURSE_CONTENT: "/student/course-content",
             NEWS: "/student/news",
             ANNOUNCEMENTS: "/student/announcements",
             FEES: "/student/fees",

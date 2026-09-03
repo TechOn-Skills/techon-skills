@@ -12,6 +12,7 @@ import {
   ListTodoIcon,
   Loader2Icon,
   PlayIcon,
+  UserCheckIcon,
 } from "lucide-react"
 
 import { Button } from "@/lib/ui/useable-components/button"
@@ -19,7 +20,7 @@ import { CONFIG } from "@/utils/constants"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
 import { ProgressRing } from "@/lib/ui/useable-components/progress-ring"
 import { parseDate, formatTime } from "@/lib/helpers"
-import { GET_MY_PROGRESS, GET_UPCOMING_LECTURES } from "@/lib/graphql"
+import { GET_MY_ATTENDANCE_SUMMARIES, GET_MY_PROGRESS, GET_UPCOMING_LECTURES } from "@/lib/graphql"
 import { useUser } from "@/lib/providers/user"
 
 type LectureApi = {
@@ -62,12 +63,30 @@ export const StudentMyLecturesScreen = () => {
     }
   }>(GET_MY_PROGRESS, { skip: !userProfileInfo?.id, fetchPolicy: "network-only" })
 
+  const { data: attendanceData } = useQuery<{
+    getMyAttendanceSummaries: Array<{
+      courseId: string
+      courseTitle: string | null
+      courseSlug: string | null
+      sessionsTaken: number
+      presentCount: number
+      percentage: number | null
+    }>
+  }>(GET_MY_ATTENDANCE_SUMMARIES, { skip: !userProfileInfo?.id, fetchPolicy: "network-only" })
+
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(t)
   }, [])
 
   const progress = progressData?.getMyProgress
+  const attendanceSummaries = attendanceData?.getMyAttendanceSummaries ?? []
+  const overallAttendance = useMemo(() => {
+    const withPct = attendanceSummaries.filter((s) => s.percentage != null && s.sessionsTaken > 0)
+    if (!withPct.length) return null
+    const sum = withPct.reduce((a, s) => a + (s.percentage ?? 0), 0)
+    return Math.round(sum / withPct.length)
+  }, [attendanceSummaries])
   const overallPercent = useMemo(() => {
     if (!progress?.courses.length) return 0
     const sum = progress.courses.reduce((a, c) => a + c.progressPercent, 0)
@@ -120,7 +139,7 @@ export const StudentMyLecturesScreen = () => {
         </div>
       ) : progress ? (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Card className="rounded-2xl">
               <CardHeader className="pb-2">
                 <CardDescription>Overall progress</CardDescription>
@@ -172,7 +191,47 @@ export const StudentMyLecturesScreen = () => {
               </CardHeader>
               <CardContent className="text-muted-foreground text-xs">From graded quizzes &amp; assignments</CardContent>
             </Card>
+            <Card className="rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-1">
+                  <UserCheckIcon className="size-3.5" /> Attendance
+                </CardDescription>
+                <CardTitle className="text-2xl">
+                  {overallAttendance != null ? `${overallAttendance}%` : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground text-xs">
+                80% required for certificate eligibility
+              </CardContent>
+            </Card>
           </div>
+
+          {attendanceSummaries.length > 0 && (
+            <div className="mb-8">
+              <h2 className="mb-4 text-xl font-semibold">Attendance by course</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {attendanceSummaries.map((s) => (
+                  <Card key={s.courseId} className="rounded-2xl">
+                    <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+                      <div>
+                        <CardTitle className="text-base">{s.courseTitle ?? "Course"}</CardTitle>
+                        <CardDescription className="text-xs">
+                          {s.sessionsTaken === 0
+                            ? "No lectures marked yet"
+                            : `${s.presentCount}/${s.sessionsTaken} sessions counted`}
+                        </CardDescription>
+                      </div>
+                      <ProgressRing value={s.percentage ?? 0} size={44} strokeWidth={3}>
+                        <span className="text-[10px] font-bold">
+                          {s.percentage != null ? `${s.percentage}%` : "—"}
+                        </span>
+                      </ProgressRing>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {progress.courses.length > 0 && (
             <div className="mb-8">

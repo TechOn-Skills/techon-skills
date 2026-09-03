@@ -7,6 +7,8 @@ export const CREATE_COURSE_ASSIGNMENT = gql`
       courseId
       title
       description
+      guidelines
+      attachmentUrls
       maxMarks
       referenceId
       dueDate

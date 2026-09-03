@@ -52,6 +52,8 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
       courseId: string
       title: string
       description: string | null
+      guidelines: string | null
+      attachmentUrls: string[]
       maxMarks: number
       referenceId: string
       dueDate: string | null
@@ -253,6 +255,32 @@ export const StudentAssignmentDetailScreen = ({ assignmentId }: { assignmentId: 
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-7">
           {a.description ? <div className="text-muted-foreground whitespace-pre-wrap">{a.description}</div> : null}
+          {a.guidelines ? (
+            <div className="rounded-2xl border bg-muted-surface/30 p-4">
+              <div className="mb-2 font-semibold">Project guidelines</div>
+              <div className="text-muted-foreground whitespace-pre-wrap">{a.guidelines}</div>
+            </div>
+          ) : null}
+          {(a.attachmentUrls?.length ?? 0) > 0 ? (
+            <div>
+              <div className="mb-2 font-semibold">Instructor files</div>
+              <ul className="space-y-2">
+                {a.attachmentUrls.map((url) => (
+                  <li key={url}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-(--brand-secondary) hover:underline"
+                    >
+                      <FileTextIcon className="size-4" />
+                      {url.split("/").pop() || "Download"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {graded && sub?.marks != null && (
             <p className="font-semibold text-(--brand-secondary)">
               Your marks: {sub.marks} / {sub.maxMarks}

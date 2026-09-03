@@ -16,3 +16,5 @@ export * from "./users";
 export * from "./quizzes";
 export * from "./certificates";
 export * from "./progress";
+export * from "./course-content";
+export * from "./attendance";

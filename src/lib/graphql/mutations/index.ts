@@ -12,3 +12,5 @@ export * from "./tickets";
 export * from "./users";
 export * from "./quizzes";
 export * from "./certificates";
+export * from "./course-content";
+export * from "./attendance";

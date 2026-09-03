@@ -7,6 +7,8 @@ export const GET_COURSE_ASSIGNMENTS = gql`
       courseId
       title
       description
+      guidelines
+      attachmentUrls
       maxMarks
       referenceId
       dueDate
@@ -25,6 +27,8 @@ export const GET_COURSE_ASSIGNMENT_BY_ID = gql`
       courseId
       title
       description
+      guidelines
+      attachmentUrls
       maxMarks
       referenceId
       dueDate
@@ -44,6 +48,8 @@ export const GET_MY_COURSE_ASSIGNMENTS = gql`
       courseId
       title
       description
+      guidelines
+      attachmentUrls
       maxMarks
       referenceId
       dueDate
@@ -63,6 +69,8 @@ export const GET_COURSE_ASSIGNMENT_FOR_STUDENT = gql`
       courseId
       title
       description
+      guidelines
+      attachmentUrls
       maxMarks
       referenceId
       dueDate

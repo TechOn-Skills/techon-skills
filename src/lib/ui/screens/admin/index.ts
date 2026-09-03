@@ -14,4 +14,7 @@ export * from "./settings"
 export * from "./images"
 export * from "./schedule-lectures"
 export * from "./certificates"
+export * from "./course-content"
+export * from "./attendance"
+
 
