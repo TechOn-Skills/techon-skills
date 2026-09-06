@@ -19,7 +19,7 @@ import {
 import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
-import { Card, CardContent } from "@/lib/ui/useable-components/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components"
 import { Input } from "@/lib/ui/useable-components/input"
 import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import {
