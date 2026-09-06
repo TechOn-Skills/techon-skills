@@ -8,4 +8,4 @@ const config = {
   },
 };
 
-export default config;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           global.i="A
+export default config;
