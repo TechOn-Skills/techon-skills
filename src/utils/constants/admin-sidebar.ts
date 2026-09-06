@@ -24,10 +24,10 @@ export const ADMIN_SIDEBAR_ITEMS = [
     { label: "Course assignments", href: CONFIG.ROUTES.ADMIN.ASSIGNMENTS, icon: NotebookPenIcon, disabled: false, roles: INSTRUCTOR_STAFF },
     { label: "Course content", href: CONFIG.ROUTES.ADMIN.COURSE_CONTENT, icon: FolderOpenIcon, disabled: false, roles: INSTRUCTOR_STAFF },
     { label: "Course quizzes", href: CONFIG.ROUTES.ADMIN.QUIZZES, icon: ClipboardListIcon, disabled: false, roles: INSTRUCTOR_STAFF },
-    { label: "Attendance", href: CONFIG.ROUTES.ADMIN.ATTENDANCE, icon: UserCheckIcon, disabled: false, roles: INSTRUCTOR_STAFF },
     { label: "Student progress", href: CONFIG.ROUTES.ADMIN.STUDENT_PROGRESS, icon: TrendingUpIcon, disabled: false, roles: INSTRUCTOR_STAFF },
     { label: "Certificates", href: CONFIG.ROUTES.ADMIN.CERTIFICATES, icon: ScrollTextIcon, disabled: false, roles: ADMIN_ONLY },
     { label: "Schedule lectures", href: CONFIG.ROUTES.ADMIN.SCHEDULE_LECTURES, icon: VideoIcon, disabled: false, roles: INSTRUCTOR_STAFF },
+    { label: "Attendance", href: CONFIG.ROUTES.ADMIN.ATTENDANCE, icon: UserCheckIcon, disabled: false, roles: INSTRUCTOR_STAFF },
     { label: "Uploaded images", href: CONFIG.ROUTES.ADMIN.IMAGES, icon: ImageIcon, disabled: false, roles: ADMIN_ONLY },
 ] as const
 

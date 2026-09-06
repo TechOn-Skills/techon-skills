@@ -191,47 +191,22 @@ export const StudentMyLecturesScreen = () => {
               </CardHeader>
               <CardContent className="text-muted-foreground text-xs">From graded quizzes &amp; assignments</CardContent>
             </Card>
-            <Card className="rounded-2xl">
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-1">
-                  <UserCheckIcon className="size-3.5" /> Attendance
-                </CardDescription>
-                <CardTitle className="text-2xl">
-                  {overallAttendance != null ? `${overallAttendance}%` : "—"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-muted-foreground text-xs">
-                80% required for certificate eligibility
-              </CardContent>
-            </Card>
+            <Link href={CONFIG.ROUTES.STUDENT.ATTENDANCE}>
+              <Card className="rounded-2xl transition-all hover:shadow-md">
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-1">
+                    <UserCheckIcon className="size-3.5" /> Attendance
+                  </CardDescription>
+                  <CardTitle className="text-2xl">
+                    {overallAttendance != null ? `${overallAttendance}%` : "—"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground text-xs">
+                  80% required for certificate · view details
+                </CardContent>
+              </Card>
+            </Link>
           </div>
-
-          {attendanceSummaries.length > 0 && (
-            <div className="mb-8">
-              <h2 className="mb-4 text-xl font-semibold">Attendance by course</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {attendanceSummaries.map((s) => (
-                  <Card key={s.courseId} className="rounded-2xl">
-                    <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-                      <div>
-                        <CardTitle className="text-base">{s.courseTitle ?? "Course"}</CardTitle>
-                        <CardDescription className="text-xs">
-                          {s.sessionsTaken === 0
-                            ? "No lectures marked yet"
-                            : `${s.presentCount}/${s.sessionsTaken} sessions counted`}
-                        </CardDescription>
-                      </div>
-                      <ProgressRing value={s.percentage ?? 0} size={44} strokeWidth={3}>
-                        <span className="text-[10px] font-bold">
-                          {s.percentage != null ? `${s.percentage}%` : "—"}
-                        </span>
-                      </ProgressRing>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
 
           {progress.courses.length > 0 && (
             <div className="mb-8">
@@ -287,6 +262,15 @@ export const StudentMyLecturesScreen = () => {
               : loadingProgress
                 ? "Loading…"
                 : "Open assignment list"}
+          </div>
+        </Link>
+        <Link href={CONFIG.ROUTES.STUDENT.ATTENDANCE} className="rounded-2xl border p-4 transition-all hover:shadow-md">
+          <UserCheckIcon className="text-(--brand-secondary) mb-2 size-5" />
+          <div className="font-semibold text-sm">Attendance</div>
+          <div className="text-muted-foreground mt-1 text-xs">
+            {overallAttendance != null
+              ? `${overallAttendance}% overall · 80% needed for certificate`
+              : "View attendance by course"}
           </div>
         </Link>
         <Link href={CONFIG.ROUTES.STUDENT.MARKS} className="rounded-2xl border p-4 transition-all hover:shadow-md">

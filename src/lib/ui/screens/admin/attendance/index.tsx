@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useMutation, useQuery } from "@apollo/client/react"
 import { Loader2Icon, RefreshCwIcon, UserCheckIcon } from "lucide-react"
 import toast from "react-hot-toast"
@@ -30,8 +31,9 @@ type SheetRow = {
 
 export const AdminAttendanceScreen = () => {
   const { userProfileInfo } = useUser()
-  const [selectedCourseId, setSelectedCourseId] = useState("")
-  const [selectedLectureId, setSelectedLectureId] = useState("")
+  const searchParams = useSearchParams()
+  const [selectedCourseId, setSelectedCourseId] = useState(searchParams.get("courseId") ?? "")
+  const [selectedLectureId, setSelectedLectureId] = useState(searchParams.get("lectureId") ?? "")
   const [draft, setDraft] = useState<Record<string, RowStatus>>({})
 
   const { data: coursesData, refetch: refetchCourses } = useQuery<{
@@ -54,10 +56,6 @@ export const AdminAttendanceScreen = () => {
 
   const lectures = lecturesData?.getLecturesForCourse ?? []
   const lectureId = selectedLectureId || lectures[0]?.id || ""
-
-  useEffect(() => {
-    setSelectedLectureId("")
-  }, [courseId])
 
   const { data: sheetData, loading: loadingSheet, refetch: refetchSheet } = useQuery<{
     getAttendanceSheet: {
@@ -151,7 +149,10 @@ export const AdminAttendanceScreen = () => {
           ) : (
             <select
               value={courseId}
-              onChange={(e) => setSelectedCourseId(e.target.value)}
+              onChange={(e) => {
+                setSelectedCourseId(e.target.value)
+                setSelectedLectureId("")
+              }}
               className="border-input bg-background rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-secondary)"
             >
               {courses.map((c) => (

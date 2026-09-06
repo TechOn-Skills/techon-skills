@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 import { useQuery, useMutation } from "@apollo/client/react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
@@ -13,11 +14,12 @@ import {
   CalendarClockIcon,
   ListXIcon,
   FilterIcon,
+  UserCheckIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
 import { Button } from "@/lib/ui/useable-components/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
 import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
 import {
@@ -31,6 +33,7 @@ import {
 import { cn, getStaffEyebrow, getClientTimezone } from "@/lib/helpers"
 import { useUser } from "@/lib/providers/user"
 import { filterCoursesForGrader } from "@/lib/helpers/grader-courses"
+import { CONFIG } from "@/utils/constants"
 
 const WEEKDAYS = [
   { v: 0, label: "Sunday" },
@@ -340,10 +343,18 @@ export const AdminScheduleLecturesScreen = () => {
             minutes before each session with the meeting link and dashboard URL.
           </p>
         </div>
-        <Button type="button" className="shrink-0 gap-2" onClick={() => setCreateOpen(true)}>
-          <PlusIcon className="h-4 w-4" />
-          New schedule
-        </Button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button asChild type="button" variant="outline" className="gap-2">
+            <Link href={CONFIG.ROUTES.ADMIN.ATTENDANCE}>
+              <UserCheckIcon className="h-4 w-4" />
+              Mark attendance
+            </Link>
+          </Button>
+          <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
+            <PlusIcon className="h-4 w-4" />
+            New schedule
+          </Button>
+        </div>
       </div>
 
       <Card className="border-(--brand-primary)/20 bg-(--brand-primary)/5">

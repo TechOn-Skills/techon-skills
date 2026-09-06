@@ -112,6 +112,7 @@ export const CONFIG = {
             CERTIFICATES: "/student/certificates",
             COURSES: "/student/courses",
             COURSE_CONTENT: "/student/course-content",
+            ATTENDANCE: "/student/attendance",
             NEWS: "/student/news",
             ANNOUNCEMENTS: "/student/announcements",
             FEES: "/student/fees",
