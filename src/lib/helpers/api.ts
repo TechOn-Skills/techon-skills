@@ -9,7 +9,6 @@ export function getApiDisplayMessage(
 }
 
 type HandleApiResponseOptions = {
-  /** When true, clears auth storage on 401 (use only for explicit session checks). */
   logoutOnUnauthorized?: boolean
 }
 
