@@ -1,6 +1,5 @@
 "use client"
 import Link from "next/link"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
 import {
   ActivityIcon,
   ArrowRightIcon,
@@ -20,7 +19,6 @@ import {
   StarsIcon,
   StoreIcon,
   WrenchIcon,
-  XIcon,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -33,8 +31,6 @@ import { useCourses } from "@/lib/providers/courses"
 import { CONFIG, SITE_PHONE_DISPLAY } from "@/utils/constants"
 import { LoggerLevel } from "@/utils/enums"
 import { COURSE_DISPLAY_BY_SLUG } from "@/utils/constants/course-display"
-
-const CONTACT_MODAL_SHOWN_KEY = "techon_contact_modal_shown"
 
 const FEATURED_COURSE_ICONS: Record<string, typeof CodeIcon> = {
   code: CodeIcon,
@@ -89,25 +85,8 @@ export const LandingPageScreen = () => {
     ...c,
     icon: FEATURED_COURSE_ICONS[c.icon] ?? CodeIcon,
   }))
-  const [modalEnrollmentSent, setModalEnrollmentSent] = useState(false)
   const [landingContactSent, setLandingContactSent] = useState(false)
   const [enrollmentSent, setEnrollmentSent] = useState(false)
-  const [contactModalOpen, setContactModalOpen] = useState(false)
-
-  // Show contact modal on first visit; persist "shown" in localStorage so it only appears once.
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const alreadyShown = localStorage.getItem(CONTACT_MODAL_SHOWN_KEY)
-    if (alreadyShown === "true") return
-    const t = setTimeout(() => setContactModalOpen(true), 500)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
-    if (contactModalOpen && typeof window !== "undefined") {
-      localStorage.setItem(CONTACT_MODAL_SHOWN_KEY, "true")
-    }
-  }, [contactModalOpen])
 
   useEffect(() => {
     // Smooth scrolling + reveal animations (no scroll-snap to avoid footer jump).
@@ -146,55 +125,6 @@ export const LandingPageScreen = () => {
 
   return (
     <div className="w-full min-w-0">
-      <DialogPrimitive.Root open={contactModalOpen} onOpenChange={setContactModalOpen}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 backdrop-blur-md transition-all duration-500" />
-          <DialogPrimitive.Content
-            className="bg-card text-card-foreground border-border fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl outline-none focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-bottom-4 duration-500"
-          >
-            <div className="relative flex max-h-[90vh] flex-col">
-              <div className="flex-none border-b border-border/60 bg-muted/30 p-6 pb-4 sm:p-8 sm:pb-4 dark:bg-muted/15">
-                <div className="absolute right-4 top-4">
-                  <DialogPrimitive.Close asChild>
-                    <button
-                      type="button"
-                      className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-(--brand-highlight)"
-                      aria-label="Close"
-                    >
-                      <XIcon className="size-5" />
-                    </button>
-                  </DialogPrimitive.Close>
-                </div>
-                <div className="flex items-start gap-3 pr-10">
-                  <span className="bg-(--brand-primary) text-(--text-on-dark) inline-flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-lg">
-                    <GraduationCapIcon className="size-6" />
-                  </span>
-                  <div className="min-w-0">
-                    <DialogPrimitive.Title className="text-xl font-semibold tracking-tight">
-                      Start your enrollment
-                    </DialogPrimitive.Title>
-                    <DialogPrimitive.Description className="text-muted-foreground mt-1 text-sm leading-6">
-                      Select courses, confirm the first-fee total, upload your payment screenshot, and submit. We’ll register you
-                      for admin approval.
-                    </DialogPrimitive.Description>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card min-h-0 flex-1 overflow-y-auto p-6 pt-4 sm:p-8 sm:pt-4">
-                <EnrollmentFormCard
-                  variant="modal"
-                  sent={modalEnrollmentSent}
-                  onSuccess={() => {
-                    setModalEnrollmentSent(true)
-                    window.setTimeout(() => setContactModalOpen(false), 2400)
-                  }}
-                />
-              </div>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      </DialogPrimitive.Root>
-
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-32 left-1/2 h-144 w-240 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,195,232,0.22),transparent_60%)] blur-3xl" />
         <div className="absolute -bottom-40 -left-40 h-112 w-md rounded-full bg-[radial-gradient(circle_at_center,rgba(242,140,40,0.16),transparent_65%)] blur-3xl" />
