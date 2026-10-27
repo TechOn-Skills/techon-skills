@@ -80,7 +80,8 @@ export const StudentFeesScreen = () => {
       const inst = p.courseDetails?.installmentNumber ?? 0
       const month = inst > 0 ? `Installment ${inst}` : formatDate(p.paymentDate, { month: "long", year: "numeric", locale: "en-GB" })
       const course = p.courseDetails?.course
-      const fee = course?.feePerMonth != null && course.feePerMonth > 0 ? course.feePerMonth : p.amount
+      // The installment amount is per student (discounts, custom plans), so never derive it from the course.
+      const fee = p.amount
       const cur = (course?.currency ?? "PKR").trim() || "PKR"
       return {
         id: p.id,
@@ -212,7 +213,7 @@ export const StudentFeesScreen = () => {
           Fee payments & status
         </h1>
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-          Manage your monthly fees. Pay online and upload proof to update your status.
+          Your course fee installments. Pay online and upload proof to update your status.
         </p>
       </div>
 

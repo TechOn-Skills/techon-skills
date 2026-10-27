@@ -18,3 +18,6 @@ export * from "./certificates";
 export * from "./progress";
 export * from "./course-content";
 export * from "./attendance";
+export * from "./recordings";
+export * from "./fee-plans";
+export * from "./finance";

@@ -9,6 +9,7 @@ import { cn } from "@/lib/helpers"
 import { useTheme } from "@/lib/providers/theme"
 import { ThemeMode } from "@/utils/enums/theme"
 import { CONFIG } from "@/utils/constants"
+import { ChangePasswordCard } from "@/lib/ui/useable-components/change-password-card"
 
 export const StudentSettingsScreen = () => {
   const { theme, changeTheme } = useTheme()
@@ -87,6 +88,8 @@ export const StudentSettingsScreen = () => {
             </CardContent>
           </Card>
         </div>
+
+        <ChangePasswordCard />
       </div>
     </div>
   )

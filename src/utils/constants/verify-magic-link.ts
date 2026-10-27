@@ -7,7 +7,7 @@ export const VERIFY_MAGIC_LINK_STATUS_CONTENT = {
         accent: "bg-slate-500/10 text-slate-600",
     },
     [MagicLinkStatus.VERIFYING]: {
-        title: "Verifying your magic link",
+        title: "Verifying your sign-in link",
         description: "This takes just a moment. Please keep this tab open.",
         accent: "bg-indigo-500/10 text-indigo-600",
     },
@@ -18,7 +18,7 @@ export const VERIFY_MAGIC_LINK_STATUS_CONTENT = {
     },
     [MagicLinkStatus.ERROR]: {
         title: "Verification failed",
-        description: "The link may have expired. Please request a new magic link.",
+        description: "This link is invalid, expired or already used. Request a new sign-in link from the website.",
         accent: "bg-rose-500/10 text-rose-600",
     },
 }

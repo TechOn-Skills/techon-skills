@@ -10,6 +10,7 @@ import {
   Loader2Icon,
   XCircleIcon,
   UserIcon,
+  WalletIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -19,6 +20,8 @@ import { formatDateISO, getImageSrc } from "@/lib/helpers"
 import { GET_PAYMENTS, UPDATE_PAYMENT } from "@/lib/graphql"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { Input } from "@/lib/ui/useable-components/input"
+import { cn } from "@/lib/helpers"
+import { StudentFeesManager } from "./student-fees"
 
 type PaymentRow = {
   id: string
@@ -42,7 +45,8 @@ function hasScreenshot(p: PaymentRow): boolean {
   )
 }
 
-export const AdminPaymentsScreen = () => {
+/** Approve/reject submitted fee proofs. */
+const PaymentApprovals = ({ onManageFees }: { onManageFees: (userId: string) => void }) => {
   const [rejectModal, setRejectModal] = useState<{ payment: PaymentRow; message: string } | null>(null)
   const [detailPayment, setDetailPayment] = useState<PaymentRow | null>(null)
   const [filterStatus, setFilterStatus] = useState<PaymentFilter>("all")
@@ -104,16 +108,7 @@ export const AdminPaymentsScreen = () => {
   }
 
   return (
-    <div className="w-full py-10 animate-in fade-in duration-700">
-      <div className="mb-8">
-        <div className="text-sm font-semibold text-secondary">Admin</div>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Payments
-        </h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
-          Approve or reject student fee submissions. Student receives an email and notification on approval or rejection.
-        </p>
-      </div>
+    <div>
 
       {error && (
         <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -227,6 +222,10 @@ export const AdminPaymentsScreen = () => {
                             )}
                           </td>
                           <td className="p-4 flex items-center gap-2 flex-wrap">
+                            <Button type="button" variant="ghost" size="sm" shape="pill" onClick={() => onManageFees(p.payerId)}>
+                              <WalletIcon className="size-4" />
+                              Fees
+                            </Button>
                             {hasScreenshotForRow && (
                               <Button
                                 type="button"
@@ -431,6 +430,51 @@ export const AdminPaymentsScreen = () => {
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
+    </div>
+  )
+}
+
+type PaymentsTab = "approvals" | "fees"
+
+export const AdminPaymentsScreen = () => {
+  const [tab, setTab] = useState<PaymentsTab>("approvals")
+  const [feesUserId, setFeesUserId] = useState<string | null>(null)
+
+  const openFees = (userId: string) => {
+    setFeesUserId(userId)
+    setTab("fees")
+  }
+
+  return (
+    <div className="w-full py-10 animate-in fade-in duration-700">
+      <div className="mb-6">
+        <div className="text-sm font-semibold text-secondary">Admin</div>
+        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">Payments</h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
+          Approve fee proofs, and set each student&apos;s fee, discount and installments.
+        </p>
+      </div>
+
+      <div className="mb-6 inline-flex rounded-full border bg-background/70 p-1">
+        {([
+          ["approvals", "Payment approvals"],
+          ["fees", "Student fees"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTab(value)}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+              tab === value ? "bg-[var(--brand-secondary)] text-[color:var(--text-on-dark)]" : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "approvals" ? <PaymentApprovals onManageFees={openFees} /> : <StudentFeesManager key={feesUserId ?? "none"} initialUserId={feesUserId} />}
     </div>
   )
 }

@@ -16,13 +16,17 @@ import {
   Loader2Icon,
   BookOpenIcon,
   MailIcon,
+  ArchiveIcon,
+  UsersIcon,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
 import { getApiDisplayMessage } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { useUser } from "@/lib/providers/user"
-import { GET_USERS, UPDATE_USER_INPUT, DELETE_USER } from "@/lib/graphql"
+import { GET_USERS, UPDATE_USER_INPUT, DELETE_USER, MOVE_USERS_TO_BIN } from "@/lib/graphql"
+import { ConfirmDialog } from "@/lib/ui/useable-components/confirm-dialog"
+import { BulkEmailSheet, type BulkEmailAudience } from "./bulk-email-sheet"
 import { Button } from "@/lib/ui/useable-components/button"
 import { Card, CardContent } from "@/lib/ui/useable-components/card"
 import { Input } from "@/lib/ui/useable-components/input"
@@ -50,6 +54,9 @@ export const AdminUsersScreen = () => {
   const [sendEmailUser, setSendEmailUser] = useState<GraphQLUser | null>(null)
   const [editUser, setEditUser] = useState<GraphQLUser | null>(null)
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<GraphQLUser | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkEmailAudiences, setBulkEmailAudiences] = useState<BulkEmailAudience[] | null>(null)
+  const [binSelectedOpen, setBinSelectedOpen] = useState(false)
   const actionMenuRef = useRef<HTMLDivElement>(null)
   const { userProfileInfo } = useUser()
   const currentUserRole = userProfileInfo?.role ?? null
@@ -76,9 +83,18 @@ export const AdminUsersScreen = () => {
     },
     onError: (e) => toast.error(e.message),
   })
+  const [moveToBinMutation, { loading: binning }] = useMutation<{ moveUsersToBin: number }>(MOVE_USERS_TO_BIN, {
+    onCompleted: (d) => {
+      toast.success(`${d.moveUsersToBin} user(s) moved to the bin`)
+      setSelected(new Set())
+      setBinSelectedOpen(false)
+      refetch()
+    },
+    onError: (e) => toast.error(e.message),
+  })
   const [deleteUserMutation] = useMutation(DELETE_USER, {
     onCompleted: () => {
-      toast.success("User deleted")
+      toast.success("User moved to the bin")
       setDeleteConfirmUser(null)
       refetch()
     },
@@ -101,6 +117,20 @@ export const AdminUsersScreen = () => {
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [users, searchQuery, roleFilter, statusFilter])
+
+  /** Super admins can't be binned; admins can only be binned by a super admin; nobody bins themselves. */
+  const canBin = (u: GraphQLUser) =>
+    canManageStatus && u.role !== "SUPER_ADMIN" && u.id !== userProfileInfo?.id && (isSuperAdmin || u.role !== "ADMIN")
+  const allSelected = filteredUsers.length > 0 && filteredUsers.every((u) => selected.has(u.id))
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filteredUsers.map((u) => u.id)))
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const binnableSelected = users.filter((u) => selected.has(u.id) && canBin(u)).map((u) => u.id)
 
   const stats = [
     { label: "Total Users", value: users.length, color: "text-blue-600" },
@@ -164,6 +194,12 @@ export const AdminUsersScreen = () => {
             />
           </div>
           {canManageStatus && (
+            <Button variant="outline" shape="pill" className="gap-2" onClick={() => setBulkEmailAudiences(["ALL_STUDENTS", "COURSE_STUDENTS", "PENDING_REGISTRATIONS"])}>
+              <MailIcon className="size-4" />
+              Email students
+            </Button>
+          )}
+          {canManageStatus && (
             <Button variant="brand-secondary" shape="pill" onClick={() => setCreateUserOpen(true)}>
               <UserIcon className="size-4" />
               Add New User
@@ -206,6 +242,26 @@ export const AdminUsersScreen = () => {
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-background/80 px-4 py-3 text-sm">
+          <UsersIcon className="size-4 text-muted-foreground" />
+          <span className="font-medium">{selected.size} selected</span>
+          <Button size="sm" variant="outline" shape="pill" className="gap-1.5" onClick={() => setBulkEmailAudiences(["SELECTED"])}>
+            <MailIcon className="size-4" />
+            Email selected
+          </Button>
+          {binnableSelected.length > 0 && (
+            <Button size="sm" variant="outline" shape="pill" className="gap-1.5 text-red-600" onClick={() => setBinSelectedOpen(true)}>
+              <ArchiveIcon className="size-4" />
+              Move {binnableSelected.length} to bin
+            </Button>
+          )}
+          <button type="button" className="text-muted-foreground ml-auto text-xs hover:underline" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </button>
+        </div>
+      )}
+
       <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(70,208,255,0.25),rgba(255,138,61,0.12),transparent_70%)] p-px">
         <Card className="bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-3xl overflow-hidden">
           <CardContent className="p-0">
@@ -223,12 +279,15 @@ export const AdminUsersScreen = () => {
                 <table className="w-full text-left text-sm">
                   <thead className="border-border border-b bg-background/40">
                     <tr>
+                      <th className="w-10 p-4">
+                        <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all shown users" />
+                      </th>
                       <th className="p-4 font-semibold">User</th>
                       <th className="p-4 font-semibold">Role</th>
                       <th className="p-4 font-semibold">Status</th>
                       <th className="p-4 font-semibold">Blocked</th>
                       <th className="p-4 font-semibold">Suspended</th>
-                      <th className="p-4 font-semibold">Deleted</th>
+                      <th className="p-4 font-semibold">Password</th>
                       <th className="p-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
@@ -239,6 +298,9 @@ export const AdminUsersScreen = () => {
                         className="border-border border-b transition-colors hover:bg-background/60 animate-in fade-in slide-in-from-bottom-2 duration-500"
                         style={{ animationDelay: `${idx * 50}ms` }}
                       >
+                        <td className="p-4">
+                          <input type="checkbox" checked={selected.has(user.id)} onChange={() => toggleOne(user.id)} aria-label={`Select ${user.email}`} />
+                        </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="bg-(--brand-primary) text-(--text-on-dark) size-10 rounded-xl flex items-center justify-center shrink-0">
@@ -273,8 +335,8 @@ export const AdminUsersScreen = () => {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={cn("text-xs font-medium", user.isDeleted ? "text-red-600" : "text-muted-foreground")}>
-                            {user.isDeleted ? "Yes" : "—"}
+                          <span className={cn("text-xs font-medium", user.hasPassword ? "text-green-600" : "text-muted-foreground")}>
+                            {user.hasPassword ? "Set" : "Email link only"}
                           </span>
                         </td>
                         <td className="p-4">
@@ -388,14 +450,14 @@ export const AdminUsersScreen = () => {
                                     <MailIcon className="size-4" />
                                     Send email
                                   </button>
-                                  {isSuperAdmin && user.role !== "SUPER_ADMIN" && (
+                                  {canBin(user) && (
                                     <button
                                       type="button"
                                       className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 transition-colors"
                                       onClick={() => { setDeleteConfirmUser(user); setShowActionMenu(null) }}
                                     >
                                       <TrashIcon className="size-4" />
-                                      Delete User
+                                      Move to bin
                                     </button>
                                   )}
                                 </div>
@@ -458,6 +520,23 @@ export const AdminUsersScreen = () => {
           refetch()
         }}
         updateUserMutation={updateUserMutation}
+      />
+      <ConfirmDialog
+        open={binSelectedOpen}
+        onOpenChange={setBinSelectedOpen}
+        title="Move to bin"
+        description={`Move ${binnableSelected.length} user(s) to the bin? They can't sign in until restored.`}
+        confirmLabel="Move to bin"
+        variant="destructive"
+        loading={binning}
+        onConfirm={() => moveToBinMutation({ variables: { ids: binnableSelected } })}
+      />
+      <BulkEmailSheet
+        key={bulkEmailAudiences ? bulkEmailAudiences.join(",") : "closed"}
+        open={!!bulkEmailAudiences}
+        onOpenChange={(open) => !open && setBulkEmailAudiences(null)}
+        selectedIds={[...selected]}
+        audiences={bulkEmailAudiences ?? ["ALL_STUDENTS"]}
       />
       <SendEmailToUserSheet
         user={sendEmailUser}

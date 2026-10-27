@@ -12,7 +12,8 @@ type ContactCourseFeesSummaryProps = {
 }
 
 /**
- * Shows first fee (monthly installment) per selected course and a running total.
+ * Shows the first installment (half of the course fee; fees are paid in full or in 2 installments)
+ * per selected course and a running total.
  * Placed below course multi-select; student uploads one screenshot for the combined payment.
  */
 export function ContactCourseFeesSummary({ selectedCourses, className }: ContactCourseFeesSummaryProps) {
@@ -21,7 +22,7 @@ export function ContactCourseFeesSummary({ selectedCourses, className }: Contact
   const { rows, total, currency, canSum, mixedCurrency } = useMemo(() => {
     const resolved = selectedCourses.map((c) => {
       const full = getCourseBySlug(c.slug)
-      const fee = full?.feePerMonth
+      const fee = typeof full?.totalFee === "number" ? Math.ceil(full.totalFee / 2) : undefined
       const cur = (full?.currency ?? "PKR").trim() || "PKR"
       return { slug: c.slug, title: c.title, fee, currency: cur }
     })
@@ -49,7 +50,7 @@ export function ContactCourseFeesSummary({ selectedCourses, className }: Contact
         className
       )}
     >
-      <div className="text-foreground mb-2 font-semibold">First fee (per course)</div>
+      <div className="text-foreground mb-2 font-semibold">First installment (per course)</div>
       <ul className="text-muted-foreground space-y-1.5">
         {rows.map((r) => (
           <li key={r.slug} className="flex items-start justify-between gap-3">
@@ -74,7 +75,7 @@ export function ContactCourseFeesSummary({ selectedCourses, className }: Contact
         </p>
       )}
       <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-        Pay this total, then upload one screenshot of the transfer below.
+        Each course is paid in 2 installments (or pay the full fee at once). Pay this total, then upload one screenshot of the transfer below.
       </p>
     </div>
   )

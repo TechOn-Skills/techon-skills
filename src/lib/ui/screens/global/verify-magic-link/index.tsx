@@ -1,42 +1,42 @@
 "use client"
 
-import { getApiDisplayMessage, getPostLoginHomePath, logger } from "@/lib/helpers"
+import { getApiDisplayMessage, getPostLoginHomePath, logger, saveSession } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import { CONFIG, VERIFY_MAGIC_LINK_STATUS_CONTENT } from "@/utils/constants"
 import { MagicLinkStatus } from "@/utils/enums"
 import { LoggerLevel } from "@/utils/enums/logger"
 import { ApiResponse, IUserProfileInfo } from "@/utils/interfaces"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import toast from "react-hot-toast"
 
 export const VerifyMagicLinkScreen = () => {
     const router = useRouter()
 
     const searchParams = useSearchParams()
-    const user_id = searchParams.get("user_id")
+    const token = searchParams.get("token")
+    /** The link is single-use; never send it twice (React dev mode runs effects twice). */
+    const startedRef = useRef(false)
 
     const [verifyingStatus, setVerifyingStatus] = useState<MagicLinkStatus>(MagicLinkStatus.IDLE)
 
     const handleVerifyMagicLink = useCallback(async () => {
+        if (startedRef.current) return
+        startedRef.current = true
         setVerifyingStatus(MagicLinkStatus.VERIFYING)
-        const toastId = toast.loading("Please wait while we verify your magic link...")
+        const toastId = toast.loading("Please wait while we verify your sign-in link...")
         try {
-            if (user_id) {
-                const data = await apiService.verifyMagicLink(user_id) as ApiResponse<{ user?: IUserProfileInfo; accessToken?: string; refreshToken?: string }>
+            if (token) {
+                const data = await apiService.verifyMagicLink(token) as ApiResponse<{ user?: IUserProfileInfo; accessToken?: string; refreshToken?: string; needsPassword?: boolean }>
                 if (!data.success) {
                     logger({ type: LoggerLevel.ERROR, message: getApiDisplayMessage(data, "Unable to verify magic link."), showToast: true })
                     setVerifyingStatus(MagicLinkStatus.ERROR)
                 } else {
-                    const token = data.data?.accessToken
-                    if (token && typeof window !== "undefined") {
-                        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH.TOKEN, token)
-                    }
-                    if (data.data?.user && typeof window !== "undefined") {
-                        localStorage.setItem(CONFIG.STORAGE_KEYS.USER.PROFILE, JSON.stringify(data.data.user))
-                    }
+                    saveSession(data.data?.accessToken, data.data?.user)
                     setVerifyingStatus(MagicLinkStatus.VERIFIED)
-                    router.push(getPostLoginHomePath(data.data?.user?.role))
+                    const home = getPostLoginHomePath(data.data?.user?.role)
+                    // Signed in by email link: offer to set (or reset) a password so next time no email is needed.
+                    router.push(`${CONFIG.ROUTES.AUTH.SET_PASSWORD}?next=${encodeURIComponent(home)}${data.data?.needsPassword ? "&first=1" : ""}`)
                 }
             } else {
                 logger({ type: LoggerLevel.ERROR, message: "Unable to verify magic link please try again", showToast: true })
@@ -49,13 +49,13 @@ export const VerifyMagicLinkScreen = () => {
         } finally {
             toast.dismiss(toastId)
         }
-    }, [user_id, router])
+    }, [token, router])
 
     useEffect(() => {
         handleVerifyMagicLink()
     }, [handleVerifyMagicLink])
 
-    if (!user_id && typeof window !== "undefined") {
+    if (!token && typeof window !== "undefined") {
         logger({ type: LoggerLevel.ERROR, message: "Unable to verify magic link please try again", showToast: true })
         router.push(CONFIG.ROUTES.PUBLIC.HOME)
         return null
@@ -83,7 +83,7 @@ export const VerifyMagicLinkScreen = () => {
                         )}
                     </div>
                     <div>
-                        <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Magic Link</p>
+                        <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Sign-in link</p>
                         <h1 className="text-2xl font-semibold text-slate-900">{statusContent.title}</h1>
                     </div>
                 </div>

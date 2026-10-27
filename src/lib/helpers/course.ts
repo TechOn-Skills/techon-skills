@@ -7,10 +7,10 @@ export function formatCourseDuration(course: ICourse): string {
   return `${n} Months`
 }
 
-/** Format course price for display (e.g. "PKR 2,500 / month"). */
+/** Format course price for display (e.g. "PKR 30,000 (full or 2 installments)"). */
 export function formatCoursePrice(course: ICourse): string {
-  const { currency, feePerMonth } = course
-  return `${currency} ${feePerMonth.toLocaleString()} / month`
+  const { currency, totalFee } = course
+  return `${currency} ${(totalFee ?? 0).toLocaleString()} (full or 2 installments)`
 }
 
 /** API course shape (GraphQL) – technologies at top level, no modules. */

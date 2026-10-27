@@ -18,3 +18,6 @@ export * from "./course-content"
 export * from "./attendance"
 
 
+export * from "./recordings"
+export * from "./finance"
+export * from "./bin"

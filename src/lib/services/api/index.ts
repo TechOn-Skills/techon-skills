@@ -14,20 +14,50 @@ import {
 class ApiService {
     constructor() { }
 
+    /** Emails a one-time sign-in link (first sign-in or forgot password). */
     sendMagicLink = async <T>(email: string): Promise<ApiResponse<T>> => {
-        const path = `${CONFIG.BACKEND_PATHS.AUTH.SEND_MAGIC_LINK}?email=${email}`;
         const response = await fetchURL({
-            path,
+            path: CONFIG.BACKEND_PATHS.AUTH.SEND_MAGIC_LINK,
             isGraphQL: false,
             options: {
                 method: FetchMethod.POST,
+                body: JSON.stringify({ email }),
+                headers: { "Content-Type": "application/json" },
             },
         })
         return handleApiResponse<T>(response);
     }
 
-    verifyMagicLink = async <T>(userId: string): Promise<ApiResponse<T>> => {
-        const path = `${CONFIG.BACKEND_PATHS.AUTH.VERIFY_MAGIC_LINK}?user_id=${userId}`;
+    /** Email + password sign-in. */
+    login = async <T>(email: string, password: string): Promise<ApiResponse<T>> => {
+        const response = await fetchURL({
+            path: CONFIG.BACKEND_PATHS.AUTH.LOGIN,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify({ email, password }),
+                headers: { "Content-Type": "application/json" },
+            },
+        })
+        return handleApiResponse<T>(response);
+    }
+
+    /** Sets (first time / after an emailed link) or changes the signed-in user's password. */
+    setPassword = async <T>(password: string, currentPassword?: string): Promise<ApiResponse<T>> => {
+        const response = await fetchURL({
+            path: CONFIG.BACKEND_PATHS.AUTH.SET_PASSWORD,
+            isGraphQL: false,
+            options: {
+                method: FetchMethod.POST,
+                body: JSON.stringify({ password, ...(currentPassword ? { currentPassword } : {}) }),
+                headers: { "Content-Type": "application/json" },
+            },
+        })
+        return handleApiResponse<T>(response);
+    }
+
+    verifyMagicLink = async <T>(token: string): Promise<ApiResponse<T>> => {
+        const path = `${CONFIG.BACKEND_PATHS.AUTH.VERIFY_MAGIC_LINK}?token=${encodeURIComponent(token)}`;
         const response = await fetchURL({
             path,
             isGraphQL: false,

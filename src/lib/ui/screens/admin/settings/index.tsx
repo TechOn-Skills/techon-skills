@@ -3,6 +3,7 @@
 import { SettingsIcon } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/lib/ui/useable-components/card"
+import { ChangePasswordCard } from "@/lib/ui/useable-components/change-password-card"
 
 export const AdminSettingsScreen = () => {
   return (
@@ -13,6 +14,10 @@ export const AdminSettingsScreen = () => {
         <p className="text-muted-foreground mt-2 max-w-2xl text-pretty">
           Configure platform settings. More options will be available here as the product grows.
         </p>
+      </div>
+
+      <div className="mb-6 max-w-xl">
+        <ChangePasswordCard />
       </div>
 
       <Card className="bg-background/70 backdrop-blur rounded-3xl max-w-xl">

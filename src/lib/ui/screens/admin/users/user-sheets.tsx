@@ -6,7 +6,7 @@ import { BookOpenIcon, Loader2Icon, SendIcon } from "lucide-react"
 import toast from "react-hot-toast"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 
-import { getApiDisplayMessage } from "@/lib/helpers"
+import { cn, getApiDisplayMessage } from "@/lib/helpers"
 import { apiService } from "@/lib/services"
 import {
   GET_COURSES,
@@ -42,6 +42,7 @@ export interface GraphQLUser {
   isBlocked: boolean
   isSuspended: boolean
   isDeleted: boolean
+  hasPassword?: boolean
 }
 
 function enrollmentDateDefaultYmd(): string {
@@ -424,10 +425,10 @@ export function DeleteUserDialog({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:fade-out-0" />
         <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[min(24rem,100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border bg-background p-6 shadow-xl">
-          <DialogPrimitive.Title className="text-lg font-semibold">Delete user</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="text-lg font-semibold">Move to bin</DialogPrimitive.Title>
           <DialogPrimitive.Description className="mt-2 text-sm text-muted-foreground">
             {user ? (
-              <>This will mark &quot;{user.fullName || user.email}&quot; as deleted. This action cannot be undone. Continue?</>
+              <>&quot;{user.fullName || user.email}&quot; will be removed from the users list and can no longer sign in. You can restore them from the User bin, and email them from there for marketing.</>
             ) : null}
           </DialogPrimitive.Description>
           <div className="mt-6 flex justify-end gap-2">
@@ -444,7 +445,7 @@ export function DeleteUserDialog({
                 onOpenChange(false)
               }}
             >
-              Delete
+              Move to bin
             </Button>
           </div>
         </DialogPrimitive.Content>
@@ -469,7 +470,11 @@ export function AssignCoursesForUserSheet({
   const [paymentFile, setPaymentFile] = useState<File | null>(null)
   const [paymentPreviewUrl, setPaymentPreviewUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const { data: coursesData } = useQuery<{ getCourses: { id: string; slug: string; title: string }[] }>(GET_COURSES)
+  const [planType, setPlanType] = useState<"TWO_INSTALLMENTS" | "FULL">("TWO_INSTALLMENTS")
+  const [agreedFee, setAgreedFee] = useState("")
+  const [discountNote, setDiscountNote] = useState("")
+  const [firstDueDate, setFirstDueDate] = useState("")
+  const { data: coursesData } = useQuery<{ getCourses: { id: string; slug: string; title: string; totalFee?: number; currency?: string }[] }>(GET_COURSES)
   const [enrollMutation] = useMutation(ENROLL_USER_IN_COURSE)
   const courses = useMemo(() => coursesData?.getCourses ?? [], [coursesData])
 
@@ -477,6 +482,10 @@ export function AssignCoursesForUserSheet({
     if (user) {
       setSelectedIds([])
       setEnrollmentDateYmd(enrollmentDateDefaultYmd())
+      setPlanType("TWO_INSTALLMENTS")
+      setAgreedFee("")
+      setDiscountNote("")
+      setFirstDueDate("")
       setPaymentFile(null)
       setPaymentPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev)
@@ -497,8 +506,15 @@ export function AssignCoursesForUserSheet({
     })
   }
 
+  const singleCourse = selectedIds.length === 1 ? courses.find((c) => c.id === selectedIds[0]) : undefined
+
   const handleAssign = async () => {
     if (!user) return
+    const fee = agreedFee.trim() ? Number(agreedFee) : null
+    if (fee != null && (!Number.isInteger(fee) || fee < 0)) {
+      toast.error("Agreed fee must be a whole number")
+      return
+    }
     setSaving(true)
     const toastId = toast.loading("Assigning courses...")
     try {
@@ -516,6 +532,12 @@ export function AssignCoursesForUserSheet({
         userId: user.id,
         enrollmentDate: enrollmentDateYmd.trim() || undefined,
         ...(paymentScreenshotUrl ? { paymentScreenshotUrl } : {}),
+        feePlan: {
+          planType,
+          ...(fee != null && singleCourse ? { agreedFee: fee } : {}),
+          ...(discountNote.trim() ? { discountNote: discountNote.trim() } : {}),
+          ...(firstDueDate ? { firstDueDate } : {}),
+        },
       }
       for (const courseId of selectedIds) {
         await enrollMutation({ variables: { input: { ...inputBase, courseId } } })
@@ -555,8 +577,47 @@ export function AssignCoursesForUserSheet({
               onChange={(e) => setEnrollmentDateYmd(e.target.value)}
               className="rounded-xl"
             />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Fees are due on the 12th of each month. If enrollment is before today, one fee row is created for each due date from the first due through today (up to the course installment limit). Enrollment on or after today still opens the full installment schedule.
+          </div>
+          <div className="space-y-3 rounded-2xl border p-3">
+            <div className="text-sm font-semibold">Fee plan</div>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ["TWO_INSTALLMENTS", "2 installments"],
+                ["FULL", "Full payment"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPlanType(value)}
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+                    planType === value ? "border-(--brand-primary) bg-(--brand-primary)/10" : "hover:bg-muted-surface/50"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {singleCourse ? (
+              <div>
+                <label className="text-muted-foreground mb-1 block text-xs font-medium">
+                  Agreed fee (course fee {singleCourse.totalFee?.toLocaleString() ?? "—"} {singleCourse.currency ?? ""}). Leave empty for no discount.
+                </label>
+                <Input type="number" min={0} step={1} value={agreedFee} onChange={(e) => setAgreedFee(e.target.value)} placeholder={String(singleCourse.totalFee ?? "")} className="rounded-xl" />
+              </div>
+            ) : selectedIds.length > 1 ? (
+              <p className="text-muted-foreground text-xs">With several courses selected, each uses its full course fee. Give a discount afterwards on the student&apos;s fee screen.</p>
+            ) : null}
+            <div>
+              <label className="text-muted-foreground mb-1 block text-xs font-medium">Discount note (optional)</label>
+              <Input value={discountNote} onChange={(e) => setDiscountNote(e.target.value)} placeholder="e.g. sibling discount" className="rounded-xl" />
+            </div>
+            <div>
+              <label className="text-muted-foreground mb-1 block text-xs font-medium">First installment due (optional, default 7 days after enrollment)</label>
+              <Input type="date" value={firstDueDate} onChange={(e) => setFirstDueDate(e.target.value)} className="rounded-xl" />
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Two installments: the second is due one month after the first. For a custom schedule, open the student&apos;s details after enrolling and edit their fees.
             </p>
           </div>
           <div>

@@ -178,7 +178,7 @@ export const AdminCoursesScreen = () => {
 
   const canNext = () => {
     if (step === 1) return form.title.trim() && form.slug.trim() && form.subtitle.trim() && form.subDescription.trim()
-    if (step === 2) return form.heroDescription.trim() && form.courseDurationInMonths > 0 && form.feePerMonth >= 0 && form.totalFee >= 0 && form.totalNumberOfInstallments > 0
+    if (step === 2) return form.heroDescription.trim() && form.courseDurationInMonths > 0 && form.totalFee >= 0
     if (step === 3) return form.technologies.length > 0 && form.technologies.every((t, i) => t.label.trim() && t.description.trim() && (t.logo.trim() || techLogoFiles[i]))
     if (step === 4) return form.articleFeatures.length > 0 && form.articleFeatures.every((a, i) => a.name.trim() && a.description.trim() && (a.image.trim() || articleImageFiles[i]))
     return true
@@ -279,7 +279,6 @@ export const AdminCoursesScreen = () => {
                       <td className="p-4 text-muted-foreground">{c.courseDurationInMonths != null ? `${c.courseDurationInMonths} mo` : "—"}</td>
                       <td className="p-4">
                         {c.totalFee != null ? `PKR ${c.totalFee.toLocaleString()}` : "—"}
-                        {c.feePerMonth != null && <span className="text-muted-foreground text-xs block">PKR {c.feePerMonth}/mo</span>}
                       </td>
                       <td className="p-4 flex items-center gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(c.id)} title="Edit course">
@@ -387,18 +386,13 @@ export const AdminCoursesScreen = () => {
                       <Input type="number" min={1} value={form.courseDurationInMonths} onChange={(e) => setForm((f) => ({ ...f, courseDurationInMonths: Number(e.target.value) || 0 }))} />
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Installments *</label>
-                      <Input type="number" min={1} value={form.totalNumberOfInstallments} onChange={(e) => setForm((f) => ({ ...f, totalNumberOfInstallments: Number(e.target.value) || 0 }))} />
+                      <label className="text-sm font-medium mb-1 block">Course fee (total) *</label>
+                      <Input type="number" min={0} value={form.totalFee || ""} onChange={(e) => setForm((f) => ({ ...f, totalFee: Number(e.target.value) || 0 }))} placeholder="0" />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Fee per month *</label>
-                    <Input type="number" min={0} value={form.feePerMonth || ""} onChange={(e) => setForm((f) => ({ ...f, feePerMonth: Number(e.target.value) || 0 }))} placeholder="0" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Total fee *</label>
-                    <Input type="number" min={0} value={form.totalFee || ""} onChange={(e) => setForm((f) => ({ ...f, totalFee: Number(e.target.value) || 0 }))} placeholder="0" />
-                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Students pay this in full or in 2 installments. Discounts and custom installments are set per student under Payments → Student fees.
+                  </p>
                 </>
               )}
               {step === 3 && (
@@ -460,7 +454,7 @@ export const AdminCoursesScreen = () => {
                   <p className="font-medium">{form.title || "—"}</p>
                   <p className="text-muted-foreground">Slug: <span className="font-mono">{form.slug || "—"}</span></p>
                   <p className="text-muted-foreground">{form.subtitle || "—"}</p>
-                  <p className="text-muted-foreground">{form.currency} {form.totalFee?.toLocaleString()} total · {form.feePerMonth} / month · {form.courseDurationInMonths} months</p>
+                  <p className="text-muted-foreground">{form.currency} {form.totalFee?.toLocaleString()} total (full or 2 installments) · {form.courseDurationInMonths} months</p>
                   <p className="text-muted-foreground">{form.technologies.length} technologies · {form.articleFeatures.length} article features</p>
                 </div>
               )}

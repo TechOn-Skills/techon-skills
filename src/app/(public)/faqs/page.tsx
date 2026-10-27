@@ -19,7 +19,7 @@ const faqs = [
   {
     question: "How much do courses cost?",
     answer:
-      "Pricing starts from PKR 3,500/month, depending on the course and track selected. Exact fees are shown on each course page and at enrollment.",
+      "Fees depend on the course and track. The exact fee is shown on each course page and at enrollment, and you can pay it in full or in two installments.",
   },
   {
     question: "How does enrollment work?",

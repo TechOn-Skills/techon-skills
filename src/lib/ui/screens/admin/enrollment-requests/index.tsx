@@ -403,7 +403,7 @@ function CourseEnrollmentRequestsPanel() {
   const [enrollUserInCourse] = useMutation(ENROLL_USER_IN_COURSE, {
     onCompleted: () => {
       setApprovingKey(null)
-      toast.success("Enrollment approved. Installments created with due dates on the 12th of each month.")
+      toast.success("Enrollment approved. Two installments were created; adjust them under Payments → Student fees if needed.")
       refetch()
     },
     onError: (e) => {
@@ -485,9 +485,7 @@ function CourseEnrollmentRequestsPanel() {
                     {filteredRequests.map((req) => {
                       const key = `${req.userId}-${req.courseId}`
                       const isApproving = approvingKey === key
-                      const feeLabel = req.course.totalNumberOfInstallments
-                        ? `${req.course.currency} ${req.course.feePerMonth?.toLocaleString() ?? 0} × ${req.course.totalNumberOfInstallments} (12th of each month)`
-                        : `${req.course.currency} ${req.course.totalFee?.toLocaleString() ?? 0} total`
+                      const feeLabel = `${req.course.currency} ${req.course.totalFee?.toLocaleString() ?? 0} (2 installments)`
                       return (
                         <tr
                           key={key}

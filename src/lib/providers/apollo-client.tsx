@@ -5,7 +5,7 @@ import { setContext } from "@apollo/client/link/context";
 import { ApolloProvider } from "@apollo/client/react";
 import { getConfig } from "@/lib/services";
 import { CONFIG } from "@/utils/constants";
-import { getClientTimezone } from "@/lib/helpers";
+import { captureRefreshedToken, getClientTimezone } from "@/lib/helpers";
 import { ReactNode, useMemo } from "react";
 
 function createApolloClient() {
@@ -26,6 +26,11 @@ function createApolloClient() {
             new HttpLink({
                 uri: GRAPHQL_URL,
                 credentials: "include",
+                fetch: async (input, init) => {
+                    const response = await fetch(input, init);
+                    captureRefreshedToken(response);
+                    return response;
+                },
             })
         ),
         cache: new InMemoryCache(),

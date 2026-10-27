@@ -65,3 +65,24 @@ export const UPDATE_USER_INPUT = gql`
         }
     }
 `;
+export const MOVE_USERS_TO_BIN = gql`
+    mutation MoveUsersToBin($ids: [ID!]!) {
+        moveUsersToBin(ids: $ids)
+    }
+`;
+
+export const RESTORE_USERS_FROM_BIN = gql`
+    mutation RestoreUsersFromBin($ids: [ID!]!) {
+        restoreUsersFromBin(ids: $ids)
+    }
+`;
+
+export const SEND_BULK_EMAIL = gql`
+    mutation SendBulkEmail($input: BulkEmailInput!) {
+        sendBulkEmail(input: $input) {
+            queued
+            skippedUnsubscribed
+            estimatedMinutes
+        }
+    }
+`;

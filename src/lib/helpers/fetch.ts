@@ -4,6 +4,7 @@ import { CONFIG } from "@/utils/constants"
 import { LoggerLevel } from "@/utils/enums"
 import { logger } from "./logger"
 import { getClientTimezone } from "./timezone"
+import { captureRefreshedToken } from "./session"
 
 const { BACKEND_URL } = getConfig()
 
@@ -28,5 +29,6 @@ export const fetchURL = async ({ path, options, isGraphQL = true }: { path: stri
         headers,
     }
     const response = await fetch(`${BACKEND_URL}${isGraphQL ? CONFIG.BACKEND_PATHS.GRAPHQL : path}`, _options)
+    captureRefreshedToken(response)
     return response
 }

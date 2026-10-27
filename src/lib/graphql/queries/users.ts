@@ -13,6 +13,7 @@ export const GET_USERS = gql`
             isDeleted
             isBlocked
             isSuspended
+            hasPassword
             enrolledCourses {
                 id
                 title
@@ -137,6 +138,39 @@ export const GET_COURSE_ENROLLMENT_REQUESTS = gql`
                 totalFee
                 currency
             }
+        }
+    }
+`;
+export const GET_MY_PASSWORD_STATUS = gql`
+    query GetMyPasswordStatus {
+        userProfileInfo {
+            id
+            hasPassword
+        }
+    }
+`;
+
+export const GET_BINNED_USERS = gql`
+    query GetBinnedUsers {
+        getBinnedUsers {
+            id
+            email
+            fullName
+            phoneNumber
+            role
+            status
+            marketingOptOut
+            deletedAt
+            deletedBy {
+                id
+                email
+                fullName
+            }
+            enrolledCourses {
+                id
+                title
+            }
+            createdAt
         }
     }
 `;

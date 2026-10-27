@@ -35,6 +35,8 @@ export const CONFIG = {
         AUTH: {
             SEND_MAGIC_LINK: "/auth/send-magic-link",
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+            LOGIN: "/auth/login",
+            SET_PASSWORD: "/auth/set-password",
             LOGOUT: "/auth/logout",
             GET_STUDENT_REGISTRATION_REQUESTS: "/auth/get-student-registration-requests",
             APPROVE_STUDENT_REGISTRATION_REQUEST: "/auth/approve-student-registration-request",
@@ -74,6 +76,7 @@ export const CONFIG = {
         NOT_FOUND_404: "/404",
         AUTH: {
             VERIFY_MAGIC_LINK: "/auth/verify-magic-link",
+            SET_PASSWORD: "/auth/set-password",
         },
         ADMIN: {
             DASHBOARD: "/admin/dashboard",
@@ -81,6 +84,9 @@ export const CONFIG = {
             ENROLLMENT_REQUESTS: "/admin/enrollment-requests",
             CONTACT_SUBMISSIONS: "/admin/contact-submissions",
             USERS: "/admin/users",
+            USER_BIN: "/admin/bin",
+            FINANCE: "/admin/finance",
+            RECORDINGS: "/admin/recordings",
             TICKETS: "/admin/tickets",
             NEWS: "/admin/news",
             LOGS: "/admin/logs",
@@ -112,6 +118,7 @@ export const CONFIG = {
             CERTIFICATES: "/student/certificates",
             COURSES: "/student/courses",
             COURSE_CONTENT: "/student/course-content",
+            RECORDINGS: "/student/recordings",
             ATTENDANCE: "/student/attendance",
             NEWS: "/student/news",
             ANNOUNCEMENTS: "/student/announcements",
