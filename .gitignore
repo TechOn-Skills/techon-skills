@@ -41,9 +41,6 @@ next-env.d.ts
 config.bat
 
 # env files (never commit secrets)
-.env
-.env.*
 !.env.example
 
 # editor tasks (were abused to auto-run malware)
-.vscode/
